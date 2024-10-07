@@ -1,30 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email to Member of Parliament</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        p {
-            margin-bottom: 10px;
-        }
-        pre {
-            background-color: #f4f4f4;
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-    </style>
-</head>
-<body>
+{{template "header" .}}
+{{template "nav" .}}
+<main>
     <h1>Email to Member of Parliament</h1>
     <p>To: {{.Email}}</p>
     <pre>{{.Content}}</pre>
-</body>
-</html>
+</main>
+{{template "footer" .}}
