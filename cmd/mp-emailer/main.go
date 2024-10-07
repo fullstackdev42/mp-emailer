@@ -44,7 +44,7 @@ func main() {
 	// Get the session secret from environment variables
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
-		logger.Error("SESSION_SECRET is not set in the environment")
+		logger.Error("SESSION_SECRET is not set in the environment", nil)
 		return
 	}
 
