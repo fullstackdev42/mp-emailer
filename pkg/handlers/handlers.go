@@ -21,8 +21,8 @@ type Handler struct {
 	store  *sessions.CookieStore
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface) *Handler {
-	store := sessions.NewCookieStore([]byte("your-secret-key")) // Replace with a secure, randomly generated key
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string) *Handler {
+	store := sessions.NewCookieStore([]byte(sessionSecret))
 	return &Handler{logger: logger, client: client, store: store}
 }
 
