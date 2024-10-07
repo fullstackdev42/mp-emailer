@@ -3,44 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP Emailer</title>
+    <title>MP Emailer - Contact Your Representative</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
             color: #333;
         }
-        form {
-            margin-top: 20px;
-        }
-        label, input {
-            display: block;
-            margin-bottom: 10px;
-        }
-        input[type="text"] {
-            padding: 8px;
-            width: 300px;
-        }
-        input[type="submit"] {
-            padding: 8px 16px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        input[type="submit"]:hover {
+        header {
             background-color: #0056b3;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+        nav {
+            background-color: #007BFF;
+            padding: 0.5rem;
+        }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        nav ul li {
+            margin: 0 10px;
+        }
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+        main {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .campaign {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>MP Emailer</h1>
-    <form action="/submit" method="post">
-        <label for="postalCode">Enter your postal code:</label>
-        <input type="text" id="postalCode" name="postalCode" required>
-        <input type="submit" value="Find MP">
-    </form>
+    <header>
+        <h1>MP Emailer</h1>
+        <p>Contact Your Representative Easily</p>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/campaigns">Campaigns</a></li>
+            <li><a href="/login">Login</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section class="campaign">
+            <h2>Email Your MP: We need REAL AI regulation!</h2>
+            <p>Make your voice heard on important AI legislation. Contact your MP now!</p>
+            <a href="/postal" class="cta-button">Email your MP!</a>
+        </section>
+        <section class="campaign">
+            <h2>Tell Your MP: Keep the Internet Open and Free</h2>
+            <p>Protect your digital rights and keep the internet accessible for all.</p>
+            <a href="/postal" class="cta-button">Take Action Now</a>
+        </section>
+        <section>
+            <h2>About MP Emailer</h2>
+            <p>MP Emailer is a platform designed to help citizens easily contact their Members of Parliament on important issues. We believe in empowering individuals to participate in the democratic process and make their voices heard.</p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 MP Emailer. All rights reserved.</p>
+    </footer>
 </body>
 </html>

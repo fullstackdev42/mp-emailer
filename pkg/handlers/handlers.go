@@ -27,16 +27,7 @@ func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface) *Handl
 }
 
 func (h *Handler) HandleIndex(c echo.Context) error {
-	session, _ := h.store.Get(c.Request(), "session")
-	user := session.Values["user"]
-
-	data := struct {
-		User interface{}
-	}{
-		User: user,
-	}
-
-	return templates.IndexTemplate.Execute(c.Response().Writer, data)
+	return templates.IndexTemplate.Execute(c.Response().Writer, nil)
 }
 
 func (h *Handler) HandleSubmit(c echo.Context) error {
