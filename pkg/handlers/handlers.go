@@ -27,7 +27,8 @@ func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface) *Handl
 }
 
 func (h *Handler) HandleIndex(c echo.Context) error {
-	return templates.IndexTemplate.Execute(c.Response().Writer, nil)
+	h.logger.Info("Handling index request")
+	return c.Render(http.StatusOK, "index.html", nil)
 }
 
 func (h *Handler) HandleSubmit(c echo.Context) error {

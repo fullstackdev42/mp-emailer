@@ -1,75 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP Emailer - Contact Your Representative</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        header {
-            background-color: #0056b3;
-            color: white;
-            text-align: center;
-            padding: 1rem;
-        }
-        nav {
-            background-color: #007BFF;
-            padding: 0.5rem;
-        }
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-        }
-        nav ul li {
-            margin: 0 10px;
-        }
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-        }
-        main {
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .campaign {
-            background-color: #f4f4f4;
-            border: 1px solid #ddd;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .cta-button {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 0.5rem 1rem;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>MP Emailer</h1>
-        <p>Contact Your Representative Easily</p>
-    </header>
-    <nav>
-        <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/about">About</a></li>
-            <li><a href="/campaigns">Campaigns</a></li>
-            <li><a href="/login">Login</a></li>
-        </ul>
-    </nav>
+{{template "header" .}}
+{{template "nav" .}}
     <main>
         <section class="campaign">
             <h2>Email Your MP: We need REAL AI regulation!</h2>
@@ -86,8 +16,4 @@
             <p>MP Emailer is a platform designed to help citizens easily contact their Members of Parliament on important issues. We believe in empowering individuals to participate in the democratic process and make their voices heard.</p>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2024 MP Emailer. All rights reserved.</p>
-    </footer>
-</body>
-</html>
+{{template "footer" .}}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
+	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -23,6 +24,9 @@ func main() {
 
 	// Create a new Echo instance
 	e := echo.New()
+
+	// Set renderer
+	e.Renderer = templates.NewRenderer()
 
 	// Middleware
 	e.Use(middleware.Logger())
