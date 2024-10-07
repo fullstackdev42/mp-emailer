@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -25,28 +25,107 @@ type Representative struct {
 
 func main() {
 	var err error
-	logger, err = loggo.NewLogger("mp-emailer.log", slog.LevelInfo)
+	logger, err = loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
 	if err != nil {
 		fmt.Printf("Error initializing logger: %v\n", err)
 		return
 	}
 
-	postalCode := getPostalCode()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handleIndex)
+	mux.HandleFunc("/submit", handleSubmit)
+
+	logger.Info("Starting server on :8080")
+	err = http.ListenAndServe(":8080", mux)
+	if err != nil {
+		logger.Error("Error starting server", err)
+	}
+}
+
+func handleIndex(w http.ResponseWriter, r *http.Request) {
+	tmpl := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MP Emailer</title>
+</head>
+<body>
+    <h1>MP Emailer</h1>
+    <form action="/submit" method="post">
+        <label for="postalCode">Enter your postal code:</label>
+        <input type="text" id="postalCode" name="postalCode" required>
+        <input type="submit" value="Find MP">
+    </form>
+</body>
+</html>
+`
+	t, err := template.New("index").Parse(tmpl)
+	if err != nil {
+		logger.Error("Error parsing template", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	err = t.Execute(w, nil)
+	if err != nil {
+		logger.Error("Error executing template", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+func handleSubmit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	postalCode := r.FormValue("postalCode")
+	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
+
 	mp, err := findMP(postalCode)
 	if err != nil {
 		logger.Error("Error finding MP", err)
+		http.Error(w, "Error finding MP", http.StatusInternalServerError)
 		return
 	}
 
 	emailContent := composeEmail(mp)
-	sendEmail(mp.Email, emailContent)
-}
 
-func getPostalCode() string {
-	var postalCode string
-	fmt.Print("Enter your postal code (e.g., A1A1A1): ")
-	fmt.Scanln(&postalCode)
-	return strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
+	tmpl := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MP Email</title>
+</head>
+<body>
+    <h1>Email to MP</h1>
+    <p>To: {{.Email}}</p>
+    <pre>{{.Content}}</pre>
+</body>
+</html>
+`
+	t, err := template.New("email").Parse(tmpl)
+	if err != nil {
+		logger.Error("Error parsing template", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Content string
+	}{
+		Email:   mp.Email,
+		Content: emailContent,
+	}
+
+	err = t.Execute(w, data)
+	if err != nil {
+		logger.Error("Error executing template", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	// Log the email sending (in a real app, you'd actually send the email here)
+	logger.Info("Simulated email sending", "to", mp.Email)
 }
 
 func findMP(postalCode string) (Representative, error) {
@@ -71,6 +150,7 @@ func findMP(postalCode string) (Representative, error) {
 
 	for _, rep := range postalCodeResp.Representatives {
 		if rep.ElectedOffice == "MP" {
+			logger.Info("MP found", "name", rep.Name, "email", rep.Email)
 			return rep, nil
 		}
 	}
@@ -92,11 +172,4 @@ Sincerely,
 [YOUR NAME]
 `
 	return fmt.Sprintf(template, mp.Name)
-}
-
-func sendEmail(to string, content string) {
-	// In a real application, you would implement actual email sending logic here
-	// For this example, we'll just print the email content
-	logger.Info("Sending email to: %s", to)
-	logger.Info("Email content:\n%s", content)
 }

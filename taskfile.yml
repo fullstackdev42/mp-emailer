@@ -1,0 +1,48 @@
+version: '3'
+
+vars:
+  BINARY_NAME: mp-emailer
+  GO_FILES: '$(find . -name "*.go" -type f -not -path "./vendor/*")'
+
+tasks:
+  default:
+    cmds:
+      - task: run
+
+  build:
+    desc: Build the application
+    cmds:
+      - go build -o {{.BINARY_NAME}} .
+
+  run:
+    desc: Run the application
+    deps: [build]
+    cmds:
+      - ./{{.BINARY_NAME}}
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./... -v
+
+  lint:
+    desc: Lint the code
+    cmds:
+      - golangci-lint run
+
+  fmt:
+    desc: Format the code
+    cmds:
+      - gofmt -s -w {{.GO_FILES}}
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f {{.BINARY_NAME}}
+
+  all:
+    desc: Run all tasks (lint, test, build)
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
