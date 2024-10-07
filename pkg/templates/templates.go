@@ -1,36 +1,30 @@
 package templates
 
-import "html/template"
+import (
+	"html/template"
+	"log"
+	"os"
+)
 
 var (
-	IndexTemplate = template.Must(template.New("index").Parse(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MP Emailer</title>
-</head>
-<body>
-    <h1>MP Emailer</h1>
-    <form action="/submit" method="post">
-        <label for="postalCode">Enter your postal code:</label>
-        <input type="text" id="postalCode" name="postalCode" required>
-        <input type="submit" value="Find MP">
-    </form>
-</body>
-</html>
-`))
-
-	EmailTemplate = template.Must(template.New("email").Parse(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MP Email</title>
-</head>
-<body>
-    <h1>Email to MP</h1>
-    <p>To: {{.Email}}</p>
-    <pre>{{.Content}}</pre>
-</body>
-</html>
-`))
+	IndexTemplate *template.Template
+	EmailTemplate *template.Template
 )
+
+func init() {
+	var err error
+
+	// Read and parse index.html
+	indexHTML, err := os.ReadFile("index.html")
+	if err != nil {
+		log.Fatalf("Error reading index.html: %v", err)
+	}
+	IndexTemplate = template.Must(template.New("index").Parse(string(indexHTML)))
+
+	// Read and parse email.html
+	emailHTML, err := os.ReadFile("email.html")
+	if err != nil {
+		log.Fatalf("Error reading email.html: %v", err)
+	}
+	EmailTemplate = template.Must(template.New("email").Parse(string(emailHTML)))
+}
