@@ -23,6 +23,10 @@ type Representative struct {
 	Email         string `json:"email"`
 }
 
+type APIResponse struct {
+	RepresentativesCentroid []Representative `json:"representatives_centroid"`
+}
+
 func main() {
 	var err error
 	logger, err = loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
@@ -130,31 +134,43 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 func findMP(postalCode string) (Representative, error) {
 	url := fmt.Sprintf("https://represent.opennorth.ca/postcodes/%s/?format=json", postalCode)
+	logger.Info("Making request to", "url", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
+		logger.Error("Error making request", err)
 		return Representative{}, fmt.Errorf("error making request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	logger.Info("Response received", "status", resp.Status)
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("Error reading response body", err)
 		return Representative{}, fmt.Errorf("error reading response: %w", err)
 	}
 
-	var postalCodeResp PostalCodeResponse
-	err = json.Unmarshal(body, &postalCodeResp)
+	logger.Info("Response body", "body", string(body))
+
+	var apiResp APIResponse
+	err = json.Unmarshal(body, &apiResp)
 	if err != nil {
+		logger.Error("Error unmarshaling JSON", err)
 		return Representative{}, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
 
-	for _, rep := range postalCodeResp.Representatives {
+	logger.Info("Unmarshaled response", "representatives", apiResp.RepresentativesCentroid)
+
+	for _, rep := range apiResp.RepresentativesCentroid {
+		logger.Info("Checking representative", "name", rep.Name, "office", rep.ElectedOffice)
 		if rep.ElectedOffice == "MP" {
 			logger.Info("MP found", "name", rep.Name, "email", rep.Email)
 			return rep, nil
 		}
 	}
 
+	logger.Warn("No MP found for postal code", "postalCode", postalCode)
 	return Representative{}, fmt.Errorf("no MP found for postal code %s", postalCode)
 }
 
