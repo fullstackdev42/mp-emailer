@@ -12,6 +12,7 @@ var templateFiles embed.FS
 var (
 	IndexTemplate *template.Template
 	EmailTemplate *template.Template
+	LoginTemplate *template.Template
 )
 
 func init() {
@@ -25,5 +26,10 @@ func init() {
 	EmailTemplate, err = template.ParseFS(templateFiles, "email.html")
 	if err != nil {
 		log.Fatalf("Error parsing email.html: %v", err)
+	}
+
+	LoginTemplate, err = template.ParseFS(templateFiles, "login.html")
+	if err != nil {
+		log.Fatalf("Error parsing login.html: %v", err)
 	}
 }
