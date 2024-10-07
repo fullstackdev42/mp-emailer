@@ -3,32 +3,35 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
-	"github.com/jonesrussell/loggo"
 )
 
-func HandleSubmit(w http.ResponseWriter, r *http.Request) {
-	logger := r.Context().Value("logger").(loggo.LoggerInterface)
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+func (h *Handler) HandleSubmit(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("Handling submit request")
 
 	postalCode := r.FormValue("postalCode")
 	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
 
-	client := api.NewClient(logger)
-	mpFinder := services.NewMPFinder(client, logger)
+	// Server-side validation
+	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
+	if !postalCodeRegex.MatchString(postalCode) {
+		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
+		http.Error(w, "Invalid postal code format", http.StatusBadRequest)
+		return
+	}
+
+	client := api.NewClient(h.logger)
+	mpFinder := services.NewMPFinder(client, h.logger)
 
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
-		logger.Error("Error finding MP", err)
+		h.logger.Error("Error finding MP", err)
 		http.Error(w, "Error finding MP", http.StatusInternalServerError)
 		return
 	}
@@ -45,11 +48,12 @@ func HandleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	err = templates.EmailTemplate.Execute(w, data)
 	if err != nil {
-		logger.Error("Error executing template", err)
+		h.logger.Error("Error executing template", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
-	logger.Info("Simulated email sending", "to", mp.Email)
+	h.logger.Info("Simulated email sending", "to", mp.Email)
 }
 
 func composeEmail(mp models.Representative) string {

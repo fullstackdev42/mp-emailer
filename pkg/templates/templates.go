@@ -1,10 +1,13 @@
 package templates
 
 import (
+	"embed"
 	"html/template"
 	"log"
-	"os"
 )
+
+//go:embed *.html
+var templateFiles embed.FS
 
 var (
 	IndexTemplate *template.Template
@@ -14,17 +17,13 @@ var (
 func init() {
 	var err error
 
-	// Read and parse index.html
-	indexHTML, err := os.ReadFile("index.html")
+	IndexTemplate, err = template.ParseFS(templateFiles, "index.html")
 	if err != nil {
-		log.Fatalf("Error reading index.html: %v", err)
+		log.Fatalf("Error parsing index.html: %v", err)
 	}
-	IndexTemplate = template.Must(template.New("index").Parse(string(indexHTML)))
 
-	// Read and parse email.html
-	emailHTML, err := os.ReadFile("email.html")
+	EmailTemplate, err = template.ParseFS(templateFiles, "email.html")
 	if err != nil {
-		log.Fatalf("Error reading email.html: %v", err)
+		log.Fatalf("Error parsing email.html: %v", err)
 	}
-	EmailTemplate = template.Must(template.New("email").Parse(string(emailHTML)))
 }
