@@ -3,6 +3,7 @@ version: '3'
 vars:
   BINARY_NAME: mp-emailer
   GO_FILES: '$(find . -name "*.go" -type f -not -path "./vendor/*")'
+  BIN_DIR: bin
 
 tasks:
   default:
@@ -12,13 +13,14 @@ tasks:
   build:
     desc: Build the application
     cmds:
-      - go build -o {{.BINARY_NAME}} .
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} .
 
   run:
     desc: Run the application
     deps: [build]
     cmds:
-      - ./{{.BINARY_NAME}}
+      - ./{{.BIN_DIR}}/{{.BINARY_NAME}}
 
   test:
     desc: Run tests
@@ -38,7 +40,7 @@ tasks:
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -f {{.BINARY_NAME}}
+      - rm -rf {{.BIN_DIR}}
 
   all:
     desc: Run all tasks (lint, test, build)
