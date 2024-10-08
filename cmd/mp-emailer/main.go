@@ -111,28 +111,33 @@ func main() {
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 	e.Use(session.Middleware(store))
 
+	// Apply SetAuthStatusMiddleware after session middleware
+	e.Use(appmid.SetAuthStatusMiddleware(store, logger))
+
 	h := handlers.NewHandler(logger, client, store, db, emailService, tmplManager)
 
-	// Create the auth middleware
-	authMiddleware := appmid.AuthMiddleware(store, logger)
-
-	// Apply auth middleware to specific routes
+	// Public routes
 	e.GET("/", h.HandleIndex)
 	e.GET("/login", h.HandleLogin)
 	e.POST("/login", h.HandleLogin)
 	e.GET("/logout", h.HandleLogout)
 	e.GET("/register", h.HandleRegister)
 	e.POST("/register", h.HandleRegister)
-	e.GET("/submit", h.HandleSubmit, authMiddleware)
-	e.POST("/submit", h.HandleSubmit, authMiddleware)
-	e.POST("/echo", h.HandleEcho, authMiddleware)
 
-	// Campaign routes
-	e.GET("/campaigns", h.HandleGetCampaigns, authMiddleware)
-	e.GET("/campaigns/new", h.HandleCreateCampaign, authMiddleware)
-	e.POST("/campaigns/new", h.HandleCreateCampaign, authMiddleware)
-	e.POST("/campaigns/:id/update", h.HandleUpdateCampaign, authMiddleware)
-	e.POST("/campaigns/:id/delete", h.HandleDeleteCampaign, authMiddleware)
+	e.GET("/campaigns", h.HandleGetCampaigns)
+
+	// Protected routes
+	authGroup := e.Group("")
+	authGroup.Use(appmid.RequireAuthMiddleware(store, logger))
+	authGroup.GET("/submit", h.HandleSubmit)
+	authGroup.POST("/submit", h.HandleSubmit)
+	authGroup.POST("/echo", h.HandleEcho)
+
+	// Campaign routes (protected)
+	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
+	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
+	authGroup.POST("/campaigns/:id/update", h.HandleUpdateCampaign)
+	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
 
 	port := config.AppPort
 	if _, err := strconv.Atoi(port); err != nil {

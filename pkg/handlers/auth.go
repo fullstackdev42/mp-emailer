@@ -56,8 +56,13 @@ func (h *Handler) HandleLogout(c echo.Context) error {
 	}
 
 	sess.Values["username"] = nil
+	sess.Options.MaxAge = -1 // This will delete the cookie
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to save session")
 	}
+
+	// Clear the isAuthenticated status
+	c.Set("isAuthenticated", false)
+
 	return c.Redirect(http.StatusSeeOther, "/")
 }
