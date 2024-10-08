@@ -94,12 +94,18 @@ func main() {
 	}
 	defer db.Close()
 
+	tmplManager, err := templates.NewTemplateManager()
+	if err != nil {
+		logger.Error("Error initializing templates", err)
+		return
+	}
+
 	e := echo.New()
 	e.Renderer = templates.NewRenderer()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	h := handlers.NewHandler(logger, client, config.SessionSecret, db, emailService)
+	h := handlers.NewHandler(logger, client, config.SessionSecret, db, emailService, tmplManager)
 	e.Use(h.AuthMiddleware)
 
 	e.GET("/", h.HandleIndex)

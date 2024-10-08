@@ -79,7 +79,7 @@ func main() {
 		logger.Error("Error creating user", err)
 		return
 	}
-	handler := handlers.NewHandler(logger, nil, "", db, emailService)
+	handler := handlers.NewHandler(logger, nil, "", db, emailService, nil)
 	if err := handler.SendAdminNotification(username, email); err != nil {
 		logger.Error("Failed to send admin notification email", err)
 		logger.Info("Continuing execution despite email sending failure")

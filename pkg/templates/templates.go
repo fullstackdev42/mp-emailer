@@ -4,48 +4,50 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"log"
 )
 
 //go:embed *.html includes/*.html
 var templateFiles embed.FS
 
-var (
+type TemplateManager struct {
 	IndexTemplate  *template.Template
 	PostalTemplate *template.Template
 	EmailTemplate  *template.Template
 	LoginTemplate  *template.Template
-)
+}
 
-func init() {
+func NewTemplateManager() (*TemplateManager, error) {
 	var err error
+	manager := &TemplateManager{}
 
 	// Parse the includes first
 	includes, err := template.ParseFS(templateFiles, "includes/*.html")
 	if err != nil {
-		log.Fatalf("Error parsing includes: %v", err)
+		return nil, fmt.Errorf("error parsing includes: %v", err)
 	}
 
 	// Parse each template, adding the includes to it
-	IndexTemplate, err = parseTemplate(includes, "index.html")
+	manager.IndexTemplate, err = parseTemplate(includes, "index.html")
 	if err != nil {
-		log.Fatalf("Error parsing index.html: %v", err)
+		return nil, fmt.Errorf("error parsing index.html: %v", err)
 	}
 
-	PostalTemplate, err = parseTemplate(includes, "postal.html")
+	manager.PostalTemplate, err = parseTemplate(includes, "postal.html")
 	if err != nil {
-		log.Fatalf("Error parsing postal.html: %v", err)
+		return nil, fmt.Errorf("error parsing postal.html: %v", err)
 	}
 
-	EmailTemplate, err = parseTemplate(includes, "email.html")
+	manager.EmailTemplate, err = parseTemplate(includes, "email.html")
 	if err != nil {
-		log.Fatalf("Error parsing email.html: %v", err)
+		return nil, fmt.Errorf("error parsing email.html: %v", err)
 	}
 
-	LoginTemplate, err = parseTemplate(includes, "login.html")
+	manager.LoginTemplate, err = parseTemplate(includes, "login.html")
 	if err != nil {
-		log.Fatalf("Error parsing login.html: %v", err)
+		return nil, fmt.Errorf("error parsing login.html: %v", err)
 	}
+
+	return manager, nil
 }
 
 func parseTemplate(includes *template.Template, filename string) (*template.Template, error) {

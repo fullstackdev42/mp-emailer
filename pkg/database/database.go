@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	// Import the MySQL driver for database/sql
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jonesrussell/loggo"
 	"golang.org/x/crypto/bcrypt"

@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
+	// Import the MySQL driver for database/sql
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
+	// Import the file source for migrations
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jonesrussell/loggo"
 )

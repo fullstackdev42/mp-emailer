@@ -17,21 +17,23 @@ import (
 )
 
 type Handler struct {
-	logger       loggo.LoggerInterface
-	client       api.ClientInterface
-	store        sessions.Store
-	db           *database.DB
-	emailService services.EmailService
+	logger          loggo.LoggerInterface
+	client          api.ClientInterface
+	store           sessions.Store
+	db              *database.DB
+	emailService    services.EmailService
+	templateManager *templates.TemplateManager
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService) *Handler {
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
 	store := sessions.NewCookieStore([]byte(sessionSecret))
 	return &Handler{
-		logger:       logger,
-		client:       client,
-		store:        store,
-		db:           db,
-		emailService: emailService,
+		logger:          logger,
+		client:          client,
+		store:           store,
+		db:              db,
+		emailService:    emailService,
+		templateManager: tmplManager,
 	}
 }
 
@@ -68,7 +70,7 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 		Content: emailContent,
 	}
 
-	return templates.EmailTemplate.Execute(c.Response().Writer, data)
+	return h.templateManager.EmailTemplate.Execute(c.Response().Writer, data)
 }
 
 func (h *Handler) HandleEcho(c echo.Context) error {
