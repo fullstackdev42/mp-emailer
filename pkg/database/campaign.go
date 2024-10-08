@@ -2,18 +2,16 @@ package database
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 )
 
 func (db *DB) CreateCampaign(campaign *models.Campaign) error {
 	query := `
-		INSERT INTO campaigns (id, name, template, owner_id, created_at, updated_at) 
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO campaigns (name, template, owner_id, created_at, updated_at) 
+		VALUES (?, ?, ?, ?, ?)
 	`
-	_, err := db.Exec(query,
-		campaign.ID,
+	result, err := db.Exec(query,
 		campaign.Name,
 		campaign.Template,
 		campaign.OwnerID,
@@ -21,39 +19,38 @@ func (db *DB) CreateCampaign(campaign *models.Campaign) error {
 		campaign.UpdatedAt,
 	)
 	if err != nil {
-		// Check for duplicate entry error
-		if isDuplicateEntryError(err) {
-			return models.ErrDuplicateCampaign
-		}
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
+
+	// Get the auto-generated ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("error getting last insert ID: %w", err)
+	}
+
+	campaign.ID = int(id)
 	return nil
 }
 
-// Add this helper function to check for duplicate entry errors
-func isDuplicateEntryError(err error) bool {
-	return strings.Contains(err.Error(), "Duplicate entry")
-}
-
 func (db *DB) GetCampaigns() ([]models.Campaign, error) {
-	query := "SELECT id, name, template FROM campaigns"
-	rows, err := db.Query(query)
+	rows, err := db.Query("SELECT id, name, template, owner_id FROM campaigns")
 	if err != nil {
-		return nil, fmt.Errorf("error fetching campaigns: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
 	var campaigns []models.Campaign
 	for rows.Next() {
 		var campaign models.Campaign
-		if err := rows.Scan(&campaign.ID, &campaign.Name, &campaign.Template); err != nil {
-			return nil, fmt.Errorf("error scanning campaign: %w", err)
+		err := rows.Scan(&campaign.ID, &campaign.Name, &campaign.Template, &campaign.OwnerID)
+		if err != nil {
+			return nil, err
 		}
 		campaigns = append(campaigns, campaign)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error with rows: %w", err)
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return campaigns, nil
@@ -68,11 +65,29 @@ func (db *DB) UpdateCampaign(campaign *models.Campaign) error {
 	return nil
 }
 
-func (db *DB) DeleteCampaign(id string) error {
+func (db *DB) DeleteCampaign(id int) error {
 	query := "DELETE FROM campaigns WHERE id = ?"
 	_, err := db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
 	return nil
+}
+
+// GetCampaignByID retrieves a campaign from the database by its ID
+func (db *DB) GetCampaignByID(id int) (*models.Campaign, error) {
+	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
+	campaign := &models.Campaign{}
+	err := db.QueryRow(query, id).Scan(
+		&campaign.ID,
+		&campaign.Name,
+		&campaign.Template,
+		&campaign.OwnerID,
+		&campaign.CreatedAt,
+		&campaign.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return campaign, nil
 }

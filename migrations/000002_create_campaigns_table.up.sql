@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS campaigns (
-    id VARCHAR(36) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     template TEXT NOT NULL,
     owner_id INT NOT NULL,

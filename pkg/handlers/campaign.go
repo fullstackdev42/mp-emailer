@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/labstack/echo-contrib/session"
@@ -18,9 +22,27 @@ func (h *Handler) HandleCreateCampaign(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}
-	userID, ok := sess.Values["userID"].(string)
+	userID, ok := sess.Values["userID"]
 	if !ok {
-		return c.String(http.StatusInternalServerError, "Invalid user ID in session")
+		// Debug print
+		fmt.Println("Session values:", sess.Values)
+		return c.String(http.StatusInternalServerError, "User ID not found in session")
+	}
+
+	// Try to convert to int
+	var ownerID int
+	switch v := userID.(type) {
+	case int:
+		ownerID = v
+	case string:
+		ownerID, err = strconv.Atoi(v)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Invalid user ID in session")
+		}
+	default:
+		// Debug print
+		fmt.Printf("Unexpected user ID type: %T\n", userID)
+		return c.String(http.StatusInternalServerError, "Invalid user ID type in session")
 	}
 
 	name := c.FormValue("name")
@@ -29,7 +51,7 @@ func (h *Handler) HandleCreateCampaign(c echo.Context) error {
 	campaign := models.Campaign{
 		Name:     name,
 		Template: template,
-		OwnerID:  userID, // Set the owner ID here
+		OwnerID:  ownerID,
 	}
 
 	if err := h.db.CreateCampaign(&campaign); err != nil {
@@ -53,7 +75,10 @@ func (h *Handler) HandleGetCampaigns(c echo.Context) error {
 }
 
 func (h *Handler) HandleUpdateCampaign(c echo.Context) error {
-	id := c.Param("id")
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+	}
 	name := c.FormValue("name")
 	template := c.FormValue("template")
 
@@ -71,11 +96,48 @@ func (h *Handler) HandleUpdateCampaign(c echo.Context) error {
 }
 
 func (h *Handler) HandleDeleteCampaign(c echo.Context) error {
-	id := c.Param("id")
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+	}
 
 	if err := h.db.DeleteCampaign(id); err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error deleting campaign")
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
+}
+
+// HandleGetCampaign handles the GET request for viewing a specific campaign
+func (h *Handler) HandleGetCampaign(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+	}
+
+	campaign, err := h.db.GetCampaignByID(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return echo.NewHTTPError(http.StatusNotFound, "Campaign not found")
+		}
+		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
+	}
+
+	// You might want to exclude sensitive information here
+	// For example, you might not want to show the OwnerID to the public
+	campaignView := struct {
+		ID        int       `json:"id"`
+		Name      string    `json:"name"`
+		Template  string    `json:"template"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+	}{
+		ID:        campaign.ID,
+		Name:      campaign.Name,
+		Template:  campaign.Template,
+		CreatedAt: campaign.CreatedAt,
+		UpdatedAt: campaign.UpdatedAt,
+	}
+
+	return c.JSON(http.StatusOK, campaignView)
 }

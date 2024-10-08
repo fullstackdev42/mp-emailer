@@ -123,6 +123,7 @@ func main() {
 	e.GET("/logout", h.HandleLogout)
 	e.GET("/register", h.HandleRegister)
 	e.POST("/register", h.HandleRegister)
+	e.GET("/campaigns/:id", h.HandleGetCampaign) // Add this new route
 
 	// Protected routes
 	authGroup := e.Group("")
