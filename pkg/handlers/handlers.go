@@ -24,6 +24,11 @@ type Handler struct {
 	db     *database.DB
 }
 
+type TemplateData struct {
+	IsAuthenticated bool
+	// Add other fields as needed
+}
+
 func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB) *Handler {
 	store := sessions.NewCookieStore([]byte(sessionSecret))
 	return &Handler{logger: logger, client: client, store: store, db: db}
@@ -47,7 +52,7 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
 	if !postalCodeRegex.MatchString(postalCode) {
 		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
-		return c.String(http.StatusBadRequest, "Invalid postal code format")
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
 	}
 
 	mpFinder := services.NewMPFinder(h.client, h.logger)
@@ -55,7 +60,7 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
 		h.logger.Error("Error finding MP", err)
-		return c.String(http.StatusInternalServerError, "Error finding MP")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Error finding MP")
 	}
 
 	emailContent := composeEmail(mp)
@@ -91,7 +96,7 @@ func composeEmail(mp models.Representative) string {
 
 func (h *Handler) HandleLogin(c echo.Context) error {
 	if c.Request().Method == http.MethodGet {
-		return templates.LoginTemplate.Execute(c.Response().Writer, nil)
+		return c.Render(http.StatusOK, "login.html", nil)
 	}
 
 	username := c.FormValue("username")
@@ -100,11 +105,11 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	valid, err := h.db.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Error("Error verifying user", err)
-		return c.String(http.StatusInternalServerError, "An error occurred during login")
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during login")
 	}
 
 	if !valid {
-		return c.String(http.StatusUnauthorized, "Invalid credentials")
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
 	session, _ := h.store.Get(c.Request(), "session")
@@ -141,31 +146,31 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 
 	// 1. Validating the input
 	if err := validateRegistrationInput(username, email, password, confirmPassword); err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	// 2. Checking if the username or email already exists
 	exists, err := h.db.UserExists(username, email)
 	if err != nil {
 		h.logger.Error("Error checking user existence", err)
-		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
 	}
 	if exists {
-		return c.String(http.StatusBadRequest, "Username or email already exists")
+		return echo.NewHTTPError(http.StatusConflict, "Username or email already exists")
 	}
 
 	// 3. Hashing the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		h.logger.Error("Error hashing password", err)
-		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
 	}
 
 	// 4. Storing the new user in the database
 	err = h.db.CreateUser(username, email, string(hashedPassword))
 	if err != nil {
 		h.logger.Error("Error creating user", err)
-		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
 	}
 
 	h.logger.Info("User registered successfully", "username", username, "email", email)
@@ -193,9 +198,4 @@ func validateRegistrationInput(username, email, password, confirmPassword string
 	}
 
 	return nil
-}
-
-type TemplateData struct {
-	IsAuthenticated bool
-	// Add other fields as needed
 }
