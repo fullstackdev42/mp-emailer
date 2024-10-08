@@ -17,11 +17,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	adminEmail = "admin@example.com" // Replace with your actual admin email
+)
+
 type Handler struct {
-	logger loggo.LoggerInterface
-	client api.ClientInterface
-	store  *sessions.CookieStore
-	db     *database.DB
+	logger       loggo.LoggerInterface
+	client       api.ClientInterface
+	store        sessions.Store
+	db           *database.DB
+	emailService services.EmailService
 }
 
 type TemplateData struct {
@@ -29,9 +34,15 @@ type TemplateData struct {
 	// Add other fields as needed
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB) *Handler {
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService) *Handler {
 	store := sessions.NewCookieStore([]byte(sessionSecret))
-	return &Handler{logger: logger, client: client, store: store, db: db}
+	return &Handler{
+		logger:       logger,
+		client:       client,
+		store:        store,
+		db:           db,
+		emailService: emailService,
+	}
 }
 
 func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
@@ -193,6 +204,16 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	err = h.db.CreateUser(username, email, string(hashedPassword))
 	if err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error creating user")
+	}
+
+	// 5. Sending email to admin
+	subject := "New User Registration"
+	body := fmt.Sprintf("A new user has registered:\nUsername: %s\nEmail: %s", username, email)
+	err = h.emailService.SendEmail(adminEmail, subject, body)
+	if err != nil {
+		h.logger.Error("Failed to send admin notification email", err)
+		// Note: We're not returning here as we don't want to interrupt the user flow
+		// if the email fails to send
 	}
 
 	h.logger.Info("User registered successfully", "username", username, "email", email)

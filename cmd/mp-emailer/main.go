@@ -9,6 +9,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
+	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/joho/godotenv"
 	"github.com/jonesrussell/loggo"
@@ -16,30 +17,76 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func main() {
-	// Load .env file
+type Config struct {
+	AppEnv        string
+	MailgunDomain string
+	MailgunAPIKey string
+	MailpitHost   string
+	MailpitPort   string
+	DBUser        string
+	DBPass        string
+	DBName        string
+	DBHost        string
+	DBPort        string
+	SessionSecret string
+	AppPort       string
+}
+
+func loadConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Printf("Error loading .env file: %v\n", err)
+		return nil, fmt.Errorf("error loading .env file: %v", err)
 	}
 
+	config := &Config{
+		AppEnv:        os.Getenv("APP_ENV"),
+		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
+		MailgunAPIKey: os.Getenv("MAILGUN_API_KEY"),
+		MailpitHost:   os.Getenv("MAILPIT_HOST"),
+		MailpitPort:   os.Getenv("MAILPIT_PORT"),
+		DBUser:        os.Getenv("DB_USER"),
+		DBPass:        os.Getenv("DB_PASS"),
+		DBName:        os.Getenv("DB_NAME"),
+		DBHost:        os.Getenv("DB_HOST"),
+		DBPort:        os.Getenv("DB_PORT"),
+		SessionSecret: os.Getenv("SESSION_SECRET"),
+		AppPort:       os.Getenv("APP_PORT"),
+	}
+
+	if config.SessionSecret == "" {
+		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
+	}
+
+	if config.AppPort == "" {
+		config.AppPort = "8080"
+	}
+
+	return config, nil
+}
+
+func main() {
 	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
 	if err != nil {
 		fmt.Printf("Error initializing logger: %v\n", err)
 		return
 	}
 
-	// Create API client
+	config, err := loadConfig()
+	if err != nil {
+		logger.Error("Error loading configuration", err)
+		return
+	}
+
+	var emailService services.EmailService
+	if config.AppEnv == "production" {
+		emailService = services.NewMailgunEmailService(config.MailgunDomain, config.MailgunAPIKey)
+	} else {
+		emailService = services.NewMailpitEmailService(config.MailpitHost, config.MailpitPort)
+	}
+
 	client := api.NewClient(logger)
 
-	// Initialize database connection
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", config.DBUser, config.DBPass, config.DBHost, config.DBPort, config.DBName)
 	db, err := database.NewDB(dsn, logger, "./migrations")
 	if err != nil {
 		logger.Error("Error connecting to database", err)
@@ -47,58 +94,33 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create a new Echo instance
+	os.Setenv("SMTP_HOST", "mailpit")
+	os.Setenv("SMTP_PORT", "1025")
+
 	e := echo.New()
-
-	// Set renderer
 	e.Renderer = templates.NewRenderer()
-
-	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Get the session secret from environment variables
-	sessionSecret := os.Getenv("SESSION_SECRET")
-	if sessionSecret == "" {
-		logger.Error("SESSION_SECRET is not set in the environment", nil)
-		return
-	}
-
-	// Create a new handler with the logger, client, session secret, and database
-	h := handlers.NewHandler(logger, client, sessionSecret, db)
-
+	h := handlers.NewHandler(logger, client, config.SessionSecret, db, emailService)
 	e.Use(h.AuthMiddleware)
 
-	// Routes
 	e.GET("/", h.HandleIndex)
 	e.GET("/login", h.HandleLogin)
 	e.POST("/login", h.HandleLogin)
 	e.GET("/logout", h.HandleLogout)
-
 	e.GET("/register", h.HandleRegister)
 	e.POST("/register", h.HandleRegister)
-
-	// Protected routes
 	e.GET("/submit", h.HandleSubmit, h.AuthMiddleware)
 	e.POST("/submit", h.HandleSubmit, h.AuthMiddleware)
 	e.POST("/echo", h.HandleEcho, h.AuthMiddleware)
 
-	// Get the port from the environment variable or use the default
-	port := os.Getenv("APP_PORT")
-
-	if port == "" {
-		port = "8080" // Default port
-		logger.Info("APP_PORT not set, using default port 8080")
-	}
-
-	// Validate that the port is a valid integer
-	_, err = strconv.Atoi(port)
-	if err != nil {
+	port := config.AppPort
+	if _, err := strconv.Atoi(port); err != nil {
 		logger.Error("Invalid APP_PORT value", err)
 		return
 	}
 
-	// Start server
 	logger.Info(fmt.Sprintf("Attempting to start server on :%s", port))
 	if err := e.Start(":" + port); err != http.ErrServerClosed {
 		logger.Error("Error starting server", err)

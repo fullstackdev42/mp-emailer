@@ -76,3 +76,8 @@ tasks:
     desc: Force set migration version
     cmds:
       - migrate -database "{{.DB_URL}}" -path ./migrations force {{.CLI_ARGS}}
+
+  mailpit-logs:
+    desc: View Mailpit logs
+    cmds:
+      - docker-compose -f .devcontainer/docker-compose.yml logs -f mailpit
