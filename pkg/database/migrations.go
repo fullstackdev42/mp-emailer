@@ -12,7 +12,7 @@ import (
 func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
 	m, err := migrate.New(
 		fmt.Sprintf("file://%s", migrationsPath),
-		dsn,
+		fmt.Sprintf("mysql://%s", dsn),
 	)
 	if err != nil {
 		return fmt.Errorf("error creating migration instance: %w", err)
