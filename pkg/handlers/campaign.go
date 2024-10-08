@@ -45,10 +45,8 @@ func (h *Handler) HandleGetCampaigns(c echo.Context) error {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
 
-	data := struct {
-		Campaigns []models.Campaign
-	}{
-		Campaigns: campaigns,
+	data := map[string]interface{}{
+		"Campaigns": campaigns,
 	}
 
 	return c.Render(http.StatusOK, "campaigns.html", data)
