@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jonesrussell/loggo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type DB struct {
@@ -61,4 +62,26 @@ func (db *DB) CreateUser(username, email, passwordHash string) error {
 		return fmt.Errorf("error creating user: %w", err)
 	}
 	return nil
+}
+
+func (db *DB) VerifyUser(username, password string) (bool, error) {
+	var storedHash string
+	query := "SELECT password_hash FROM users WHERE username = ?"
+	err := db.QueryRow(query, username).Scan(&storedHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // User not found
+		}
+		return false, fmt.Errorf("error querying user: %w", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return false, nil // Incorrect password
+		}
+		return false, fmt.Errorf("error comparing passwords: %w", err)
+	}
+
+	return true, nil
 }

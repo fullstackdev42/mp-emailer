@@ -30,8 +30,11 @@ func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessio
 }
 
 func (h *Handler) HandleIndex(c echo.Context) error {
-	h.logger.Info("Handling index request")
-	return c.Render(http.StatusOK, "index.html", nil)
+	data := TemplateData{
+		IsAuthenticated: c.Get("isAuthenticated").(bool),
+	}
+
+	return c.Render(http.StatusOK, "index.html", data)
 }
 
 func (h *Handler) HandleSubmit(c echo.Context) error {
@@ -94,15 +97,20 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	// TODO: Implement proper user authentication
-	if username == "admin" && password == "password" {
-		session, _ := h.store.Get(c.Request(), "session")
-		session.Values["user"] = username
-		session.Save(c.Request(), c.Response().Writer)
-		return c.Redirect(http.StatusSeeOther, "/")
+	valid, err := h.db.VerifyUser(username, password)
+	if err != nil {
+		h.logger.Error("Error verifying user", err)
+		return c.String(http.StatusInternalServerError, "An error occurred during login")
 	}
 
-	return c.String(http.StatusUnauthorized, "Invalid credentials")
+	if !valid {
+		return c.String(http.StatusUnauthorized, "Invalid credentials")
+	}
+
+	session, _ := h.store.Get(c.Request(), "session")
+	session.Values["user"] = username
+	session.Save(c.Request(), c.Response().Writer)
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
@@ -116,9 +124,7 @@ func (h *Handler) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session, _ := h.store.Get(c.Request(), "session")
 		user := session.Values["user"]
-		if user == nil {
-			return c.Redirect(http.StatusSeeOther, "/login")
-		}
+		c.Set("isAuthenticated", user != nil)
 		return next(c)
 	}
 }
@@ -187,4 +193,9 @@ func validateRegistrationInput(username, email, password, confirmPassword string
 	}
 
 	return nil
+}
+
+type TemplateData struct {
+	IsAuthenticated bool
+	// Add other fields as needed
 }

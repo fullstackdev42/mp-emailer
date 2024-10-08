@@ -73,6 +73,8 @@ func main() {
 	// Create a new handler with the logger, client, session secret, and database
 	h := handlers.NewHandler(logger, client, sessionSecret, db)
 
+	e.Use(h.AuthMiddleware)
+
 	// Routes
 	e.GET("/", h.HandleIndex)
 	e.GET("/login", h.HandleLogin)
