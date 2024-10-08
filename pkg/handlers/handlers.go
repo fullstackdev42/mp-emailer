@@ -25,8 +25,8 @@ type Handler struct {
 	templateManager *templates.TemplateManager
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
-	store := sessions.NewCookieStore([]byte(sessionSecret))
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, store sessions.Store, db *database.DB, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
+
 	return &Handler{
 		logger:          logger,
 		client:          client,
@@ -88,4 +88,9 @@ func (h *Handler) HandleEcho(c echo.Context) error {
 
 func composeEmail(mp models.Representative) string {
 	return fmt.Sprintf("Dear %s,\n\nThis is a sample email content.\n\nBest regards,\nYour constituent", mp.Name)
+}
+
+// Add this method to your Handler struct
+func (h *Handler) GetSessionStore() sessions.Store {
+	return h.store
 }

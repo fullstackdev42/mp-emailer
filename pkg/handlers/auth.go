@@ -3,21 +3,13 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
 const (
 	adminEmail = "admin@example.com" // Replace with your actual admin email
 )
-
-func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
-	return h.store.Get(c.Request(), "session")
-}
-
-func (h *Handler) saveSession(session *sessions.Session, c echo.Context) error {
-	return session.Save(c.Request(), c.Response().Writer)
-}
 
 func (h *Handler) handleError(err error, statusCode int, message string) error {
 	h.logger.Error(message, err)
@@ -44,36 +36,25 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 		return c.Render(http.StatusUnauthorized, "login.html", data)
 	}
 
-	session, err := h.getSession(c)
-	if err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to get session")
+	// Set user in session
+	sess, _ := session.Get("mpe", c)
+	sess.Values["username"] = username
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to save session")
 	}
 
-	session.Values["user"] = username
-	if err := h.saveSession(session, c); err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to save session")
-	}
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(http.StatusFound, "/")
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
-	session, err := h.getSession(c)
+	sess, err := session.Get("mpe", c)
 	if err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to get session")
+		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}
 
-	session.Values["user"] = nil
-	if err := h.saveSession(session, c); err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to save session during logout")
+	sess.Values["username"] = nil
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to save session")
 	}
 	return c.Redirect(http.StatusSeeOther, "/")
-}
-
-func (h *Handler) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		session, _ := h.store.Get(c.Request(), "session")
-		user := session.Values["user"]
-		c.Set("isAuthenticated", user != nil)
-		return next(c)
-	}
 }

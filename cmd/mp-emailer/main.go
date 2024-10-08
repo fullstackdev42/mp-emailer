@@ -9,16 +9,20 @@ import (
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
+	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/jonesrussell/loggo"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type Config struct {
 	AppEnv        string
+	AppPort       string
 	MailgunDomain string
 	MailgunAPIKey string
 	MailpitHost   string
@@ -29,7 +33,6 @@ type Config struct {
 	DBHost        string
 	DBPort        string
 	SessionSecret string
-	AppPort       string
 }
 
 func loadConfig() (*Config, error) {
@@ -40,6 +43,7 @@ func loadConfig() (*Config, error) {
 
 	config := &Config{
 		AppEnv:        os.Getenv("APP_ENV"),
+		AppPort:       os.Getenv("APP_PORT"),
 		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
 		MailgunAPIKey: os.Getenv("MAILGUN_API_KEY"),
 		MailpitHost:   os.Getenv("MAILPIT_HOST"),
@@ -50,7 +54,6 @@ func loadConfig() (*Config, error) {
 		DBHost:        os.Getenv("DB_HOST"),
 		DBPort:        os.Getenv("DB_PORT"),
 		SessionSecret: os.Getenv("SESSION_SECRET"),
-		AppPort:       os.Getenv("APP_PORT"),
 	}
 
 	if config.SessionSecret == "" {
@@ -85,7 +88,6 @@ func main() {
 	}
 
 	client := api.NewClient(logger)
-
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", config.DBUser, config.DBPass, config.DBHost, config.DBPort, config.DBName)
 	db, err := database.NewDB(dsn, logger, "./migrations")
 	if err != nil {
@@ -105,25 +107,32 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	h := handlers.NewHandler(logger, client, config.SessionSecret, db, emailService, tmplManager)
-	e.Use(h.AuthMiddleware)
+	// Initialize session store
+	store := sessions.NewCookieStore([]byte(config.SessionSecret))
+	e.Use(session.Middleware(store))
 
+	h := handlers.NewHandler(logger, client, store, db, emailService, tmplManager)
+
+	// Create the auth middleware
+	authMiddleware := appmid.AuthMiddleware(h.GetSessionStore(), logger)
+
+	// Apply auth middleware to specific routes
 	e.GET("/", h.HandleIndex)
 	e.GET("/login", h.HandleLogin)
 	e.POST("/login", h.HandleLogin)
 	e.GET("/logout", h.HandleLogout)
 	e.GET("/register", h.HandleRegister)
 	e.POST("/register", h.HandleRegister)
-	e.GET("/submit", h.HandleSubmit, h.AuthMiddleware)
-	e.POST("/submit", h.HandleSubmit, h.AuthMiddleware)
-	e.POST("/echo", h.HandleEcho, h.AuthMiddleware)
+	e.GET("/submit", h.HandleSubmit, authMiddleware)
+	e.POST("/submit", h.HandleSubmit, authMiddleware)
+	e.POST("/echo", h.HandleEcho, authMiddleware)
 
 	// Campaign routes
-	e.GET("/campaigns", h.HandleGetCampaigns, h.AuthMiddleware)
-	e.GET("/campaigns/new", h.HandleCreateCampaign, h.AuthMiddleware)
-	e.POST("/campaigns/new", h.HandleCreateCampaign, h.AuthMiddleware)
-	e.POST("/campaigns/:id/update", h.HandleUpdateCampaign, h.AuthMiddleware)
-	e.POST("/campaigns/:id/delete", h.HandleDeleteCampaign, h.AuthMiddleware)
+	e.GET("/campaigns", h.HandleGetCampaigns, authMiddleware)
+	e.GET("/campaigns/new", h.HandleCreateCampaign, authMiddleware)
+	e.POST("/campaigns/new", h.HandleCreateCampaign, authMiddleware)
+	e.POST("/campaigns/:id/update", h.HandleUpdateCampaign, authMiddleware)
+	e.POST("/campaigns/:id/delete", h.HandleDeleteCampaign, authMiddleware)
 
 	port := config.AppPort
 	if _, err := strconv.Atoi(port); err != nil {
