@@ -40,7 +40,7 @@ func main() {
 	dbPort := os.Getenv("DB_PORT")
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
-	db, err := database.NewDB(dsn, logger)
+	db, err := database.NewDB(dsn, logger, "./migrations")
 	if err != nil {
 		logger.Error("Error connecting to database", err)
 		return
