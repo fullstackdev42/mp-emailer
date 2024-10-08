@@ -34,6 +34,19 @@ func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessio
 	return &Handler{logger: logger, client: client, store: store, db: db}
 }
 
+func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
+	return h.store.Get(c.Request(), "session")
+}
+
+func (h *Handler) saveSession(session *sessions.Session, c echo.Context) error {
+	return session.Save(c.Request(), c.Response().Writer)
+}
+
+func (h *Handler) handleError(err error, statusCode int, message string) error {
+	h.logger.Error(message, err)
+	return echo.NewHTTPError(statusCode, message)
+}
+
 func (h *Handler) HandleIndex(c echo.Context) error {
 	data := TemplateData{
 		IsAuthenticated: c.Get("isAuthenticated").(bool),
@@ -59,8 +72,7 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
-		h.logger.Error("Error finding MP", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Error finding MP")
+		return h.handleError(err, http.StatusInternalServerError, "Error finding MP")
 	}
 
 	emailContent := composeEmail(mp)
@@ -83,8 +95,7 @@ func (h *Handler) HandleEcho(c echo.Context) error {
 
 	req := new(EchoRequest)
 	if err := c.Bind(req); err != nil {
-		h.logger.Error("Error binding request", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+		return h.handleError(err, http.StatusBadRequest, "Error binding request")
 	}
 
 	return c.JSON(http.StatusOK, req)
@@ -104,24 +115,35 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 
 	valid, err := h.db.VerifyUser(username, password)
 	if err != nil {
-		h.logger.Error("Error verifying user", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during login")
+		return h.handleError(err, http.StatusInternalServerError, "Error verifying user")
 	}
 
 	if !valid {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	session, _ := h.store.Get(c.Request(), "session")
+	session, err := h.getSession(c)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Failed to get session")
+	}
+
 	session.Values["user"] = username
-	session.Save(c.Request(), c.Response().Writer)
+	if err := h.saveSession(session, c); err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Failed to save session")
+	}
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
-	session, _ := h.store.Get(c.Request(), "session")
+	session, err := h.getSession(c)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Failed to get session")
+	}
+
 	session.Values["user"] = nil
-	session.Save(c.Request(), c.Response().Writer)
+	if err := h.saveSession(session, c); err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Failed to save session during logout")
+	}
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -152,8 +174,7 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	// 2. Checking if the username or email already exists
 	exists, err := h.db.UserExists(username, email)
 	if err != nil {
-		h.logger.Error("Error checking user existence", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
+		return h.handleError(err, http.StatusInternalServerError, "Error checking user existence")
 	}
 	if exists {
 		return echo.NewHTTPError(http.StatusConflict, "Username or email already exists")
@@ -162,15 +183,13 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	// 3. Hashing the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		h.logger.Error("Error hashing password", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
+		return h.handleError(err, http.StatusInternalServerError, "Error hashing password")
 	}
 
 	// 4. Storing the new user in the database
 	err = h.db.CreateUser(username, email, string(hashedPassword))
 	if err != nil {
-		h.logger.Error("Error creating user", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "An error occurred during registration")
+		return h.handleError(err, http.StatusInternalServerError, "Error creating user")
 	}
 
 	h.logger.Info("User registered successfully", "username", username, "email", email)

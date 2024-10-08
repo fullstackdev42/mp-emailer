@@ -4,7 +4,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"log"
 )
 
@@ -20,16 +19,6 @@ var (
 
 func init() {
 	var err error
-
-	// Debug: Print all files in the embedded filesystem
-	fs.WalkDir(templateFiles, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			log.Printf("Error walking directory: %v", err)
-			return err
-		}
-		log.Printf("Found file: %s", path)
-		return nil
-	})
 
 	// Parse the includes first
 	includes, err := template.ParseFS(templateFiles, "includes/*.html")
