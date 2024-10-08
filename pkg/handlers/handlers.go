@@ -207,10 +207,7 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	}
 
 	// 5. Sending email to admin
-	subject := "New User Registration"
-	body := fmt.Sprintf("A new user has registered:\nUsername: %s\nEmail: %s", username, email)
-	err = h.emailService.SendEmail(adminEmail, subject, body)
-	if err != nil {
+	if err := h.SendAdminNotification(username, email); err != nil {
 		h.logger.Error("Failed to send admin notification email", err)
 		// Note: We're not returning here as we don't want to interrupt the user flow
 		// if the email fails to send
@@ -220,6 +217,12 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 
 	// Redirect to login page after successful registration
 	return c.Redirect(http.StatusSeeOther, "/login")
+}
+
+func (h *Handler) SendAdminNotification(username, email string) error {
+	subject := "New User Registration"
+	body := fmt.Sprintf("A new user has registered:\nUsername: %s\nEmail: %s", username, email)
+	return h.emailService.SendEmail(adminEmail, subject, body)
 }
 
 func validateRegistrationInput(username, email, password, confirmPassword string) error {
