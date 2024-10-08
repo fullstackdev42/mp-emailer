@@ -6,18 +6,37 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
+	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) HandleIndex(c echo.Context) error {
-	data := TemplateData{
-		IsAuthenticated: c.Get("isAuthenticated").(bool),
-	}
+type Handler struct {
+	logger       loggo.LoggerInterface
+	client       api.ClientInterface
+	store        sessions.Store
+	db           *database.DB
+	emailService services.EmailService
+}
 
-	return c.Render(http.StatusOK, "index.html", data)
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService) *Handler {
+	store := sessions.NewCookieStore([]byte(sessionSecret))
+	return &Handler{
+		logger:       logger,
+		client:       client,
+		store:        store,
+		db:           db,
+		emailService: emailService,
+	}
+}
+
+func (h *Handler) HandleIndex(c echo.Context) error {
+	return c.Render(http.StatusOK, "index.html", nil)
 }
 
 func (h *Handler) HandleSubmit(c echo.Context) error {
@@ -26,7 +45,6 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 	postalCode := c.FormValue("postalCode")
 	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
 
-	// Server-side validation
 	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
 	if !postalCodeRegex.MatchString(postalCode) {
 		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)

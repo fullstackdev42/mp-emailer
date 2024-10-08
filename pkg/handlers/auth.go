@@ -3,41 +3,13 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/pkg/api"
-	"github.com/fullstackdev42/mp-emailer/pkg/database"
-	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
 const (
 	adminEmail = "admin@example.com" // Replace with your actual admin email
 )
-
-type Handler struct {
-	logger       loggo.LoggerInterface
-	client       api.ClientInterface
-	store        sessions.Store
-	db           *database.DB
-	emailService services.EmailService
-}
-
-type TemplateData struct {
-	IsAuthenticated bool
-	// Add other fields as needed
-}
-
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB, emailService services.EmailService) *Handler {
-	store := sessions.NewCookieStore([]byte(sessionSecret))
-	return &Handler{
-		logger:       logger,
-		client:       client,
-		store:        store,
-		db:           db,
-		emailService: emailService,
-	}
-}
 
 func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
 	return h.store.Get(c.Request(), "session")

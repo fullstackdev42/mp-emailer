@@ -1,0 +1,15 @@
+{{template "header" .}}
+{{template "nav" .}}
+<main>
+    <h1>Create Campaign</h1>
+    <form action="/campaigns/new" method="POST">
+        <label for="name">Campaign Name:</label>
+        <input type="text" id="name" name="name" required>
+        <br>
+        <label for="template">Template:</label>
+        <textarea id="template" name="template" rows="10" cols="50" required></textarea>
+        <br>
+        <button type="submit">Create Campaign</button>
+    </form>
+</main>
+{{template "footer" .}}

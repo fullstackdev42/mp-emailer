@@ -1,0 +1,28 @@
+{{template "header" .}}
+{{template "nav" .}}
+<main>
+    <h1>Campaigns</h1>
+    <a href="/campaigns/new">Create New Campaign</a>
+    <ul>
+        {{range .Campaigns}}
+        <li>
+            <h2>{{.Name}}</h2>
+            <pre>{{.Template}}</pre>
+            <form action="/campaigns/{{.ID}}/update" method="POST">
+                <input type="hidden" name="id" value="{{.ID}}">
+                <label for="name">Campaign Name:</label>
+                <input type="text" id="name" name="name" value="{{.Name}}" required>
+                <br>
+                <label for="template">Template:</label>
+                <textarea id="template" name="template" rows="10" cols="50" required>{{.Template}}</textarea>
+                <br>
+                <button type="submit">Update Campaign</button>
+            </form>
+            <form action="/campaigns/{{.ID}}/delete" method="POST">
+                <button type="submit">Delete Campaign</button>
+            </form>
+        </li>
+        {{end}}
+    </ul>
+</main>
+{{template "footer" .}}

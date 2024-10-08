@@ -112,6 +112,13 @@ func main() {
 	e.POST("/submit", h.HandleSubmit, h.AuthMiddleware)
 	e.POST("/echo", h.HandleEcho, h.AuthMiddleware)
 
+	// Campaign routes
+	e.GET("/campaigns", h.HandleGetCampaigns, h.AuthMiddleware)
+	e.GET("/campaigns/new", h.HandleCreateCampaign, h.AuthMiddleware)
+	e.POST("/campaigns/new", h.HandleCreateCampaign, h.AuthMiddleware)
+	e.POST("/campaigns/:id/update", h.HandleUpdateCampaign, h.AuthMiddleware)
+	e.POST("/campaigns/:id/delete", h.HandleDeleteCampaign, h.AuthMiddleware)
+
 	port := config.AppPort
 	if _, err := strconv.Atoi(port); err != nil {
 		logger.Error("Invalid APP_PORT value", err)
