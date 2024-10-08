@@ -94,9 +94,6 @@ func main() {
 	}
 	defer db.Close()
 
-	os.Setenv("SMTP_HOST", "mailpit")
-	os.Setenv("SMTP_PORT", "1025")
-
 	e := echo.New()
 	e.Renderer = templates.NewRenderer()
 	e.Use(middleware.Logger())

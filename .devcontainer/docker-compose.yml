@@ -7,12 +7,6 @@ services:
       - ../..:/workspaces:cached
     command: sleep infinity
     network_mode: service:db
-    environment:
-      - SMTP_HOST=mailpit
-      - SMTP_PORT=1025
-      - SMTP_FROM=${SMTP_FROM}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - SMTP_USE_TLS=false
 
   db:
     image: mariadb:10.4
