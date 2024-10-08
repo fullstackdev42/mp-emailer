@@ -7,23 +7,26 @@ import (
 	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
 	logger loggo.LoggerInterface
 	client api.ClientInterface
 	store  *sessions.CookieStore
+	db     *database.DB
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string) *Handler {
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, sessionSecret string, db *database.DB) *Handler {
 	store := sessions.NewCookieStore([]byte(sessionSecret))
-	return &Handler{logger: logger, client: client, store: store}
+	return &Handler{logger: logger, client: client, store: store, db: db}
 }
 
 func (h *Handler) HandleIndex(c echo.Context) error {
@@ -130,20 +133,58 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	password := c.FormValue("password")
 	confirmPassword := c.FormValue("confirm_password")
 
-	if password != confirmPassword {
-		return c.String(http.StatusBadRequest, "Passwords do not match")
+	// 1. Validating the input
+	if err := validateRegistrationInput(username, email, password, confirmPassword); err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	// TODO: Implement user registration logic
-	// This should include:
-	// 1. Validating the input
 	// 2. Checking if the username or email already exists
-	// 3. Hashing the password
-	// 4. Storing the new user in the database
+	exists, err := h.db.UserExists(username, email)
+	if err != nil {
+		h.logger.Error("Error checking user existence", err)
+		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+	}
+	if exists {
+		return c.String(http.StatusBadRequest, "Username or email already exists")
+	}
 
-	// For now, we'll just log the registration attempt
-	h.logger.Info("Registration attempt", "username", username, "email", email)
+	// 3. Hashing the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		h.logger.Error("Error hashing password", err)
+		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+	}
+
+	// 4. Storing the new user in the database
+	err = h.db.CreateUser(username, email, string(hashedPassword))
+	if err != nil {
+		h.logger.Error("Error creating user", err)
+		return c.String(http.StatusInternalServerError, "An error occurred during registration")
+	}
+
+	h.logger.Info("User registered successfully", "username", username, "email", email)
 
 	// Redirect to login page after successful registration
 	return c.Redirect(http.StatusSeeOther, "/login")
+}
+
+func validateRegistrationInput(username, email, password, confirmPassword string) error {
+	if username == "" || email == "" || password == "" || confirmPassword == "" {
+		return fmt.Errorf("all fields are required")
+	}
+
+	if password != confirmPassword {
+		return fmt.Errorf("passwords do not match")
+	}
+
+	if len(password) < 8 {
+		return fmt.Errorf("password must be at least 8 characters long")
+	}
+
+	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	if !emailRegex.MatchString(email) {
+		return fmt.Errorf("invalid email format")
+	}
+
+	return nil
 }

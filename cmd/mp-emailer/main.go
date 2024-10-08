@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/joho/godotenv"
@@ -31,6 +32,27 @@ func main() {
 	// Create API client
 	client := api.NewClient(logger)
 
+	// Initialize database connection
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
+	db, err := database.NewDB(dsn, logger)
+	if err != nil {
+		logger.Error("Error connecting to database", err)
+		return
+	}
+	defer db.Close()
+
+	// Create users table if it doesn't exist
+	if err := db.CreateUsersTable(); err != nil {
+		logger.Error("Error creating users table", err)
+		return
+	}
+
 	// Create a new Echo instance
 	e := echo.New()
 
@@ -48,8 +70,8 @@ func main() {
 		return
 	}
 
-	// Create a new handler with the logger, client, and session secret
-	h := handlers.NewHandler(logger, client, sessionSecret)
+	// Create a new handler with the logger, client, session secret, and database
+	h := handlers.NewHandler(logger, client, sessionSecret, db)
 
 	// Routes
 	e.GET("/", h.HandleIndex)
