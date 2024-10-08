@@ -37,7 +37,10 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	}
 
 	// Set user in session
-	sess, _ := session.Get("mpe", c)
+	sess, err := session.Get("mpe", c)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to get session")
+	}
 	sess.Values["username"] = username
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to save session")

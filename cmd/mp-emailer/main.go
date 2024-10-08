@@ -114,7 +114,7 @@ func main() {
 	h := handlers.NewHandler(logger, client, store, db, emailService, tmplManager)
 
 	// Create the auth middleware
-	authMiddleware := appmid.AuthMiddleware(h.GetSessionStore(), logger)
+	authMiddleware := appmid.AuthMiddleware(store, logger)
 
 	// Apply auth middleware to specific routes
 	e.GET("/", h.HandleIndex)
