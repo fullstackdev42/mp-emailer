@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
@@ -20,7 +21,6 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Printf("Error loading .env file: %v\n", err)
-		return
 	}
 
 	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
@@ -83,9 +83,24 @@ func main() {
 	e.POST("/submit", h.HandleSubmit, h.AuthMiddleware)
 	e.POST("/echo", h.HandleEcho, h.AuthMiddleware)
 
+	// Get the port from the environment variable or use the default
+	port := os.Getenv("APP_PORT")
+
+	if port == "" {
+		port = "8080" // Default port
+		logger.Info("APP_PORT not set, using default port 8080")
+	}
+
+	// Validate that the port is a valid integer
+	_, err = strconv.Atoi(port)
+	if err != nil {
+		logger.Error("Invalid APP_PORT value", err)
+		return
+	}
+
 	// Start server
-	logger.Info("Starting server on :8080")
-	if err := e.Start(":8080"); err != http.ErrServerClosed {
+	logger.Info(fmt.Sprintf("Attempting to start server on :%s", port))
+	if err := e.Start(":" + port); err != http.ErrServerClosed {
 		logger.Error("Error starting server", err)
 	}
 }
