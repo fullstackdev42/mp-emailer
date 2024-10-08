@@ -119,7 +119,10 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	}
 
 	if !valid {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
+		data := map[string]interface{}{
+			"Error": "Invalid username or password",
+		}
+		return c.Render(http.StatusUnauthorized, "login.html", data)
 	}
 
 	session, err := h.getSession(c)
