@@ -1,8 +1,9 @@
 FROM mcr.microsoft.com/devcontainers/go:1-1.23-bookworm
 
-# [Optional] Uncomment this section to install additional OS packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+# Install MariaDB client
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends mariadb-client \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # [Optional] Uncomment the next lines to use go get to install anything else you need
 # USER vscode
