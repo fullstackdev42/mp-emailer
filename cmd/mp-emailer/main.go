@@ -57,6 +57,9 @@ func main() {
 	e.POST("/login", h.HandleLogin)
 	e.GET("/logout", h.HandleLogout)
 
+	e.GET("/register", h.HandleRegister)
+	e.POST("/register", h.HandleRegister)
+
 	// Protected routes
 	e.GET("/submit", h.HandleSubmit, h.AuthMiddleware)
 	e.POST("/submit", h.HandleSubmit, h.AuthMiddleware)

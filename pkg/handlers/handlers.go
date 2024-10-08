@@ -119,3 +119,31 @@ func (h *Handler) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+func (h *Handler) HandleRegister(c echo.Context) error {
+	if c.Request().Method == http.MethodGet {
+		return c.Render(http.StatusOK, "register.html", nil)
+	}
+
+	username := c.FormValue("username")
+	email := c.FormValue("email")
+	password := c.FormValue("password")
+	confirmPassword := c.FormValue("confirm_password")
+
+	if password != confirmPassword {
+		return c.String(http.StatusBadRequest, "Passwords do not match")
+	}
+
+	// TODO: Implement user registration logic
+	// This should include:
+	// 1. Validating the input
+	// 2. Checking if the username or email already exists
+	// 3. Hashing the password
+	// 4. Storing the new user in the database
+
+	// For now, we'll just log the registration attempt
+	h.logger.Info("Registration attempt", "username", username, "email", email)
+
+	// Redirect to login page after successful registration
+	return c.Redirect(http.StatusSeeOther, "/login")
+}
