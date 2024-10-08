@@ -89,8 +89,3 @@ func (h *Handler) HandleEcho(c echo.Context) error {
 func composeEmail(mp models.Representative) string {
 	return fmt.Sprintf("Dear %s,\n\nThis is a sample email content.\n\nBest regards,\nYour constituent", mp.Name)
 }
-
-// Add this method to your Handler struct
-func (h *Handler) GetSessionStore() sessions.Store {
-	return h.store
-}

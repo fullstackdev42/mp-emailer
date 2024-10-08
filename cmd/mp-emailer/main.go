@@ -124,8 +124,6 @@ func main() {
 	e.GET("/register", h.HandleRegister)
 	e.POST("/register", h.HandleRegister)
 
-	e.GET("/campaigns", h.HandleGetCampaigns)
-
 	// Protected routes
 	authGroup := e.Group("")
 	authGroup.Use(appmid.RequireAuthMiddleware(store, logger))
@@ -134,6 +132,7 @@ func main() {
 	authGroup.POST("/echo", h.HandleEcho)
 
 	// Campaign routes (protected)
+	authGroup.GET("/campaigns", h.HandleGetCampaigns)
 	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.POST("/campaigns/:id/update", h.HandleUpdateCampaign)

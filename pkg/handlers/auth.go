@@ -24,14 +24,10 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	valid, err := h.db.VerifyUser(username, password)
+	userID, err := h.db.VerifyUser(username, password)
 	if err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Error verifying user")
-	}
-
-	if !valid {
 		data := map[string]interface{}{
-			"Error": "Invalid username or password",
+			"Error": err.Error(),
 		}
 		return c.Render(http.StatusUnauthorized, "login.html", data)
 	}
@@ -41,6 +37,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}
+	sess.Values["userID"] = userID // Ensure userID is set correctly as a string
 	sess.Values["username"] = username
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to save session")
@@ -55,6 +52,7 @@ func (h *Handler) HandleLogout(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}
 
+	sess.Values["userID"] = nil
 	sess.Values["username"] = nil
 	sess.Options.MaxAge = -1 // This will delete the cookie
 	if err := sess.Save(c.Request(), c.Response()); err != nil {

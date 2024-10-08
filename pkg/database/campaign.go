@@ -2,17 +2,37 @@ package database
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 )
 
 func (db *DB) CreateCampaign(campaign *models.Campaign) error {
-	query := "INSERT INTO campaigns (id, name, template) VALUES (?, ?, ?)"
-	_, err := db.Exec(query, campaign.ID, campaign.Name, campaign.Template)
+	query := `
+		INSERT INTO campaigns (id, name, template, owner_id, created_at, updated_at) 
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+	_, err := db.Exec(query,
+		campaign.ID,
+		campaign.Name,
+		campaign.Template,
+		campaign.OwnerID,
+		campaign.CreatedAt,
+		campaign.UpdatedAt,
+	)
 	if err != nil {
+		// Check for duplicate entry error
+		if isDuplicateEntryError(err) {
+			return models.ErrDuplicateCampaign
+		}
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
 	return nil
+}
+
+// Add this helper function to check for duplicate entry errors
+func isDuplicateEntryError(err error) bool {
+	return strings.Contains(err.Error(), "Duplicate entry")
 }
 
 func (db *DB) GetCampaigns() ([]models.Campaign, error) {

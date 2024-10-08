@@ -51,24 +51,25 @@ func (db *DB) CreateUser(username, email, passwordHash string) error {
 	return nil
 }
 
-func (db *DB) VerifyUser(username, password string) (bool, error) {
+func (db *DB) VerifyUser(username, password string) (string, error) {
 	var storedHash string
-	query := "SELECT password_hash FROM users WHERE username = ?"
-	err := db.QueryRow(query, username).Scan(&storedHash)
+	var userID string
+	query := "SELECT id, password_hash FROM users WHERE username = ?"
+	err := db.QueryRow(query, username).Scan(&userID, &storedHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil // User not found
+			return "", fmt.Errorf("invalid username or password")
 		}
-		return false, fmt.Errorf("error querying user: %w", err)
+		return "", fmt.Errorf("error querying user: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return false, nil // Incorrect password
+			return "", fmt.Errorf("invalid username or password")
 		}
-		return false, fmt.Errorf("error comparing passwords: %w", err)
+		return "", fmt.Errorf("error comparing passwords: %w", err)
 	}
 
-	return true, nil
+	return userID, nil
 }
