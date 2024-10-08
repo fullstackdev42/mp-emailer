@@ -47,12 +47,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create users table if it doesn't exist
-	if err := db.CreateUsersTable(); err != nil {
-		logger.Error("Error creating users table", err)
-		return
-	}
-
 	// Create a new Echo instance
 	e := echo.New()
 

@@ -31,24 +31,6 @@ func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB
 	return &DB{DB: db, logger: logger}, nil
 }
 
-func (db *DB) CreateUsersTable() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INT AUTO_INCREMENT PRIMARY KEY,
-		username VARCHAR(50) UNIQUE NOT NULL,
-		email VARCHAR(100) UNIQUE NOT NULL,
-		password_hash VARCHAR(255) NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)`
-
-	_, err := db.Exec(query)
-	if err != nil {
-		return fmt.Errorf("error creating users table: %w", err)
-	}
-
-	return nil
-}
-
 func (db *DB) UserExists(username, email string) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
