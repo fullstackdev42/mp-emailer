@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/labstack/echo-contrib/session"
@@ -14,7 +13,7 @@ import (
 
 func (h *Handler) HandleCreateCampaign(c echo.Context) error {
 	if c.Request().Method == http.MethodGet {
-		return c.Render(http.StatusOK, "create_campaign.html", nil)
+		return c.Render(http.StatusOK, "campaign_create.html", nil)
 	}
 
 	// Extract user ID from session
@@ -123,21 +122,7 @@ func (h *Handler) HandleGetCampaign(c echo.Context) error {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 
-	// You might want to exclude sensitive information here
-	// For example, you might not want to show the OwnerID to the public
-	campaignView := struct {
-		ID        int       `json:"id"`
-		Name      string    `json:"name"`
-		Template  string    `json:"template"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-	}{
-		ID:        campaign.ID,
-		Name:      campaign.Name,
-		Template:  campaign.Template,
-		CreatedAt: campaign.CreatedAt,
-		UpdatedAt: campaign.UpdatedAt,
-	}
-
-	return c.JSON(http.StatusOK, campaignView)
+	return c.Render(http.StatusOK, "campaign_detail.html", map[string]interface{}{
+		"Campaign": campaign,
+	})
 }

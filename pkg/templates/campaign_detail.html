@@ -1,0 +1,20 @@
+{{template "header" .}}
+{{template "nav" .}}
+<main>
+    <h1>Campaign: {{.Campaign.Name}}</h1>
+    <p>ID: {{.Campaign.ID}}</p>
+    <p>Created At: {{.Campaign.CreatedAt}}</p>
+    <p>Updated At: {{.Campaign.UpdatedAt}}</p>
+    
+    <h2>Template:</h2>
+    <pre>{{.Campaign.Template}}</pre>
+    
+    <h2>Actions:</h2>
+    <a href="/campaigns/{{.Campaign.ID}}/edit" class="button">Edit Campaign</a>
+    <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-form">
+        <button type="submit" class="button delete-button">Delete Campaign</button>
+    </form>
+    
+    <a href="/campaigns" class="button">Back to Campaigns</a>
+</main>
+{{template "footer" .}}

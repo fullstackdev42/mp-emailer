@@ -2,28 +2,19 @@
 {{template "nav" .}}
 <main>
     <h1>Campaigns</h1>
-    <a href="/campaigns/new">Create New Campaign</a>
+    <a href="/campaigns/new" class="button">Create New Campaign</a>
     
     {{if .Campaigns}}
-        <ul>
+        <ul class="campaign-list">
             {{range .Campaigns}}
-            <li>
+            <li class="campaign-item">
                 <h2>{{.Name}}</h2>
-                <p>ID: {{.ID}}</p>
-                <pre>{{.Template}}</pre>
-                <form action="/campaigns/{{.ID}}/update" method="POST">
-                    <input type="hidden" name="id" value="{{.ID}}">
-                    <label for="name-{{.ID}}">Campaign Name:</label>
-                    <input type="text" id="name-{{.ID}}" name="name" value="{{.Name}}" required>
-                    <br>
-                    <label for="template-{{.ID}}">Template:</label>
-                    <textarea id="template-{{.ID}}" name="template" rows="10" cols="50" required>{{.Template}}</textarea>
-                    <br>
-                    <button type="submit">Update Campaign</button>
-                </form>
-                <form action="/campaigns/{{.ID}}/delete" method="POST">
-                    <button type="submit">Delete Campaign</button>
-                </form>
+                <div class="campaign-actions">
+                    <a href="/campaigns/{{.ID}}" class="button">View/Edit</a>
+                    <form action="/campaigns/{{.ID}}/delete" method="POST" class="inline-form">
+                        <button type="submit" class="button delete-button">Delete</button>
+                    </form>
+                </div>
             </li>
             {{end}}
         </ul>
