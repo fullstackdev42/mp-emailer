@@ -28,7 +28,7 @@ MP Emailer is a web application that facilitates communication between constitue
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/mp-emailer.git
+   git clone https://github.com/fullstackdev42/mp-emailer.git
    cd mp-emailer
    ```
 
