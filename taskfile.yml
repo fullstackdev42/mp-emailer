@@ -81,3 +81,8 @@ tasks:
     desc: View Mailpit logs
     cmds:
       - docker-compose -f .devcontainer/docker-compose.yml logs -f mailpit
+
+  dev:
+    desc: Run the application with live reloading
+    cmds:
+      - air

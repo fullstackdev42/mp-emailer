@@ -8,13 +8,7 @@
         <ul class="campaign-list">
             {{range .Campaigns}}
             <li class="campaign-item">
-                <h2>{{.Name}}</h2>
-                <div class="campaign-actions">
-                    <a href="/campaigns/{{.ID}}" class="button">View/Edit</a>
-                    <form action="/campaigns/{{.ID}}/delete" method="POST" class="inline-form">
-                        <button type="submit" class="button delete-button">Delete</button>
-                    </form>
-                </div>
+                <h2><a href="/campaigns/{{.ID}}" class="button">{{.Name}}</a></h2>
             </li>
             {{end}}
         </ul>
