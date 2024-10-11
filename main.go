@@ -69,7 +69,7 @@ func loadConfig() (*Config, error) {
 	return config, nil
 }
 
-//go:embed web/public/*
+//go:embed web/public/* web/public/includes/*
 var templateFS embed.FS
 
 func main() {

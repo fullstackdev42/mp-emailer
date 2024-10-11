@@ -1,4 +1,15 @@
 {
     "go.lintTool": "golangci-lint",
-    "go.lintFlags": ["--config=${workspaceFolder}/.golangci.yml"]
+    "go.lintFlags": [
+        "--config=${workspaceFolder}/.golangci.yml"
+    ],
+    "css.validate": false,
+    "tailwindCSS.includeLanguages": {
+        "html": "html",
+        "javascript": "javascript",
+        "css": "css"
+    },
+    "editor.quickSuggestions": {
+        "strings": true
+    }
 }
