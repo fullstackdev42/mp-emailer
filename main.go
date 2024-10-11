@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"embed"
 
@@ -35,6 +36,7 @@ type Config struct {
 	DBHost        string
 	DBPort        string
 	SessionSecret string
+	AppDebug      string
 }
 
 func loadConfig() (*Config, error) {
@@ -56,6 +58,7 @@ func loadConfig() (*Config, error) {
 		DBHost:        os.Getenv("DB_HOST"),
 		DBPort:        os.Getenv("DB_PORT"),
 		SessionSecret: os.Getenv("SESSION_SECRET"),
+		AppDebug:      os.Getenv("APP_DEBUG"),
 	}
 
 	if config.SessionSecret == "" {
@@ -89,17 +92,25 @@ func initializeEmailService(config *Config) services.EmailService {
 }
 
 func main() {
-	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelDebug)
+	config, err := loadConfig()
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		return
+	}
+
+	logLevel := loggo.LevelInfo
+	if strings.ToLower(config.AppDebug) == "true" {
+		logLevel = loggo.LevelDebug
+	}
+
+	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
 	if err != nil {
 		fmt.Printf("Error initializing logger: %v\n", err)
 		return
 	}
 
-	config, err := loadConfig()
-	if err != nil {
-		logger.Error("Error loading configuration", err)
-		return
-	}
+	// Log the current log level
+	logger.Info(fmt.Sprintf("Application started with log level: %v", logLevel))
 
 	emailService := initializeEmailService(config)
 
