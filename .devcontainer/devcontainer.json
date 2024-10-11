@@ -13,17 +13,20 @@
 			"installOhMyZsh": true,
 			"installOhMyZshConfig": true,
 			"upgradePackages": true,
-			"username": "vscode",
+			"username": "automatic",
 			"userUid": "automatic",
 			"userGid": "automatic"
 		},
 		"ghcr.io/devcontainers/features/node:1": {
-			"nodeGypDependencies": true,
-			"installYarnUsingApt": true,
-			"version": "latest",
+			"version": "lts",
 			"pnpmVersion": "latest",
 			"nvmVersion": "latest"
-		}
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"installDirectlyFromGitHubRelease": true,
+			"version": "latest"
+		},
+		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {}
 	},
 	"customizations": {
 		"vscode": {
