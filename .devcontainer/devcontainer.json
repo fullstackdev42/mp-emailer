@@ -3,6 +3,7 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"mounts": ["type=bind,source=/home/${localEnv:USER}/.ssh,target=/home/vscode/.ssh,readonly"],
 	"features": {
 		"ghcr.io/eitsupi/devcontainer-features/go-task:1": {
 			"version": "latest"
@@ -13,7 +14,7 @@
 			"installOhMyZsh": true,
 			"installOhMyZshConfig": true,
 			"upgradePackages": true,
-			"username": "automatic",
+			"username": "vscode",
 			"userUid": "automatic",
 			"userGid": "automatic"
 		},
