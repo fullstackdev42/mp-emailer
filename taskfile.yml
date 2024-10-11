@@ -17,7 +17,7 @@ tasks:
     desc: Build the application
     cmds:
       - mkdir -p {{.BIN_DIR}}
-      - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} cmd/{{.BINARY_NAME}}/main.go
+      - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} main.go
 
   run:
     desc: Run the application
@@ -86,3 +86,18 @@ tasks:
     desc: Run the application with live reloading
     cmds:
       - air
+
+  frontend-install:
+    dir: web
+    cmds:
+      - npm install
+
+  frontend-build:
+    dir: web
+    cmds:
+      - npm run build
+
+  frontend-dev:
+    dir: web
+    cmds:
+      - npm run dev

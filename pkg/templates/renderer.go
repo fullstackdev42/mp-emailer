@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"embed"
 	"html/template"
 	"io"
 
@@ -29,7 +30,7 @@ func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c 
 	return t.templates.ExecuteTemplate(w, name, viewData)
 }
 
-func NewRenderer() *TemplateRenderer {
+func NewRenderer(templateFiles embed.FS) *TemplateRenderer {
 	return &TemplateRenderer{
 		templates: template.Must(template.ParseFS(templateFiles, "*.html", "includes/*.html")),
 	}

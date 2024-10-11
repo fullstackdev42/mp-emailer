@@ -2,69 +2,24 @@ package templates
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
+	"io"
+
+	"github.com/labstack/echo/v4"
 )
 
-//go:embed *.html includes/*.html
-var templateFiles embed.FS
-
 type TemplateManager struct {
-	IndexTemplate  *template.Template
-	PostalTemplate *template.Template
-	EmailTemplate  *template.Template
-	LoginTemplate  *template.Template
+	templates *template.Template
 }
 
-func NewTemplateManager() (*TemplateManager, error) {
-	var err error
-	manager := &TemplateManager{}
-
-	// Parse the includes first
-	includes, err := template.ParseFS(templateFiles, "includes/*.html")
+func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
+	tmpl, err := template.ParseFS(templateFiles, "web/public/*.html", "web/public/includes/*.html")
 	if err != nil {
-		return nil, fmt.Errorf("error parsing includes: %v", err)
+		return nil, err
 	}
-
-	// Parse each template, adding the includes to it
-	manager.IndexTemplate, err = parseTemplate(includes, "index.html")
-	if err != nil {
-		return nil, fmt.Errorf("error parsing index.html: %v", err)
-	}
-
-	manager.PostalTemplate, err = parseTemplate(includes, "postal.html")
-	if err != nil {
-		return nil, fmt.Errorf("error parsing postal.html: %v", err)
-	}
-
-	manager.EmailTemplate, err = parseTemplate(includes, "email.html")
-	if err != nil {
-		return nil, fmt.Errorf("error parsing email.html: %v", err)
-	}
-
-	manager.LoginTemplate, err = parseTemplate(includes, "login.html")
-	if err != nil {
-		return nil, fmt.Errorf("error parsing login.html: %v", err)
-	}
-
-	return manager, nil
+	return &TemplateManager{templates: tmpl}, nil
 }
 
-func parseTemplate(includes *template.Template, filename string) (*template.Template, error) {
-	content, err := templateFiles.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error reading %s: %v", filename, err)
-	}
-
-	tmpl, err := includes.Clone()
-	if err != nil {
-		return nil, fmt.Errorf("error cloning includes for %s: %v", filename, err)
-	}
-
-	tmpl, err = tmpl.Parse(string(content))
-	if err != nil {
-		return nil, fmt.Errorf("error parsing %s: %v", filename, err)
-	}
-
-	return tmpl, nil
+func (tm *TemplateManager) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
+	return tm.templates.ExecuteTemplate(w, name, data)
 }

@@ -70,7 +70,7 @@ func (h *Handler) HandleSubmit(c echo.Context) error {
 		Content: emailContent,
 	}
 
-	return h.templateManager.EmailTemplate.Execute(c.Response().Writer, data)
+	return c.Render(http.StatusOK, "email.html", data)
 }
 
 func (h *Handler) HandleEcho(c echo.Context) error {

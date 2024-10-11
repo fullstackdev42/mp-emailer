@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 
+	"embed"
+
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
@@ -67,6 +69,9 @@ func loadConfig() (*Config, error) {
 	return config, nil
 }
 
+//go:embed web/public/*
+var templateFS embed.FS
+
 func main() {
 	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
 	if err != nil {
@@ -96,14 +101,17 @@ func main() {
 	}
 	defer db.Close()
 
-	tmplManager, err := templates.NewTemplateManager()
+	e := echo.New()
+	e.Static("/static", "web/public")
+
+	tmplManager, err := templates.NewTemplateManager(templateFS)
 	if err != nil {
 		logger.Error("Error initializing templates", err)
 		return
 	}
 
-	e := echo.New()
-	e.Renderer = templates.NewRenderer()
+	e.Renderer = echo.Renderer(tmplManager)
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
