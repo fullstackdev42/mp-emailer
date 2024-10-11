@@ -1,5 +1,5 @@
 {
-	"name": "Go Cause",
+	"name": "Go MP",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",

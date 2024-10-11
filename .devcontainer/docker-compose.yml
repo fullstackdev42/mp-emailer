@@ -9,15 +9,15 @@ services:
     network_mode: service:db
 
   db:
-    image: mariadb:10.4
+    image: mariadb:10.11
     restart: unless-stopped
     volumes:
       - mariadb-data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: mariadb
-      MYSQL_DATABASE: mariadb
-      MYSQL_USER: mariadb
-      MYSQL_PASSWORD: mariadb
+      MYSQL_DATABASE: db
+      MYSQL_USER: db
+      MYSQL_PASSWORD: db
 
   mailpit:
     image: axllent/mailpit:latest
