@@ -72,6 +72,22 @@ func loadConfig() (*Config, error) {
 //go:embed web/public/* web/public/includes/*
 var templateFS embed.FS
 
+func dbMiddleware(db *database.DB) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("db", db)
+			return next(c)
+		}
+	}
+}
+
+func initializeEmailService(config *Config) services.EmailService {
+	if config.AppEnv == "production" {
+		return services.NewMailgunEmailService(config.MailgunDomain, config.MailgunAPIKey)
+	}
+	return services.NewMailpitEmailService(config.MailpitHost, config.MailpitPort)
+}
+
 func main() {
 	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
 	if err != nil {
@@ -85,12 +101,7 @@ func main() {
 		return
 	}
 
-	var emailService services.EmailService
-	if config.AppEnv == "production" {
-		emailService = services.NewMailgunEmailService(config.MailgunDomain, config.MailgunAPIKey)
-	} else {
-		emailService = services.NewMailpitEmailService(config.MailpitHost, config.MailpitPort)
-	}
+	emailService := initializeEmailService(config)
 
 	client := api.NewClient(logger)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", config.DBUser, config.DBPass, config.DBHost, config.DBPort, config.DBName)
@@ -122,7 +133,10 @@ func main() {
 	// Apply SetAuthStatusMiddleware after session middleware
 	e.Use(appmid.SetAuthStatusMiddleware(store, logger))
 
-	h := handlers.NewHandler(logger, client, store, db, emailService, tmplManager)
+	// Add database middleware
+	e.Use(dbMiddleware(db))
+
+	h := handlers.NewHandler(logger, client, store, emailService, tmplManager)
 
 	// Public routes
 	e.GET("/", h.HandleIndex)

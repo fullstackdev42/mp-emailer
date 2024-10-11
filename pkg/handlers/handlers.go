@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
-	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
@@ -20,18 +19,16 @@ type Handler struct {
 	logger          loggo.LoggerInterface
 	client          api.ClientInterface
 	store           sessions.Store
-	db              *database.DB
 	emailService    services.EmailService
 	templateManager *templates.TemplateManager
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, store sessions.Store, db *database.DB, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
+func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, store sessions.Store, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
 
 	return &Handler{
 		logger:          logger,
 		client:          client,
 		store:           store,
-		db:              db,
 		emailService:    emailService,
 		templateManager: tmplManager,
 	}

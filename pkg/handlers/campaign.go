@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -53,7 +54,10 @@ func (h *Handler) HandleCreateCampaign(c echo.Context) error {
 		OwnerID:  ownerID,
 	}
 
-	if err := h.db.CreateCampaign(&campaign); err != nil {
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	if err := db.CreateCampaign(&campaign); err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error creating campaign")
 	}
 
@@ -61,7 +65,10 @@ func (h *Handler) HandleCreateCampaign(c echo.Context) error {
 }
 
 func (h *Handler) HandleGetCampaigns(c echo.Context) error {
-	campaigns, err := h.db.GetCampaigns()
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	campaigns, err := db.GetCampaigns()
 	if err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
@@ -87,7 +94,10 @@ func (h *Handler) HandleUpdateCampaign(c echo.Context) error {
 		Template: template,
 	}
 
-	if err := h.db.UpdateCampaign(&campaign); err != nil {
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	if err := db.UpdateCampaign(&campaign); err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error updating campaign")
 	}
 
@@ -100,7 +110,10 @@ func (h *Handler) HandleDeleteCampaign(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
 	}
 
-	if err := h.db.DeleteCampaign(id); err != nil {
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	if err := db.DeleteCampaign(id); err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error deleting campaign")
 	}
 
@@ -114,7 +127,10 @@ func (h *Handler) HandleGetCampaign(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
 	}
 
-	campaign, err := h.db.GetCampaignByID(id)
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	campaign, err := db.GetCampaignByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return echo.NewHTTPError(http.StatusNotFound, "Campaign not found")

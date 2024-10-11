@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
@@ -24,7 +25,10 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	userID, err := h.db.VerifyUser(username, password)
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
+	userID, err := db.VerifyUser(username, password)
 	if err != nil {
 		data := map[string]interface{}{
 			"Error": err.Error(),

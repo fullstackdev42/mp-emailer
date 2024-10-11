@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -25,7 +26,7 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	}
 
 	// Register user
-	if err := h.registerUser(username, email, password); err != nil {
+	if err := h.registerUser(c, username, email, password); err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error registering user")
 	}
 
@@ -33,9 +34,12 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func (h *Handler) registerUser(username, email, password string) error {
+func (h *Handler) registerUser(c echo.Context, username, email, password string) error {
+	// Retrieve the database connection from the context
+	db := c.Get("db").(*database.DB)
+
 	// Check if the username or email already exists
-	exists, err := h.db.UserExists(username, email)
+	exists, err := db.UserExists(username, email)
 	if err != nil {
 		return fmt.Errorf("error checking user existence: %w", err)
 	}
@@ -50,7 +54,7 @@ func (h *Handler) registerUser(username, email, password string) error {
 	}
 
 	// Store the new user in the database
-	if err := h.db.CreateUser(username, email, string(hashedPassword)); err != nil {
+	if err := db.CreateUser(username, email, string(hashedPassword)); err != nil {
 		return fmt.Errorf("error creating user: %w", err)
 	}
 

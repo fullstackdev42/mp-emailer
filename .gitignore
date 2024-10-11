@@ -3,3 +3,4 @@ bin/
 .env
 tmp/
 node_modules/
+web/public/css/
