@@ -69,7 +69,7 @@ func loadConfig() (*Config, error) {
 	return config, nil
 }
 
-//go:embed web/public/* web/public/includes/*
+//go:embed web/public/* web/public/partials/*
 var templateFS embed.FS
 
 func dbMiddleware(db *database.DB) echo.MiddlewareFunc {

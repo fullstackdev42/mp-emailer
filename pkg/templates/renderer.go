@@ -32,6 +32,6 @@ func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c 
 
 func NewRenderer(templateFiles embed.FS) *TemplateRenderer {
 	return &TemplateRenderer{
-		templates: template.Must(template.ParseFS(templateFiles, "*.html", "includes/*.html")),
+		templates: template.Must(template.ParseFS(templateFiles, "*.html", "partials/*.html")),
 	}
 }

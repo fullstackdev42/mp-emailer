@@ -13,7 +13,7 @@ type TemplateManager struct {
 }
 
 func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
-	tmpl, err := template.ParseFS(templateFiles, "web/public/*.html", "web/public/includes/*.html")
+	tmpl, err := template.ParseFS(templateFiles, "web/public/*.html", "web/public/partials/*.html")
 	if err != nil {
 		return nil, err
 	}
