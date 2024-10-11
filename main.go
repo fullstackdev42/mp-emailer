@@ -89,7 +89,7 @@ func initializeEmailService(config *Config) services.EmailService {
 }
 
 func main() {
-	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelInfo)
+	logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelDebug)
 	if err != nil {
 		fmt.Printf("Error initializing logger: %v\n", err)
 		return
