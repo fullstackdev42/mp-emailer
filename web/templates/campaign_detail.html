@@ -7,6 +7,8 @@
             Last updated: {{.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
         </time>
     </p>
+
+    {{template "campaign_send_form" .}}
     
     <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
         <h2 id="template-preview" class="sr-only">Template Preview</h2>
