@@ -1,11 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Quill', Quill);
   const Parchment = Quill.import('parchment');
 
-  console.log('Parchment', Parchment);
-
-  class TailwindClass extends Parchment.Attributor {
+  class TailwindListClass extends Parchment.Attributor {
     add(node, value) {
+      node.classList.remove('list-decimal', 'list-disc');
       if (value === 'ordered') {
         node.classList.add('list-decimal');
       } else if (value === 'bullet') {
@@ -13,13 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return true;
     }
+
+    remove(node) {
+      node.classList.remove('list-decimal', 'list-disc');
+    }
   }
 
-  const TailwindListClass = new TailwindClass('list', 'ql-list', {
+  Quill.register(new TailwindListClass('list', 'ql-list', {
     scope: Parchment.Scope.BLOCK,
-  });
-
-  Quill.register(TailwindListClass, true);
+  }), true);
 
   const toolbarOptions = [
     ['bold', 'italic', 'underline', 'strike'],
@@ -35,27 +35,44 @@ document.addEventListener('DOMContentLoaded', function() {
     [{ 'font': [] }],
     [{ 'align': [] }],
     ['clean'],
-    ['link']
+    ['link'],
   ];
 
   window.initQuill = function() {
+    // Register the htmlEditButton module
+    Quill.register("modules/htmlEditButton", htmlEditButton);
+
     return new Quill('#editor', {
       modules: {
-        toolbar: toolbarOptions
+        toolbar: {
+          container: toolbarOptions,
+          handlers: {
+            // Add a custom handler for the HTML edit button
+            'html-edit': function() {
+              const htmlEditButton = this.quill.getModule('htmlEditButton');
+              if (htmlEditButton) {
+                htmlEditButton.toggle();
+              }
+            }
+          }
+        },
+        htmlEditButton: {
+          buttonHTML: "&lt;&gt;",
+          buttonTitle: "Edit HTML",
+        }
       },
       theme: 'snow'
     });
   };
 
-  // Initialize Quill if the editor element exists
   const editorElement = document.getElementById('editor');
   if (editorElement) {
     const quill = initQuill();
     const form = document.querySelector('form');
-    if (form) {
-      form.onsubmit = function() {
-        document.getElementById('template').value = quill.root.innerHTML;
-      };
-    }
+    form?.addEventListener('submit', function(event) {
+      event.preventDefault();
+      document.getElementById('template').value = quill.root.innerHTML;
+      this.submit();
+    });
   }
 });

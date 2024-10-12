@@ -3,6 +3,10 @@ module.exports = {
     theme: {
       extend: {},
     },
+    safelist: [
+      'list-decimal',
+      'list-disc',
+    ],
     plugins: [],
   }
   
