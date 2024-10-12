@@ -22,12 +22,30 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 
 	// Validate input
 	if err := validateRegistrationInput(username, email, password, confirmPassword); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+			"Error":    err.Error(),
+			"Username": username,
+			"Email":    email,
+		})
 	}
 
 	// Register user
-	if err := h.registerUser(c, username, email, password); err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Error registering user")
+	err := h.registerUser(c, username, email, password)
+	if err != nil {
+		var errorMessage string
+		if jsonErr, ok := err.(*echo.HTTPError); ok {
+			// Handle JSON errors
+			errorMessage = fmt.Sprintf("%v", jsonErr.Message)
+		} else {
+			// Handle other errors
+			errorMessage = "Error registering user: " + err.Error()
+		}
+
+		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+			"Error":    errorMessage,
+			"Username": username,
+			"Email":    email,
+		})
 	}
 
 	// Redirect to login page after successful registration
