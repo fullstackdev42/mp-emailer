@@ -169,8 +169,9 @@ func main() {
 	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.GET("/campaigns/:id", h.HandleGetCampaign)
-	authGroup.POST("/campaigns/:id/update", h.HandleUpdateCampaign)
 	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
+	e.GET("/campaigns/:id/edit", h.HandleEditCampaign)
+	e.POST("/campaigns/:id/edit", h.HandleEditCampaign)
 
 	port := config.AppPort
 	if _, err := strconv.Atoi(port); err != nil {
