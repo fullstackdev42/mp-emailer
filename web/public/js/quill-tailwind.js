@@ -1,26 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const Parchment = Quill.import('parchment');
-
-  class TailwindListClass extends Parchment.Attributor {
-    add(node, value) {
-      node.classList.remove('list-decimal', 'list-disc');
-      if (value === 'ordered') {
-        node.classList.add('list-decimal');
-      } else if (value === 'bullet') {
-        node.classList.add('list-disc');
-      }
-      return true;
-    }
-
-    remove(node) {
-      node.classList.remove('list-decimal', 'list-disc');
-    }
-  }
-
-  Quill.register(new TailwindListClass('list', 'ql-list', {
-    scope: Parchment.Scope.BLOCK,
-  }), true);
-
   const toolbarOptions = [
     ['bold', 'italic', 'underline', 'strike'],
     ['blockquote', 'code-block'],
@@ -39,23 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
   ];
 
   window.initQuill = function() {
-    // Register the htmlEditButton module
-    Quill.register("modules/htmlEditButton", htmlEditButton);
-
     return new Quill('#editor', {
       modules: {
-        toolbar: {
-          container: toolbarOptions,
-          handlers: {
-            // Add a custom handler for the HTML edit button
-            'html-edit': function() {
-              const htmlEditButton = this.quill.getModule('htmlEditButton');
-              if (htmlEditButton) {
-                htmlEditButton.toggle();
-              }
-            }
-          }
-        },
+        toolbar: toolbarOptions,
         htmlEditButton: {
           buttonHTML: "&lt;&gt;",
           buttonTitle: "Edit HTML",
