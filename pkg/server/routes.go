@@ -18,6 +18,7 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
 	// Protected routes
 	authGroup := e.Group("")
 	authGroup.Use(appmid.RequireAuthMiddleware(h.Store, h.Logger))
+
 	authGroup.GET("/submit", h.HandleSubmit)
 	authGroup.POST("/submit", h.HandleSubmit)
 	authGroup.POST("/echo", h.HandleEcho)
@@ -28,6 +29,6 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
 	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.GET("/campaigns/:id", h.HandleGetCampaign)
 	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
-	e.GET("/campaigns/:id/edit", h.HandleEditCampaign)
-	e.POST("/campaigns/:id/edit", h.HandleEditCampaign)
+	authGroup.GET("/campaigns/:id/edit", h.HandleEditCampaign)
+	authGroup.POST("/campaigns/:id/edit", h.HandleEditCampaign)
 }

@@ -1,32 +1,38 @@
 {{template "header" .}}
 {{template "nav" .}}
 <main class="max-w-4xl mx-auto p-8">
-    <h1 class="text-3xl font-bold mb-6">Campaign: {{.Campaign.Name}}</h1>
-    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-        <p class="mb-2"><span class="font-semibold">ID:</span> {{.Campaign.ID}}</p>
-        <p class="mb-2"><span class="font-semibold">Created At:</span> {{.Campaign.CreatedAt}}</p>
-        <p class="mb-2"><span class="font-semibold">Updated At:</span> {{.Campaign.UpdatedAt}}</p>
+    <h1 class="text-3xl font-bold mb-2" id="campaign-name">{{.Campaign.Name}}</h1>
+    <p class="mb-6 text-sm text-gray-600">
+        <time datetime="{{.Campaign.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+            Last updated: {{.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
+        </time>
+    </p>
+    
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
+        <h2 id="template-preview" class="sr-only">Template Preview</h2>
+        <div id="editor">{{.Campaign.Template}}</div>
     </div>
 
-    <h2 class="text-2xl font-bold mb-4">Template Preview:</h2>
-    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-        {{.Campaign.Template}}
-    </div>
-
-    <h2 class="text-2xl font-bold mb-4">Actions:</h2>
-    <div class="flex flex-wrap gap-4 mb-6">
+    <h2 class="text-2xl font-bold mb-4" id="actions-heading">Actions:</h2>
+    <div class="flex flex-wrap gap-4 mb-6" aria-labelledby="actions-heading">
         <a href="/campaigns/{{.Campaign.ID}}/edit"
-            class="inline-block bg-blue-500 hover:bg-blue-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Edit
-            Campaign</a>
+            class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+            aria-label="Edit Campaign">
+            Edit Campaign
+        </a>
         <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-block">
             <button type="submit"
-                class="bg-red-500 hover:bg-red-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Delete
-                Campaign</button>
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+                aria-label="Delete Campaign">
+                Delete Campaign
+            </button>
         </form>
     </div>
 
     <a href="/campaigns"
-        class="inline-block bg-gray-500 hover:bg-gray-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Back
-        to Campaigns</a>
+        class="inline-block bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+        aria-label="Back to Campaigns List">
+        Back to Campaigns
+    </a>
 </main>
 {{template "footer" .}}

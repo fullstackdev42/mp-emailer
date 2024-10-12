@@ -23,39 +23,6 @@
     </form>
 </main>
 
-<!-- Include Quill stylesheet -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.0-beta.0/dist/quill.snow.css" rel="stylesheet" />
-
-<!-- Include the Quill library -->
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.0-beta.0/dist/quill.js"></script>
-
-<!-- Initialize Quill editor -->
-<script>
-    const quill = new Quill('#editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'header': 1 }, { 'header': 2 }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'script': 'sub'}, { 'script': 'super' }],
-                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                [{ 'direction': 'rtl' }],
-                [{ 'size': ['small', false, 'large', 'huge'] }],
-                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'font': [] }],
-                [{ 'align': [] }],
-                ['clean']
-            ]
-        }
-    });
-
-    // Update hidden input with Quill contents before form submission
-    document.querySelector('form').onsubmit = function() {
-        document.getElementById('template').value = quill.root.innerHTML;
-    };
-</script>
+<script src="/static/js/quill-tailwind.js"></script>
 
 {{template "footer" .}}
