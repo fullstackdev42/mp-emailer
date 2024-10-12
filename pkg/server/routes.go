@@ -23,11 +23,12 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
 	authGroup.POST("/submit", h.HandleSubmit)
 	authGroup.POST("/echo", h.HandleEcho)
 
-	// Campaign routes (protected)
+	// Campaign routes
+	e.GET("/campaigns/:id", h.HandleGetCampaign)
+	// (protected)
 	authGroup.GET("/campaigns", h.HandleGetCampaigns)
 	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
 	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
-	authGroup.GET("/campaigns/:id", h.HandleGetCampaign)
 	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
 	authGroup.GET("/campaigns/:id/edit", h.HandleEditCampaign)
 	authGroup.POST("/campaigns/:id/edit", h.HandleEditCampaign)
