@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
+	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +17,7 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
 
 	// Protected routes
 	authGroup := e.Group("")
-	//	authGroup.Use(middleware.RequireAuthMiddleware())
+	authGroup.Use(appmid.RequireAuthMiddleware(h.Store, h.Logger))
 	authGroup.GET("/submit", h.HandleSubmit)
 	authGroup.POST("/submit", h.HandleSubmit)
 	authGroup.POST("/echo", h.HandleEcho)

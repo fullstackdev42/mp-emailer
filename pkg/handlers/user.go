@@ -78,12 +78,12 @@ func (h *Handler) registerUser(c echo.Context, username, email, password string)
 
 	// Send email to admin
 	if err := h.SendAdminNotification(username, email); err != nil {
-		h.logger.Error("Failed to send admin notification email", err)
+		h.Logger.Error("Failed to send admin notification email", err)
 		// Note: We're not returning here as we don't want to interrupt the user flow
 		// if the email fails to send
 	}
 
-	h.logger.Info("User registered successfully", "username", username, "email", email)
+	h.Logger.Info("User registered successfully", "username", username, "email", email)
 	return nil
 }
 

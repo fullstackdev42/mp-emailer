@@ -16,9 +16,9 @@ import (
 )
 
 type Handler struct {
-	logger          loggo.LoggerInterface
+	Logger          loggo.LoggerInterface
 	client          api.ClientInterface
-	store           sessions.Store
+	Store           sessions.Store
 	emailService    services.EmailService
 	templateManager *templates.TemplateManager
 }
@@ -26,9 +26,9 @@ type Handler struct {
 func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, store sessions.Store, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
 
 	return &Handler{
-		logger:          logger,
+		Logger:          logger,
 		client:          client,
-		store:           store,
+		Store:           store,
 		emailService:    emailService,
 		templateManager: tmplManager,
 	}
@@ -39,18 +39,18 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 }
 
 func (h *Handler) HandleSubmit(c echo.Context) error {
-	h.logger.Info("Handling submit request")
+	h.Logger.Info("Handling submit request")
 
 	postalCode := c.FormValue("postalCode")
 	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
 
 	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
 	if !postalCodeRegex.MatchString(postalCode) {
-		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
+		h.Logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
 	}
 
-	mpFinder := services.NewMPFinder(h.client, h.logger)
+	mpFinder := services.NewMPFinder(h.client, h.Logger)
 
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {

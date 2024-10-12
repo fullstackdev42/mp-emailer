@@ -14,57 +14,57 @@ const (
 )
 
 func (h *Handler) handleError(err error, statusCode int, message string) error {
-	h.logger.Error(message, err)
+	h.Logger.Error(message, err)
 	return echo.NewHTTPError(statusCode, message)
 }
 
 func (h *Handler) HandleLogin(c echo.Context) error {
-	h.logger.Debug("HandleLogin called with method: " + c.Request().Method)
+	h.Logger.Debug("HandleLogin called with method: " + c.Request().Method)
 
 	if c.Request().Method == http.MethodGet {
-		h.logger.Debug("Rendering login page")
+		h.Logger.Debug("Rendering login page")
 		return c.Render(http.StatusOK, "login.html", nil)
 	}
 
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	h.logger.Debug("Login attempt for username: " + username)
+	h.Logger.Debug("Login attempt for username: " + username)
 
 	// Retrieve the database connection from the context
 	db := c.Get("db").(*database.DB)
 	if db == nil {
-		h.logger.Error("Database connection not found in context", errors.New("database connection not available"))
+		h.Logger.Error("Database connection not found in context", errors.New("database connection not available"))
 		return h.handleError(nil, http.StatusInternalServerError, "Database connection not available")
 	}
 
 	userID, err := db.VerifyUser(username, password)
 	if err != nil {
-		h.logger.Error("User verification failed", err)
+		h.Logger.Error("User verification failed", err)
 		data := map[string]interface{}{
 			"Error": err.Error(),
 		}
 		return c.Render(http.StatusUnauthorized, "login.html", data)
 	}
-	h.logger.Debug("User verified successfully. UserID: " + userID)
+	h.Logger.Debug("User verified successfully. UserID: " + userID)
 
 	// Set user in session
 	sess, err := session.Get("mpe", c)
 	if err != nil {
-		h.logger.Error("Failed to get session", err)
+		h.Logger.Error("Failed to get session", err)
 		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}
 
 	sess.Values["userID"] = userID
 	sess.Values["username"] = username
-	h.logger.Debug("Session values set. UserID: " + userID + ", Username: " + username)
+	h.Logger.Debug("Session values set. UserID: " + userID + ", Username: " + username)
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		h.logger.Error("Failed to save session", err)
+		h.Logger.Error("Failed to save session", err)
 		return c.String(http.StatusInternalServerError, "Failed to save session")
 	}
-	h.logger.Debug("Session saved successfully")
+	h.Logger.Debug("Session saved successfully")
 
-	h.logger.Debug("Redirecting to home page")
+	h.Logger.Debug("Redirecting to home page")
 	return c.Redirect(http.StatusFound, "/")
 }
 
