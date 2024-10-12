@@ -24,19 +24,19 @@ import (
 )
 
 type Config struct {
+	AppDebug      string
 	AppEnv        string
 	AppPort       string
-	MailgunDomain string
+	DBHost        string
+	DBName        string
+	DBPass        string
+	DBPort        string
+	DBUser        string
 	MailgunAPIKey string
+	MailgunDomain string
 	MailpitHost   string
 	MailpitPort   string
-	DBUser        string
-	DBPass        string
-	DBName        string
-	DBHost        string
-	DBPort        string
 	SessionSecret string
-	AppDebug      string
 }
 
 func loadConfig() (*Config, error) {
@@ -46,19 +46,19 @@ func loadConfig() (*Config, error) {
 	}
 
 	config := &Config{
+		AppDebug:      os.Getenv("APP_DEBUG"),
 		AppEnv:        os.Getenv("APP_ENV"),
 		AppPort:       os.Getenv("APP_PORT"),
-		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
+		DBHost:        os.Getenv("DB_HOST"),
+		DBName:        os.Getenv("DB_NAME"),
+		DBPass:        os.Getenv("DB_PASS"),
+		DBPort:        os.Getenv("DB_PORT"),
+		DBUser:        os.Getenv("DB_USER"),
 		MailgunAPIKey: os.Getenv("MAILGUN_API_KEY"),
+		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
 		MailpitHost:   os.Getenv("MAILPIT_HOST"),
 		MailpitPort:   os.Getenv("MAILPIT_PORT"),
-		DBUser:        os.Getenv("DB_USER"),
-		DBPass:        os.Getenv("DB_PASS"),
-		DBName:        os.Getenv("DB_NAME"),
-		DBHost:        os.Getenv("DB_HOST"),
-		DBPort:        os.Getenv("DB_PORT"),
 		SessionSecret: os.Getenv("SESSION_SECRET"),
-		AppDebug:      os.Getenv("APP_DEBUG"),
 	}
 
 	if config.SessionSecret == "" {
