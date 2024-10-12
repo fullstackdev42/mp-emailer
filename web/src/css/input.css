@@ -3,11 +3,13 @@
 @tailwind utilities;
 
 @layer base {
-  ol {
-    @apply list-decimal pl-5;
-  }
+    #editor {
+        ol {
+            @apply list-decimal pl-5;
+        }
 
-  ul {
-    @apply list-disc pl-5;
-  }
+        ul {
+            @apply list-disc pl-5;
+        }
+    }
 }
