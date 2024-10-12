@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -73,24 +74,40 @@ func (db *DB) GetCampaignByID(id int) (*models.Campaign, error) {
 	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
 	row := db.QueryRow(query, id)
 
-	var createdAt, updatedAt []byte
+	var createdAt, updatedAt sql.NullString
 	campaign := &models.Campaign{}
 
 	err := row.Scan(&campaign.ID, &campaign.Name, &campaign.Template, &campaign.OwnerID, &createdAt, &updatedAt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}
 
-	// Convert []byte to time.Time
-	campaign.CreatedAt, err = time.Parse("2006-01-02 15:04:05", string(createdAt))
-	if err != nil {
-		return nil, fmt.Errorf("error parsing created_at: %w", err)
+	// Handle created_at
+	if createdAt.Valid {
+		campaign.CreatedAt, err = parseDateTime(createdAt.String)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing created_at: %w", err)
+		}
+	} else {
+		campaign.CreatedAt = time.Time{} // Zero value for time.Time
 	}
 
-	campaign.UpdatedAt, err = time.Parse("2006-01-02 15:04:05", string(updatedAt))
-	if err != nil {
-		return nil, fmt.Errorf("error parsing updated_at: %w", err)
+	// Handle updated_at
+	if updatedAt.Valid {
+		campaign.UpdatedAt, err = parseDateTime(updatedAt.String)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing updated_at: %w", err)
+		}
+	} else {
+		campaign.UpdatedAt = time.Time{} // Zero value for time.Time
 	}
 
 	return campaign, nil
+}
+
+func parseDateTime(dateStr string) (time.Time, error) {
+	if dateStr == "0000-00-00 00:00:00" {
+		return time.Time{}, nil
+	}
+	return time.Parse("2006-01-02 15:04:05", dateStr)
 }
