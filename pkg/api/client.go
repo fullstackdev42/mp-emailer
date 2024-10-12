@@ -10,6 +10,11 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
+// ClientInterface defines the methods that the API client must implement.
+type ClientInterface interface {
+	FetchRepresentatives(postalCode string) ([]models.Representative, error)
+}
+
 type Client struct {
 	logger loggo.LoggerInterface
 }

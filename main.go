@@ -3,128 +3,44 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 
 	"embed"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/config"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
-	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
+	"github.com/fullstackdev42/mp-emailer/pkg/server"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/gorilla/sessions"
-	"github.com/joho/godotenv"
 	"github.com/jonesrussell/loggo"
-	"github.com/labstack/echo-contrib/session"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
-
-type Config struct {
-	AppDebug      string
-	AppEnv        string
-	AppPort       string
-	DBHost        string
-	DBName        string
-	DBPass        string
-	DBPort        string
-	DBUser        string
-	MailgunAPIKey string
-	MailgunDomain string
-	MailpitHost   string
-	MailpitPort   string
-	SessionSecret string
-}
-
-func loadConfig() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("error loading .env file: %v", err)
-	}
-
-	config := &Config{
-		AppDebug:      os.Getenv("APP_DEBUG"),
-		AppEnv:        os.Getenv("APP_ENV"),
-		AppPort:       os.Getenv("APP_PORT"),
-		DBHost:        os.Getenv("DB_HOST"),
-		DBName:        os.Getenv("DB_NAME"),
-		DBPass:        os.Getenv("DB_PASS"),
-		DBPort:        os.Getenv("DB_PORT"),
-		DBUser:        os.Getenv("DB_USER"),
-		MailgunAPIKey: os.Getenv("MAILGUN_API_KEY"),
-		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
-		MailpitHost:   os.Getenv("MAILPIT_HOST"),
-		MailpitPort:   os.Getenv("MAILPIT_PORT"),
-		SessionSecret: os.Getenv("SESSION_SECRET"),
-	}
-
-	if config.SessionSecret == "" {
-		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
-	}
-
-	if config.AppPort == "" {
-		config.AppPort = "8080"
-	}
-
-	return config, nil
-}
 
 //go:embed web/templates/* web/templates/partials/*
 var templateFS embed.FS
 
-func dbMiddleware(db *database.DB) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("db", db)
-			return next(c)
-		}
-	}
-}
-
-func initializeEmailService(config *Config) services.EmailService {
-	if config.AppEnv == "production" {
-		return services.NewMailgunEmailService(config.MailgunDomain, config.MailgunAPIKey)
-	}
-	return services.NewMailpitEmailService(config.MailpitHost, config.MailpitPort)
-}
-
 func main() {
-	config, err := loadConfig()
+	config, err := config.Load()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		return
 	}
 
-	logLevel := loggo.LevelInfo
-	if strings.ToLower(config.AppDebug) == "true" {
-		logLevel = loggo.LevelDebug
-	}
-
-	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
+	logger, err := loggo.NewLogger("mp-emailer.log", config.GetLogLevel())
 	if err != nil {
 		fmt.Printf("Error initializing logger: %v\n", err)
 		return
 	}
 
-	// Log the current log level
-	logger.Info(fmt.Sprintf("Application started with log level: %v", logLevel))
-
-	emailService := initializeEmailService(config)
-
-	client := api.NewClient(logger)
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", config.DBUser, config.DBPass, config.DBHost, config.DBPort, config.DBName)
-	db, err := database.NewDB(dsn, logger, "./migrations")
+	db, err := database.NewDB(config.DatabaseDSN(), logger, config.DBName)
 	if err != nil {
 		logger.Error("Error connecting to database", err)
 		return
 	}
 	defer db.Close()
 
-	e := echo.New()
-	e.Static("/static", "web/public")
+	emailService := services.NewEmailService(config)
 
 	tmplManager, err := templates.NewTemplateManager(templateFS)
 	if err != nil {
@@ -132,55 +48,29 @@ func main() {
 		return
 	}
 
-	e.Renderer = echo.Renderer(tmplManager)
+	// Log the current log level
+	logger.Info(fmt.Sprintf("Application started with log level: %v", config.GetLogLevel()))
 
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	//emailService := initializeEmailService(config)
 
-	// Initialize session store
-	store := sessions.NewCookieStore([]byte(config.SessionSecret))
-	e.Use(session.Middleware(store))
+	client := api.NewClient(logger)
 
-	// Apply SetAuthStatusMiddleware after session middleware
-	e.Use(appmid.SetAuthStatusMiddleware(store, logger))
+	// Create a session store (you need to import and configure this)
+	store := sessions.NewCookieStore([]byte("your-secret-key"))
 
-	// Add database middleware
-	e.Use(dbMiddleware(db))
+	handler := handlers.NewHandler(
+		logger,
+		client,
+		store,
+		emailService,
+		tmplManager,
+	)
 
-	h := handlers.NewHandler(logger, client, store, emailService, tmplManager)
+	e := server.New(config, logger.(*loggo.Logger), db, tmplManager)
+	server.RegisterRoutes(e, handler)
 
-	// Public routes
-	e.GET("/", h.HandleIndex)
-	e.GET("/login", h.HandleLogin)
-	e.POST("/login", h.HandleLogin)
-	e.GET("/logout", h.HandleLogout)
-	e.GET("/register", h.HandleRegister)
-	e.POST("/register", h.HandleRegister)
-
-	// Protected routes
-	authGroup := e.Group("")
-	authGroup.Use(appmid.RequireAuthMiddleware(store, logger))
-	authGroup.GET("/submit", h.HandleSubmit)
-	authGroup.POST("/submit", h.HandleSubmit)
-	authGroup.POST("/echo", h.HandleEcho)
-
-	// Campaign routes (protected)
-	authGroup.GET("/campaigns", h.HandleGetCampaigns)
-	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
-	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
-	authGroup.GET("/campaigns/:id", h.HandleGetCampaign)
-	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
-	e.GET("/campaigns/:id/edit", h.HandleEditCampaign)
-	e.POST("/campaigns/:id/edit", h.HandleEditCampaign)
-
-	port := config.AppPort
-	if _, err := strconv.Atoi(port); err != nil {
-		logger.Error("Invalid APP_PORT value", err)
-		return
-	}
-
-	logger.Info(fmt.Sprintf("Attempting to start server on :%s", port))
-	if err := e.Start(":" + port); err != http.ErrServerClosed {
+	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
+	if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {
 		logger.Error("Error starting server", err)
 	}
 }
