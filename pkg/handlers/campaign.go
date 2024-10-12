@@ -103,17 +103,21 @@ func (h *Handler) HandleDeleteCampaign(c echo.Context) error {
 func (h *Handler) HandleGetCampaign(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
+		h.logger.Error("Invalid campaign ID", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
 	}
 
 	// Retrieve the database connection from the context
 	db := c.Get("db").(*database.DB)
 
+	// Attempt to fetch the campaign
 	campaign, err := db.GetCampaignByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			h.logger.Error("Campaign not found", err)
 			return echo.NewHTTPError(http.StatusNotFound, "Campaign not found")
 		}
+		h.logger.Error("Error fetching campaign", err)
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 
