@@ -16,6 +16,8 @@ type DB struct {
 }
 
 func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB, error) {
+	logger.Debug("Attempting to connect to database with DSN: " + dsn)
+
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("error opening database: %w", err)
@@ -24,6 +26,8 @@ func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
+
+	logger.Info("Successfully connected to database")
 
 	if err := RunMigrations(dsn, migrationsPath, logger); err != nil {
 		return nil, fmt.Errorf("error running migrations: %w", err)

@@ -76,6 +76,5 @@ func (c *Config) GetLogLevel() loggo.Level {
 
 // Add this method to the Config struct
 func (c *Config) DatabaseDSN() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
 }

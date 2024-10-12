@@ -20,6 +20,8 @@ import (
 //go:embed web/templates/* web/templates/partials/*
 var templateFS embed.FS
 
+const migrationsPath string = "./migrations"
+
 func main() {
 	config, err := config.Load()
 	if err != nil {
@@ -33,7 +35,7 @@ func main() {
 		return
 	}
 
-	db, err := database.NewDB(config.DatabaseDSN(), logger, config.DBName)
+	db, err := database.NewDB(config.DatabaseDSN(), logger, migrationsPath)
 	if err != nil {
 		logger.Error("Error connecting to database", err)
 		return
