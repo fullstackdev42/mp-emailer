@@ -1,15 +1,61 @@
 {{template "header" .}}
 {{template "nav" .}}
-<main>
-    <h1>Create Campaign</h1>
-    <form action="/campaigns/new" method="POST">
-        <label for="name">Campaign Name:</label>
-        <input type="text" id="name" name="name" required>
-        <br>
-        <label for="template">Template:</label>
-        <textarea id="template" name="template" rows="10" cols="50" required></textarea>
-        <br>
-        <button type="submit">Create Campaign</button>
+<main class="max-w-4xl mx-auto p-8">
+    <h1 class="text-3xl font-bold mb-6">Create Campaign</h1>
+    <form action="/campaigns/new" method="POST"
+        class="max-w-2xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-4">
+            <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Campaign Name:</label>
+            <input type="text" id="name" name="name" required
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        </div>
+        <div class="mb-6">
+            <label for="template" class="block text-gray-700 text-sm font-bold mb-2">Template:</label>
+            <div id="editor" class="h-64 mb-4"></div>
+            <input type="hidden" id="template" name="template">
+        </div>
+        <div class="flex items-center justify-between">
+            <button type="submit"
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300">
+                Create Campaign
+            </button>
+        </div>
     </form>
 </main>
+
+<!-- Include Quill stylesheet -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.0-beta.0/dist/quill.snow.css" rel="stylesheet" />
+
+<!-- Include the Quill library -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.0-beta.0/dist/quill.js"></script>
+
+<!-- Initialize Quill editor -->
+<script>
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'script': 'sub' }, { 'script': 'super' }],
+                [{ 'indent': '-1' }, { 'indent': '+1' }],
+                [{ 'direction': 'rtl' }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'font': [] }],
+                [{ 'align': [] }],
+                ['clean']
+            ]
+        }
+    });
+
+    // Update hidden input with Quill contents before form submission
+    document.querySelector('form').onsubmit = function () {
+        document.getElementById('template').value = quill.root.innerHTML;
+    };
+</script>
+
 {{template "footer" .}}

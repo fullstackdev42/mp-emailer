@@ -1,20 +1,30 @@
 {{template "header" .}}
 {{template "nav" .}}
-<main>
-    <h1>Campaign: {{.Campaign.Name}}</h1>
-    <p>ID: {{.Campaign.ID}}</p>
-    <p>Created At: {{.Campaign.CreatedAt}}</p>
-    <p>Updated At: {{.Campaign.UpdatedAt}}</p>
-    
-    <h2>Template:</h2>
-    <pre>{{.Campaign.Template}}</pre>
-    
-    <h2>Actions:</h2>
-    <a href="/campaigns/{{.Campaign.ID}}/edit" class="button">Edit Campaign</a>
-    <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-form">
-        <button type="submit" class="button delete-button">Delete Campaign</button>
-    </form>
-    
-    <a href="/campaigns" class="button">Back to Campaigns</a>
+<main class="max-w-4xl mx-auto p-8">
+    <h1 class="text-3xl font-bold mb-6">Campaign: {{.Campaign.Name}}</h1>
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <p class="mb-2"><span class="font-semibold">ID:</span> {{.Campaign.ID}}</p>
+        <p class="mb-2"><span class="font-semibold">Created At:</span> {{.Campaign.CreatedAt}}</p>
+        <p class="mb-2"><span class="font-semibold">Updated At:</span> {{.Campaign.UpdatedAt}}</p>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4">Template:</h2>
+    <pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-6">{{.Campaign.Template}}</pre>
+
+    <h2 class="text-2xl font-bold mb-4">Actions:</h2>
+    <div class="flex flex-wrap gap-4 mb-6">
+        <a href="/campaigns/{{.Campaign.ID}}/edit"
+            class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">Edit
+            Campaign</a>
+        <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-block">
+            <button type="submit"
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300">Delete
+                Campaign</button>
+        </form>
+    </div>
+
+    <a href="/campaigns"
+        class="inline-block bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-300">Back
+        to Campaigns</a>
 </main>
 {{template "footer" .}}
