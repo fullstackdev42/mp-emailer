@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
+
+	"html/template"
 
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/models"
@@ -138,7 +141,24 @@ func (h *Handler) HandleGetCampaign(c echo.Context) error {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 
+	// Convert the campaign template to template.HTML
+	campaignData := struct {
+		ID        int
+		Name      string
+		Template  template.HTML
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		OwnerID   int
+	}{
+		ID:        campaign.ID,
+		Name:      campaign.Name,
+		Template:  template.HTML(campaign.Template),
+		CreatedAt: campaign.CreatedAt,
+		UpdatedAt: campaign.UpdatedAt,
+		OwnerID:   campaign.OwnerID,
+	}
+
 	return c.Render(http.StatusOK, "campaign_detail.html", map[string]interface{}{
-		"Campaign": campaign,
+		"Campaign": campaignData,
 	})
 }

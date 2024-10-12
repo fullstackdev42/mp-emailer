@@ -8,23 +8,25 @@
         <p class="mb-2"><span class="font-semibold">Updated At:</span> {{.Campaign.UpdatedAt}}</p>
     </div>
 
-    <h2 class="text-2xl font-bold mb-4">Template:</h2>
-    <pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-6">{{.Campaign.Template}}</pre>
+    <h2 class="text-2xl font-bold mb-4">Template Preview:</h2>
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        {{.Campaign.Template}}
+    </div>
 
     <h2 class="text-2xl font-bold mb-4">Actions:</h2>
     <div class="flex flex-wrap gap-4 mb-6">
         <a href="/campaigns/{{.Campaign.ID}}/edit"
-            class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">Edit
+            class="inline-block bg-blue-500 hover:bg-blue-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Edit
             Campaign</a>
         <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-block">
             <button type="submit"
-                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300">Delete
+                class="bg-red-500 hover:bg-red-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Delete
                 Campaign</button>
         </form>
     </div>
 
     <a href="/campaigns"
-        class="inline-block bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-300">Back
+        class="inline-block bg-gray-500 hover:bg-gray-600 text-gray-700 font-bold py-2 px-4 rounded transition duration-300">Back
         to Campaigns</a>
 </main>
 {{template "footer" .}}
