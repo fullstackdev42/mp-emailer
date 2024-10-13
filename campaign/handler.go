@@ -170,49 +170,78 @@ func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
 
-	// Log all form values
-	for key, values := range c.Request().Form {
-		h.logger.Debug("Form value", "key", key, "values", values)
+	postalCode, err := h.extractAndValidatePostalCode(c)
+	if err != nil {
+		return err
 	}
 
-	postalCode := c.FormValue("postal_code")
-	h.logger.Debug("Raw postal code received", "postalCode", postalCode)
+	mp, err := h.findMP(postalCode)
+	if err != nil {
+		return err
+	}
 
+	campaign, err := h.fetchCampaign(c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	userData := h.extractUserData(c)
+	emailContent := h.composeEmail(mp, campaign, userData)
+
+	return h.renderEmailTemplate(c, mp.Email, emailContent)
+}
+
+func (h *Handler) composeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
+	emailTemplate := campaign.Template
+	for key, value := range userData {
+		placeholder := fmt.Sprintf("{{%s}}", key)
+		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
+	}
+	// Handle the token with the apostrophe
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", mp.Name)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", mp.Email)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
+	return emailTemplate
+}
+
+func (h *Handler) extractAndValidatePostalCode(c echo.Context) (string, error) {
+	postalCode := c.FormValue("postal_code")
 	if postalCode == "" {
 		h.logger.Warn("Empty postal code submitted")
-		return echo.NewHTTPError(http.StatusBadRequest, "Postal code is required")
+		return "", echo.NewHTTPError(http.StatusBadRequest, "Postal code is required")
 	}
 
 	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
-	h.logger.Debug("Processed postal code", "postalCode", postalCode)
-
 	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
 	if !postalCodeRegex.MatchString(postalCode) {
-		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode, "regexPattern", postalCodeRegex.String())
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
+		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
+		return "", echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
 	}
 
-	h.logger.Info("Valid postal code received", "postalCode", postalCode)
+	return postalCode, nil
+}
 
+func (h *Handler) findMP(postalCode string) (Representative, error) {
 	mpFinder := NewMPFinder(h.client, h.logger)
-
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
 		h.logger.Error("Error finding MP", err)
-		return h.handleError(err, http.StatusInternalServerError, "Error finding MP")
+		return Representative{}, h.handleError(err, http.StatusInternalServerError, "Error finding MP")
 	}
-	h.logger.Debug("MP found", "name", mp.Name, "email", mp.Email)
+	return mp, nil
+}
 
-	campaignID := c.Param("id")
-	h.logger.Debug("Campaign ID", "id", campaignID)
-	campaign, err := h.service.GetCampaignByID(campaignID)
+func (h *Handler) fetchCampaign(id string) (*Campaign, error) {
+	campaign, err := h.service.GetCampaignByID(id)
 	if err != nil {
 		h.logger.Error("Error fetching campaign", err)
-		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
+		return nil, h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
-	h.logger.Debug("Campaign fetched", "name", campaign.Name)
+	return campaign, nil
+}
 
-	userData := map[string]string{
+func (h *Handler) extractUserData(c echo.Context) map[string]string {
+	return map[string]string{
 		"First Name":    c.FormValue("first_name"),
 		"Last Name":     c.FormValue("last_name"),
 		"Address 1":     c.FormValue("address_1"),
@@ -221,21 +250,23 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		"Postal Code":   c.FormValue("postal_code"),
 		"Email Address": c.FormValue("email"),
 	}
-	h.logger.Debug("User data", "userData", userData)
+}
 
-	emailContent := h.composeEmail(mp, campaign, userData)
-	h.logger.Debug("Composed email content", "content", emailContent)
-
+func (h *Handler) renderEmailTemplate(c echo.Context, email, content string) error {
 	data := struct {
 		Email   string
-		Content string
+		Content template.HTML // Use template.HTML to ensure HTML content is rendered correctly
 	}{
-		Email:   mp.Email,
-		Content: emailContent,
+		Email:   email,
+		Content: template.HTML(content), // Convert content to template.HTML
 	}
+
 	h.logger.Debug("Data for email template", "data", data)
 
-	err = c.Render(http.StatusOK, "email.html", data)
+	// Attempt to render the email template
+	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{
+		"Data": data,
+	})
 	if err != nil {
 		h.logger.Error("Error rendering email template", err)
 		return h.handleError(err, http.StatusInternalServerError, "Error rendering email template")
@@ -243,24 +274,6 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 
 	h.logger.Info("Email template rendered successfully")
 	return nil
-}
-
-func (h *Handler) composeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
-	content := campaign.Template
-
-	// Replace MP information
-	content = strings.ReplaceAll(content, "{{MP's Name}}", mp.Name)
-
-	// Replace user information
-	for key, value := range userData {
-		content = strings.ReplaceAll(content, "{{"+key+"}}", value)
-	}
-
-	// Replace date
-	currentDate := time.Now().Format("January 2, 2006")
-	content = strings.ReplaceAll(content, "{{Date}}", currentDate)
-
-	return content
 }
 
 func (h *Handler) HandleMPLookup(c echo.Context) error {
