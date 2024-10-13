@@ -2,12 +2,12 @@ package routes
 
 import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
+	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, h *handlers.Handler, ch *campaign.Handler, uh *user.Handler) {
+func RegisterRoutes(e *echo.Echo, h *server.Handler, ch *campaign.Handler, uh *user.Handler) {
 	// Public routes
 	e.GET("/", h.HandleIndex)
 

@@ -10,9 +10,8 @@ import (
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
-	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
-	"github.com/fullstackdev42/mp-emailer/pkg/server"
 	"github.com/fullstackdev42/mp-emailer/routes"
+	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -57,7 +56,7 @@ func main() {
 	// Create a session store (you need to import and configure this)
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 
-	handler := handlers.NewHandler(
+	handler := server.NewHandler(
 		logger,
 		store,
 		emailService,
