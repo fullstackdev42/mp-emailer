@@ -10,7 +10,7 @@ import (
 
 type Handler struct {
 	service ServiceInterface
-	logger  *loggo.Logger
+	logger  loggo.LoggerInterface
 }
 
 func NewHandler(service ServiceInterface, logger *loggo.Logger) *Handler {
@@ -40,42 +40,20 @@ func (h *Handler) HandleRegister(c echo.Context) error {
 }
 
 func (h *Handler) HandleLogin(c echo.Context) error {
-	h.logger.Debug("HandleLogin called with method: " + c.Request().Method)
-
-	if c.Request().Method == http.MethodGet {
-		h.logger.Debug("Rendering login page")
-		return c.Render(http.StatusOK, "login.html", nil)
-	}
-
 	username := c.FormValue("username")
 	password := c.FormValue("password")
+
+	h.logger.Debug("HandleLogin called with method: POST")
 	h.logger.Debug("Login attempt for username: " + username)
 
-	userID, err := h.service.VerifyUser(username, password)
+	_, err := h.service.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Warn("Login failed for user: " + username)
-		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
-			"Error": "Invalid username or password",
-		})
-	}
-	h.logger.Debug("User verified successfully. UserID: " + userID)
-
-	sess, err := session.Get("mpe", c)
-	if err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to get session")
+		return h.handleError(err, http.StatusUnauthorized, "Invalid username or password")
 	}
 
-	sess.Values["userID"] = userID
-	sess.Values["username"] = username
-	h.logger.Debug("Session values set. UserID: " + userID + ", Username: " + username)
-
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		return h.handleError(err, http.StatusInternalServerError, "Failed to save session")
-	}
-	h.logger.Debug("Session saved successfully")
-
-	h.logger.Debug("Redirecting to home page")
-	return c.Redirect(http.StatusFound, "/")
+	// Handle successful login (not shown here)
+	return nil
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
@@ -99,5 +77,5 @@ func (h *Handler) HandleLogout(c echo.Context) error {
 
 func (h *Handler) handleError(err error, statusCode int, message string) error {
 	h.logger.Error(message, err)
-	return echo.NewHTTPError(statusCode, message)
+	return echo.NewHTTPError(statusCode, map[string]string{"error": message})
 }

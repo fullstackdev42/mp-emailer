@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -23,74 +24,81 @@ func (m *MockService) VerifyUser(username, password string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-// Update the RegisterUser method to match the ServiceInterface
 func (m *MockService) RegisterUser(username, password, email string) error {
 	args := m.Called(username, password, email)
 	return args.Error(0)
 }
 
 func TestHandler_HandleLogin(t *testing.T) {
-	type fields struct {
-		service ServiceInterface
-		logger  loggo.LoggerInterface
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := loggo.NewMockLogger(ctrl)
+	mockService := new(MockService)
+
+	h := &Handler{
+		service: mockService,
+		logger:  mockLogger,
 	}
+
 	tests := []struct {
 		name           string
-		fields         fields
-		setupMock      func(*MockService)
-		wantErr        bool
+		setupMock      func()
 		wantStatusCode int
 		wantBody       string
 	}{
 		{
 			name: "Invalid credentials",
-			fields: fields{
-				service: func() ServiceInterface {
-					ms := new(MockService)
-					return ms
-				}(),
-				logger: loggo.NewMockLogger(gomock.NewController(t)),
+			setupMock: func() {
+				mockService.On("VerifyUser", "testuser", "wrongpassword").Return("", echo.NewHTTPError(http.StatusUnauthorized, map[string]string{"error": "Invalid username or password"}))
+				mockLogger.EXPECT().Debug("HandleLogin called with method: POST").Times(1)
+				mockLogger.EXPECT().Debug("Login attempt for username: testuser").Times(1)
+				mockLogger.EXPECT().Warn("Login failed for user: testuser").Times(1)
+				mockLogger.EXPECT().Error("Invalid username or password", gomock.Any()).Times(1)
 			},
-			setupMock: func(ms *MockService) {
-				ms.On("VerifyUser", "testuser", "wrongpassword").Return("", echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password"))
-			},
-			wantErr:        false,
 			wantStatusCode: http.StatusUnauthorized,
 			wantBody:       "Invalid username or password",
 		},
-		// TODO: Add more test cases (e.g., successful login, server error, etc.)
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup
+			tt.setupMock()
+
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(url.Values{"username": {"testuser"}, "password": {"wrongpassword"}}.Encode()))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			h := &Handler{
-				service: tt.fields.service, // Ensure this is of type ServiceInterface
-				logger:  tt.fields.logger.(*loggo.Logger),
-			}
-			// Setup mock expectations
-			if mockService, ok := h.service.(*MockService); ok && tt.setupMock != nil {
-				tt.setupMock(mockService)
-			}
 
-			// Call the method
 			err := h.HandleLogin(c)
 
-			// Assertions
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Handler.HandleLogin() error = %v, wantErr %v", err, tt.wantErr)
+			if err != nil {
+				httpError, ok := err.(*echo.HTTPError)
+				if ok {
+					assert.Equal(t, tt.wantStatusCode, httpError.Code)
+					// Directly assert the map
+					responseBody, ok := httpError.Message.(map[string]string)
+					if ok {
+						assert.Contains(t, responseBody["error"], tt.wantBody)
+					} else {
+						t.Fatalf("expected map[string]string, got %T", httpError.Message)
+					}
+				} else {
+					t.Fatalf("expected HTTPError, got %v", err)
+				}
+			} else {
+				assert.Equal(t, tt.wantStatusCode, rec.Code)
+				// Parse the JSON response
+				var responseBody map[string]string
+				if err := json.Unmarshal(rec.Body.Bytes(), &responseBody); err == nil {
+					assert.Contains(t, responseBody["error"], tt.wantBody)
+				} else {
+					t.Fatalf("failed to parse JSON response: %v", err)
+				}
 			}
-			assert.Equal(t, tt.wantStatusCode, rec.Code)
-			assert.Contains(t, rec.Body.String(), tt.wantBody)
 
-			// Verify mock expectations
-			if ms, ok := h.service.(*MockService); ok {
-				ms.AssertExpectations(t)
-			}
+			mockService.AssertExpectations(t)
 		})
 	}
 }
