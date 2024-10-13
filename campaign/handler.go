@@ -22,7 +22,13 @@ type Handler struct {
 	client                      ClientInterface
 }
 
-func NewHandler(service *Service, logger loggo.LoggerInterface, representativeLookupService *RepresentativeLookupService, emailService email.Service, client ClientInterface) *Handler {
+func NewHandler(
+	service *Service,
+	logger loggo.LoggerInterface,
+	representativeLookupService *RepresentativeLookupService,
+	emailService email.Service,
+	client ClientInterface,
+) *Handler {
 	return &Handler{
 		service:                     service,
 		logger:                      logger,
