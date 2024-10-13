@@ -1,6 +1,8 @@
 package user
 
 import (
+	"fmt"
+
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -44,4 +46,13 @@ func checkAuthentication(c echo.Context, store sessions.Store, logger loggo.Logg
 	}
 
 	return true
+}
+
+// GetOwnerIDFromSession retrieves the owner ID from the session
+func GetOwnerIDFromSession(c echo.Context) (int, error) {
+	ownerID, ok := c.Get("user_id").(int)
+	if !ok {
+		return 0, fmt.Errorf("user_id not found in session or not an integer")
+	}
+	return ownerID, nil
 }

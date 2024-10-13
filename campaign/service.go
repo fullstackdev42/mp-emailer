@@ -2,8 +2,12 @@ package campaign
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Service struct {
@@ -90,4 +94,40 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 		return fmt.Errorf("failed to update campaign: %w", err)
 	}
 	return nil
+}
+
+func (s *Service) ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
+	emailTemplate := campaign.Template
+	for key, value := range userData {
+		placeholder := fmt.Sprintf("{{%s}}", key)
+		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
+	}
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", mp.Name)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", mp.Email)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
+	return emailTemplate
+}
+
+func (s *Service) ValidatePostalCode(postalCode string) (string, error) {
+	if postalCode == "" {
+		return "", fmt.Errorf("postal code is required")
+	}
+
+	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
+	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
+	if !postalCodeRegex.MatchString(postalCode) {
+		return "", fmt.Errorf("invalid postal code format")
+	}
+
+	return postalCode, nil
+}
+
+// ExtractAndValidatePostalCode extracts the postal code from the request and validates it
+func (s *Service) ExtractAndValidatePostalCode(c echo.Context) (string, error) {
+	postalCode := c.FormValue("postal_code")
+	validatedPostalCode, err := s.ValidatePostalCode(postalCode)
+	if err != nil {
+		return "", fmt.Errorf("invalid postal code: %w", err)
+	}
+	return validatedPostalCode, nil
 }

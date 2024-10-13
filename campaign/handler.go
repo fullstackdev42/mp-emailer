@@ -1,15 +1,13 @@
 package campaign
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
@@ -84,9 +82,9 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	name := c.FormValue("name")
 	template := c.FormValue("template")
-	ownerID, err := h.getOwnerIDFromSession(c)
+	ownerID, err := user.GetOwnerIDFromSession(c)
 	if err != nil {
-		return err
+		return h.handleError(err, http.StatusUnauthorized, "Unauthorized")
 	}
 
 	campaign := &Campaign{
@@ -164,21 +162,13 @@ func (h *Handler) handleError(err error, statusCode int, message string) error {
 	return echo.NewHTTPError(statusCode, message)
 }
 
-func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
-	// Get the owner ID from the session
-	ownerID, ok := c.Get("user_id").(int)
-	if !ok {
-		return 0, fmt.Errorf("user_id not found in session or not an integer")
-	}
-	return ownerID, nil
-}
-
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
 
-	postalCode, err := h.extractAndValidatePostalCode(c)
+	postalCode, err := h.service.ExtractAndValidatePostalCode(c)
 	if err != nil {
-		return err
+		h.logger.Warn("Invalid postal code submitted", "error", err)
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	mp, err := h.findMP(postalCode)
@@ -192,39 +182,9 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	}
 
 	userData := h.extractUserData(c)
-	emailContent := h.composeEmail(mp, campaign, userData)
+	emailContent := h.service.ComposeEmail(mp, campaign, userData)
 
 	return h.renderEmailTemplate(c, mp.Email, emailContent)
-}
-
-func (h *Handler) composeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
-	emailTemplate := campaign.Template
-	for key, value := range userData {
-		placeholder := fmt.Sprintf("{{%s}}", key)
-		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
-	}
-	// Handle the token with the apostrophe
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", mp.Name)
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", mp.Email)
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
-	return emailTemplate
-}
-
-func (h *Handler) extractAndValidatePostalCode(c echo.Context) (string, error) {
-	postalCode := c.FormValue("postal_code")
-	if postalCode == "" {
-		h.logger.Warn("Empty postal code submitted")
-		return "", echo.NewHTTPError(http.StatusBadRequest, "Postal code is required")
-	}
-
-	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
-	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
-	if !postalCodeRegex.MatchString(postalCode) {
-		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
-		return "", echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
-	}
-
-	return postalCode, nil
 }
 
 func (h *Handler) findMP(postalCode string) (Representative, error) {
