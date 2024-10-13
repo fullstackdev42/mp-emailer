@@ -53,7 +53,10 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
-		return h.handleError(err, http.StatusUnauthorized, "Invalid username or password")
+		h.logger.Warn("Login failed for user: " + username)
+		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
+			"Error": "Invalid username or password",
+		})
 	}
 	h.logger.Debug("User verified successfully. UserID: " + userID)
 
