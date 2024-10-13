@@ -14,6 +14,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/pkg/server"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/pkg/templates"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 )
@@ -69,10 +70,13 @@ func main() {
 
 	campaignRepo := campaign.NewRepository(db.SQL)
 	campaignService := campaign.NewService(campaignRepo)
-	campaignHandler := campaign.NewHandler(campaignService)
+	campaignHandler := campaign.NewHandler(campaignService, logger, client, emailService)
+	userRepo := user.NewRepository(db.SQL)
+	userService := user.NewService(userRepo)
+	userHandler := user.NewHandler(userService, logger)
 
 	e := server.New(config, logger.(*loggo.Logger), db, tmplManager)
-	server.RegisterRoutes(e, handler, campaignHandler)
+	server.RegisterRoutes(e, handler, campaignHandler, userHandler)
 
 	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
 	if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {

@@ -4,24 +4,22 @@ import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, h *handlers.Handler, ch *campaign.Handler) {
+func RegisterRoutes(e *echo.Echo, h *handlers.Handler, ch *campaign.Handler, uh *user.Handler) {
 	// Public routes
 	e.GET("/", h.HandleIndex)
-	e.GET("/login", h.HandleLogin)
-	e.POST("/login", h.HandleLogin)
-	e.GET("/logout", h.HandleLogout)
-	e.GET("/register", h.HandleRegister)
-	e.POST("/register", h.HandleRegister)
+	e.GET("/login", uh.HandleLogin)
+	e.POST("/login", uh.HandleLogin)
+	e.GET("/logout", uh.HandleLogout)
+	e.GET("/register", uh.HandleRegister)
+	e.POST("/register", uh.HandleRegister)
 
 	// Protected routes
 	authGroup := e.Group("")
 	authGroup.Use(appmid.RequireAuthMiddleware(h.Store, h.Logger))
-
-	authGroup.GET("/submit", h.HandleSubmit)
-	authGroup.POST("/submit", h.HandleSubmit)
 	authGroup.POST("/echo", h.HandleEcho)
 
 	// Campaign routes
@@ -31,6 +29,7 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler, ch *campaign.Handler) {
 func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
 	// Public campaign route
 	e.GET("/campaigns/:id", ch.GetCampaign)
+	e.POST("/campaigns/:id/submit", ch.HandleCampaignSubmit)
 
 	// Protected campaign routes
 	authGroup.GET("/campaigns", ch.GetAllCampaigns)

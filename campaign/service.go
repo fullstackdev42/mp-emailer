@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -13,12 +14,12 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetCampaignByID(id int) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(id)
+func (s *Service) GetCampaignByID(id string) (*Campaign, error) {
+	campaignID, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get campaign: %w", err)
+		return nil, fmt.Errorf("invalid campaign ID: %w", err)
 	}
-	return campaign, nil
+	return s.repo.GetByID(campaignID)
 }
 
 func (s *Service) GetAllCampaigns() ([]Campaign, error) {
@@ -90,5 +91,3 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 	}
 	return nil
 }
-
-// ... other service methods ...

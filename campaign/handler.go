@@ -4,26 +4,36 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/models"
+	"github.com/fullstackdev42/mp-emailer/pkg/services"
+	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
-	service *Service
+	service      *Service
+	logger       loggo.LoggerInterface
+	client       api.ClientInterface
+	emailService services.EmailService
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, logger loggo.LoggerInterface, client api.ClientInterface, emailService services.EmailService) *Handler {
+	return &Handler{
+		service:      service,
+		logger:       logger,
+		client:       client,
+		emailService: emailService,
+	}
 }
 
 func (h *Handler) GetCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
-	}
-
+	id := c.Param("id")
 	campaign, err := h.service.GetCampaignByID(id)
 	if err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
@@ -100,11 +110,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 }
 
 func (h *Handler) EditCampaignForm(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
-	}
-
+	id := c.Param("id")
 	campaign, err := h.service.GetCampaignByID(id)
 	if err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
@@ -148,8 +154,8 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 }
 
 func (h *Handler) handleError(err error, statusCode int, message string) error {
-	// Log the error here (implement proper logging)
-	return echo.NewHTTPError(statusCode, fmt.Sprintf("%s: %v", message, err))
+	h.logger.Error(message, err)
+	return echo.NewHTTPError(statusCode, message)
 }
 
 func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
@@ -159,4 +165,48 @@ func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
 		return 0, fmt.Errorf("user_id not found in session or not an integer")
 	}
 	return ownerID, nil
+}
+
+func (h *Handler) HandleCampaignSubmit(c echo.Context) error {
+	h.logger.Info("Handling campaign submit request")
+
+	postalCode := c.FormValue("postalCode")
+	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
+
+	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
+	if !postalCodeRegex.MatchString(postalCode) {
+		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
+	}
+
+	mpFinder := services.NewMPFinder(h.client, h.logger)
+
+	mp, err := mpFinder.FindMP(postalCode)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Error finding MP")
+	}
+
+	campaignID := c.Param("id")
+	campaign, err := h.service.GetCampaignByID(campaignID)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
+	}
+
+	emailContent := h.composeEmail(mp, campaign)
+
+	data := struct {
+		Email   string
+		Content string
+	}{
+		Email:   mp.Email,
+		Content: emailContent,
+	}
+
+	return c.Render(http.StatusOK, "email.html", data)
+}
+
+func (h *Handler) composeEmail(mp models.Representative, campaign *Campaign) string {
+	// Here you would use the campaign template and replace any placeholders
+	// with the MP's information. For now, we'll use a simple format:
+	return fmt.Sprintf("Dear %s,\n\n%s\n\nBest regards,\nYour constituent", mp.Name, campaign.Template)
 }
