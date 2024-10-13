@@ -35,17 +35,14 @@ func (s *Service) GetAllCampaigns() ([]Campaign, error) {
 }
 
 func (s *Service) CreateCampaign(campaign *Campaign) error {
-	// Add business logic, e.g., validation
 	if campaign.Name == "" {
 		return fmt.Errorf("campaign name cannot be empty")
 	}
 	if len(campaign.Template) < 10 {
 		return fmt.Errorf("campaign template must be at least 10 characters long")
 	}
-
 	campaign.CreatedAt = time.Now()
 	campaign.UpdatedAt = time.Now()
-
 	err := s.repo.Create(campaign)
 	if err != nil {
 		return fmt.Errorf("failed to create campaign: %w", err)
@@ -54,7 +51,6 @@ func (s *Service) CreateCampaign(campaign *Campaign) error {
 }
 
 func (s *Service) DeleteCampaign(id int) error {
-	// Add business logic, e.g., check if user has permission to delete
 	campaign, err := s.repo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get campaign for deletion: %w", err)
@@ -62,7 +58,6 @@ func (s *Service) DeleteCampaign(id int) error {
 	if campaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
-
 	err = s.repo.Delete(id)
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
@@ -71,14 +66,12 @@ func (s *Service) DeleteCampaign(id int) error {
 }
 
 func (s *Service) UpdateCampaign(campaign *Campaign) error {
-	// Add business logic, e.g., validation
 	if campaign.Name == "" {
 		return fmt.Errorf("campaign name cannot be empty")
 	}
 	if len(campaign.Template) < 10 {
 		return fmt.Errorf("campaign template must be at least 10 characters long")
 	}
-
 	existingCampaign, err := s.repo.GetByID(campaign.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get existing campaign: %w", err)
@@ -86,9 +79,7 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 	if existingCampaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
-
 	campaign.UpdatedAt = time.Now()
-
 	err = s.repo.Update(campaign)
 	if err != nil {
 		return fmt.Errorf("failed to update campaign: %w", err)
@@ -130,4 +121,16 @@ func (s *Service) ExtractAndValidatePostalCode(c echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid postal code: %w", err)
 	}
 	return validatedPostalCode, nil
+}
+
+func (s *Service) ExtractUserData(c echo.Context) map[string]string {
+	return map[string]string{
+		"First Name":    c.FormValue("first_name"),
+		"Last Name":     c.FormValue("last_name"),
+		"Address 1":     c.FormValue("address_1"),
+		"City":          c.FormValue("city"),
+		"Province":      c.FormValue("province"),
+		"Postal Code":   c.FormValue("postal_code"),
+		"Email Address": c.FormValue("email"),
+	}
 }

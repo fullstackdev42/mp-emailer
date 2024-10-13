@@ -17,15 +17,11 @@ func NewRepository(db *database.DB) *Repository {
 }
 
 func (r *Repository) Create(campaign *Campaign) error {
-	query := `
-		INSERT INTO campaigns (name, template, owner_id)
-		VALUES (?, ?, ?)
-	`
+	query := `INSERT INTO campaigns (name, template, owner_id)VALUES (?, ?, ?)`
 	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
-
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("error getting last insert ID: %w", err)

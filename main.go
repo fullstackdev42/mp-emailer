@@ -27,23 +27,10 @@ func main() {
 		fx.Provide(
 			config.Load,
 			newLogger,
-			func(cfg *config.Config, logger *loggo.Logger) (*database.DB, error) {
-				db, err := database.NewDB(cfg.DatabaseDSN(), logger)
-				if err != nil {
-					return nil, err
-				}
-
-				// Run migrations after creating the database connection
-				if err := database.RunMigrations(cfg.DatabaseDSN(), cfg.MigrationsPath, logger); err != nil {
-					return nil, fmt.Errorf("failed to run migrations: %w", err)
-				}
-
-				return db, nil
-			},
+			newDB,
 			email.NewEmailService,
 			newTemplateManager,
 			newSessionStore,
-			server.NewHandler,
 			campaign.NewRepository,
 			campaign.NewService,
 			campaign.NewRepresentativeLookupService,
@@ -53,8 +40,12 @@ func main() {
 			user.NewService,
 			user.NewHandler,
 			server.New,
+			provideHandler,
 		),
-		fx.Invoke(registerRoutes, startServer),
+		fx.Invoke(
+			registerRoutes,
+			startServer,
+		),
 	)
 	app.Run()
 }
@@ -67,6 +58,18 @@ func newLogger(config *config.Config) (*loggo.Logger, error) {
 	return logger.(*loggo.Logger), nil
 }
 
+func newDB(cfg *config.Config, logger *loggo.Logger) (*database.DB, error) {
+	db, err := database.NewDB(cfg.DatabaseDSN(), logger)
+	if err != nil {
+		return nil, err
+	}
+	// Run migrations after creating the database connection
+	if err := database.RunMigrations(cfg.DatabaseDSN(), cfg.MigrationsPath, logger); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+	return db, nil
+}
+
 func newTemplateManager() (*server.TemplateManager, error) {
 	return server.NewTemplateManager(templateFS)
 }
@@ -75,7 +78,21 @@ func newSessionStore(config *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(config.SessionSecret))
 }
 
-func registerRoutes(e *echo.Echo, handler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+func provideHandler(
+	logger *loggo.Logger,
+	store sessions.Store,
+	emailService email.Service,
+	tmplManager *server.TemplateManager,
+) *server.Handler {
+	return server.NewHandler(logger, store, emailService, tmplManager)
+}
+
+func registerRoutes(
+	e *echo.Echo,
+	handler *server.Handler,
+	campaignHandler *campaign.Handler,
+	userHandler *user.Handler,
+) {
 	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
 }
 
