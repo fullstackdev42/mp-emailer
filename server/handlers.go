@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -14,6 +15,7 @@ type Handler struct {
 	Store           sessions.Store
 	emailService    email.Service
 	templateManager *TemplateManager
+	userService     user.ServiceInterface
 }
 
 func NewHandler(
@@ -21,12 +23,14 @@ func NewHandler(
 	store sessions.Store,
 	emailService email.Service,
 	tmplManager *TemplateManager,
+	userService user.ServiceInterface,
 ) *Handler {
 	return &Handler{
 		Logger:          logger,
 		Store:           store,
 		emailService:    emailService,
 		templateManager: tmplManager,
+		userService:     userService,
 	}
 }
 

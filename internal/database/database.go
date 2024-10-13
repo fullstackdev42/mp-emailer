@@ -12,10 +12,10 @@ import (
 
 type DB struct {
 	SQL    *sql.DB
-	logger *loggo.Logger
+	logger loggo.LoggerInterface
 }
 
-func NewDB(dsn string, logger *loggo.Logger) (*DB, error) {
+func NewDB(dsn string, logger loggo.LoggerInterface) (*DB, error) {
 	logger.Debug("Attempting to connect to database with DSN: " + dsn)
 
 	db, err := sql.Open("mysql", dsn)

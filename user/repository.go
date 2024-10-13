@@ -9,10 +9,10 @@ import (
 
 type Repository struct {
 	db     *database.DB
-	logger *loggo.Logger
+	logger loggo.LoggerInterface
 }
 
-func NewRepository(db *database.DB, logger *loggo.Logger) *Repository {
+func NewRepository(db *database.DB, logger loggo.LoggerInterface) *Repository {
 	return &Repository{db: db, logger: logger}
 }
 

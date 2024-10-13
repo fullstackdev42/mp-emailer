@@ -13,7 +13,7 @@ type Handler struct {
 	logger  loggo.LoggerInterface
 }
 
-func NewHandler(service ServiceInterface, logger *loggo.Logger) *Handler {
+func NewHandler(service ServiceInterface, logger loggo.LoggerInterface) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,

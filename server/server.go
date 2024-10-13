@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func New(config *config.Config, logger *loggo.Logger, tmplManager *TemplateManager) *echo.Echo {
+func New(config *config.Config, logger loggo.LoggerInterface, tmplManager *TemplateManager) *echo.Echo {
 	e := echo.New()
 	e.Static("/static", "web/public")
 	e.Renderer = echo.Renderer(tmplManager)
@@ -20,7 +20,7 @@ func New(config *config.Config, logger *loggo.Logger, tmplManager *TemplateManag
 
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 	e.Use(session.Middleware(store))
-	e.Use(user.SetAuthStatusMiddleware(store, logger))
+	e.Use(user.SetAuthStatusMiddleware(store, logger.(*loggo.Logger)))
 
 	return e
 }

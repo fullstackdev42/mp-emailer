@@ -50,22 +50,21 @@ func main() {
 	app.Run()
 }
 
-func newLogger(config *config.Config) (*loggo.Logger, error) {
+func newLogger(config *config.Config) (loggo.LoggerInterface, error) {
 	logger, err := loggo.NewLogger("mp-emailer.log", config.GetLogLevel())
 	if err != nil {
 		return nil, err
 	}
-	return logger.(*loggo.Logger), nil
+	return logger, nil
 }
 
-func newDB(cfg *config.Config, logger *loggo.Logger) (*database.DB, error) {
-	db, err := database.NewDB(cfg.DatabaseDSN(), logger)
+func newDB(logger loggo.LoggerInterface, config *config.Config) (*database.DB, error) {
+	logger.Info("Initializing database connection")
+	dsn := config.DatabaseDSN()            // Get the DSN from the config
+	db, err := database.NewDB(dsn, logger) // Call NewDB with DSN and logger
 	if err != nil {
+		logger.Error("Failed to initialize database", err)
 		return nil, err
-	}
-	// Run migrations after creating the database connection
-	if err := database.RunMigrations(cfg.DatabaseDSN(), cfg.MigrationsPath, logger); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 	return db, nil
 }
@@ -79,12 +78,13 @@ func newSessionStore(config *config.Config) sessions.Store {
 }
 
 func provideHandler(
-	logger *loggo.Logger,
+	logger loggo.LoggerInterface,
 	store sessions.Store,
 	emailService email.Service,
 	tmplManager *server.TemplateManager,
+	userService user.ServiceInterface,
 ) *server.Handler {
-	return server.NewHandler(logger, store, emailService, tmplManager)
+	return server.NewHandler(logger.(*loggo.Logger), store, emailService, tmplManager, userService)
 }
 
 func registerRoutes(
