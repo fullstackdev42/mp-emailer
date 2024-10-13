@@ -9,20 +9,21 @@ import (
 )
 
 type Config struct {
-	AppDebug      string
-	AppEnv        string
-	AppPort       string
-	DBHost        string
-	DBName        string
-	DBPass        string
-	DBPort        string
-	DBUser        string
-	MailgunAPIKey string
-	MailgunDomain string
-	MailpitHost   string
-	MailpitPort   string
-	SessionSecret string
-	LogLevel      string
+	AppDebug       string
+	AppEnv         string
+	AppPort        string
+	DBHost         string
+	DBName         string
+	DBPass         string
+	DBPort         string
+	DBUser         string
+	MailgunAPIKey  string
+	MailgunDomain  string
+	MailpitHost    string
+	MailpitPort    string
+	MigrationsPath string
+	SessionSecret  string
+	LogLevel       string
 }
 
 func Load() (*Config, error) {
@@ -32,20 +33,21 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
-		AppDebug:      os.Getenv("APP_DEBUG"),
-		AppEnv:        os.Getenv("APP_ENV"),
-		AppPort:       os.Getenv("APP_PORT"),
-		DBHost:        os.Getenv("DB_HOST"),
-		DBName:        os.Getenv("DB_NAME"),
-		DBPass:        os.Getenv("DB_PASS"),
-		DBPort:        os.Getenv("DB_PORT"),
-		DBUser:        os.Getenv("DB_USER"),
-		MailgunAPIKey: os.Getenv("MAILGUN_API_KEY"),
-		MailgunDomain: os.Getenv("MAILGUN_DOMAIN"),
-		MailpitHost:   os.Getenv("MAILPIT_HOST"),
-		MailpitPort:   os.Getenv("MAILPIT_PORT"),
-		SessionSecret: os.Getenv("SESSION_SECRET"),
-		LogLevel:      os.Getenv("LOG_LEVEL"),
+		AppDebug:       os.Getenv("APP_DEBUG"),
+		AppEnv:         os.Getenv("APP_ENV"),
+		AppPort:        os.Getenv("APP_PORT"),
+		DBHost:         os.Getenv("DB_HOST"),
+		DBName:         os.Getenv("DB_NAME"),
+		DBPass:         os.Getenv("DB_PASS"),
+		DBPort:         os.Getenv("DB_PORT"),
+		DBUser:         os.Getenv("DB_USER"),
+		MailgunAPIKey:  os.Getenv("MAILGUN_API_KEY"),
+		MailgunDomain:  os.Getenv("MAILGUN_DOMAIN"),
+		MailpitHost:    os.Getenv("MAILPIT_HOST"),
+		MailpitPort:    os.Getenv("MAILPIT_PORT"),
+		MigrationsPath: os.Getenv("MIGRATIONS_PATH"),
+		SessionSecret:  os.Getenv("SESSION_SECRET"),
+		LogLevel:       os.Getenv("LOG_LEVEL"),
 	}
 
 	if config.AppDebug == "true" {
