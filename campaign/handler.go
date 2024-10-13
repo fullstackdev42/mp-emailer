@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -28,20 +29,19 @@ func (h *Handler) GetCampaign(c echo.Context) error {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 
-	// Convert the campaign template to template.HTML
 	campaignData := struct {
 		ID        int
 		Name      string
 		Template  template.HTML
-		CreatedAt string
-		UpdatedAt string
+		CreatedAt time.Time
+		UpdatedAt time.Time
 		OwnerID   int
 	}{
 		ID:        campaign.ID,
 		Name:      campaign.Name,
 		Template:  template.HTML(campaign.Template),
-		CreatedAt: campaign.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt: campaign.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt: campaign.CreatedAt,
+		UpdatedAt: campaign.UpdatedAt,
 		OwnerID:   campaign.OwnerID,
 	}
 
