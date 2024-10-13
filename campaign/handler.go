@@ -170,14 +170,29 @@ func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
 
-	postalCode := c.FormValue("postalCode")
+	// Log all form values
+	for key, values := range c.Request().Form {
+		h.logger.Debug("Form value", "key", key, "values", values)
+	}
+
+	postalCode := c.FormValue("postal_code") // Changed from "postalCode" to "postal_code"
+	h.logger.Debug("Raw postal code received", "postalCode", postalCode)
+
+	if postalCode == "" {
+		h.logger.Warn("Empty postal code submitted")
+		return echo.NewHTTPError(http.StatusBadRequest, "Postal code is required")
+	}
+
 	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
+	h.logger.Debug("Processed postal code", "postalCode", postalCode)
 
 	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
 	if !postalCodeRegex.MatchString(postalCode) {
-		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode)
+		h.logger.Warn("Invalid postal code submitted", "postalCode", postalCode, "regexPattern", postalCodeRegex.String())
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
 	}
+
+	h.logger.Info("Valid postal code received", "postalCode", postalCode)
 
 	mpFinder := NewMPFinder(h.client, h.logger)
 
