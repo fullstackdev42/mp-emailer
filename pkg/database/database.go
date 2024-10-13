@@ -11,7 +11,7 @@ import (
 )
 
 type DB struct {
-	*sql.DB
+	SQL    *sql.DB
 	logger loggo.LoggerInterface
 }
 
@@ -33,13 +33,13 @@ func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB
 		return nil, fmt.Errorf("error running migrations: %w", err)
 	}
 
-	return &DB{DB: db, logger: logger}, nil
+	return &DB{SQL: db, logger: logger}, nil
 }
 
 func (db *DB) UserExists(username, email string) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
-	err := db.QueryRow(query, username, email).Scan(&count)
+	err := db.SQL.QueryRow(query, username, email).Scan(&count)
 	if err != nil {
 		return false, fmt.Errorf("error checking user existence: %w", err)
 	}
@@ -48,7 +48,7 @@ func (db *DB) UserExists(username, email string) (bool, error) {
 
 func (db *DB) CreateUser(username, email, passwordHash string) error {
 	query := "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
-	_, err := db.Exec(query, username, email, passwordHash)
+	_, err := db.SQL.Exec(query, username, email, passwordHash)
 	if err != nil {
 		return fmt.Errorf("error creating user: %w", err)
 	}
@@ -59,7 +59,7 @@ func (db *DB) VerifyUser(username, password string) (string, error) {
 	var storedHash string
 	var userID string
 	query := "SELECT id, password_hash FROM users WHERE username = ?"
-	err := db.QueryRow(query, username).Scan(&userID, &storedHash)
+	err := db.SQL.QueryRow(query, username).Scan(&userID, &storedHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", fmt.Errorf("invalid username or password")

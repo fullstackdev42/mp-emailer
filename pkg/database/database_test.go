@@ -65,7 +65,7 @@ func TestNewDB(t *testing.T) {
 				t.Errorf("NewDB() returned nil, want non-nil")
 				return
 			}
-			if got.DB == nil {
+			if got.SQL == nil {
 				t.Errorf("NewDB() returned DB with nil sql.DB")
 			}
 			if got.logger != tt.args.logger {
@@ -96,7 +96,7 @@ func TestDB_UserExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &DB{
-				DB:     tt.fields.DB,
+				SQL:    tt.fields.DB,
 				logger: tt.fields.logger,
 			}
 			got, err := db.UserExists(tt.args.username, tt.args.email)
@@ -132,7 +132,7 @@ func TestDB_CreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &DB{
-				DB:     tt.fields.DB,
+				SQL:    tt.fields.DB,
 				logger: tt.fields.logger,
 			}
 			if err := db.CreateUser(tt.args.username, tt.args.email, tt.args.passwordHash); (err != nil) != tt.wantErr {
@@ -163,7 +163,7 @@ func TestDB_VerifyUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &DB{
-				DB:     tt.fields.DB,
+				SQL:    tt.fields.DB,
 				logger: tt.fields.logger,
 			}
 			got, err := db.VerifyUser(tt.args.username, tt.args.password)

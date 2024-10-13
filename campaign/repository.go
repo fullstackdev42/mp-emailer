@@ -1,24 +1,29 @@
-package database
+package campaign
 
 import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"github.com/fullstackdev42/mp-emailer/pkg/models"
 )
 
-func (db *DB) CreateCampaign(campaign *models.Campaign) error {
+type Repository struct {
+	db *sql.DB
+}
+
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) Create(campaign *Campaign) error {
 	query := `
-        INSERT INTO campaigns (name, template, owner_id)
-        VALUES (?, ?, ?)
-    `
-	result, err := db.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
+		INSERT INTO campaigns (name, template, owner_id)
+		VALUES (?, ?, ?)
+	`
+	result, err := r.db.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
 
-	// Get the auto-generated ID
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("error getting last insert ID: %w", err)
@@ -27,82 +32,67 @@ func (db *DB) CreateCampaign(campaign *models.Campaign) error {
 	return nil
 }
 
-func (db *DB) GetCampaigns() ([]models.Campaign, error) {
-	rows, err := db.Query("SELECT id, name, template, owner_id FROM campaigns")
+func (r *Repository) GetAll() ([]Campaign, error) {
+	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns"
+	rows, err := r.db.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
 	defer rows.Close()
 
-	var campaigns []models.Campaign
+	var campaigns []Campaign
 	for rows.Next() {
-		var campaign models.Campaign
-		err := rows.Scan(&campaign.ID, &campaign.Name, &campaign.Template, &campaign.OwnerID)
+		var c Campaign
+		var createdAt, updatedAt sql.NullString
+		err := rows.Scan(&c.ID, &c.Name, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning campaign: %w", err)
 		}
-		campaigns = append(campaigns, campaign)
+		c.CreatedAt, _ = parseDateTime(createdAt.String)
+		c.UpdatedAt, _ = parseDateTime(updatedAt.String)
+		campaigns = append(campaigns, c)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating campaigns: %w", err)
 	}
 
 	return campaigns, nil
 }
 
-func (db *DB) UpdateCampaign(campaign *models.Campaign) error {
-	query := "UPDATE campaigns SET name = ?, template = ? WHERE id = ?"
-	_, err := db.Exec(query, campaign.Name, campaign.Template, campaign.ID)
+func (r *Repository) Update(campaign *Campaign) error {
+	query := "UPDATE campaigns SET name = ?, template = ?, updated_at = NOW() WHERE id = ?"
+	_, err := r.db.Exec(query, campaign.Name, campaign.Template, campaign.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
 	return nil
 }
 
-func (db *DB) DeleteCampaign(id int) error {
+func (r *Repository) Delete(id int) error {
 	query := "DELETE FROM campaigns WHERE id = ?"
-	_, err := db.Exec(query, id)
+	_, err := r.db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
 	return nil
 }
 
-// GetCampaignByID retrieves a campaign by its ID
-func (db *DB) GetCampaignByID(id int) (*models.Campaign, error) {
+func (r *Repository) GetByID(id int) (*Campaign, error) {
 	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
-	row := db.QueryRow(query, id)
+	row := r.db.QueryRow(query, id)
 
+	var c Campaign
 	var createdAt, updatedAt sql.NullString
-	campaign := &models.Campaign{}
-
-	err := row.Scan(&campaign.ID, &campaign.Name, &campaign.Template, &campaign.OwnerID, &createdAt, &updatedAt)
+	err := row.Scan(&c.ID, &c.Name, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}
 
-	// Handle created_at
-	if createdAt.Valid {
-		campaign.CreatedAt, err = parseDateTime(createdAt.String)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing created_at: %w", err)
-		}
-	} else {
-		campaign.CreatedAt = time.Time{} // Zero value for time.Time
-	}
+	c.CreatedAt, _ = parseDateTime(createdAt.String)
+	c.UpdatedAt, _ = parseDateTime(updatedAt.String)
 
-	// Handle updated_at
-	if updatedAt.Valid {
-		campaign.UpdatedAt, err = parseDateTime(updatedAt.String)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing updated_at: %w", err)
-		}
-	} else {
-		campaign.UpdatedAt = time.Time{} // Zero value for time.Time
-	}
-
-	return campaign, nil
+	return &c, nil
 }
 
 func parseDateTime(dateStr string) (time.Time, error) {

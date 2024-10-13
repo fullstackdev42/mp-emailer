@@ -6,6 +6,7 @@ import (
 
 	"embed"
 
+	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/config"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
@@ -40,7 +41,7 @@ func main() {
 		logger.Error("Error connecting to database", err)
 		return
 	}
-	defer db.Close()
+	defer db.SQL.Close()
 
 	emailService := services.NewEmailService(config)
 
@@ -52,8 +53,6 @@ func main() {
 
 	// Log the current log level
 	logger.Info(fmt.Sprintf("Application started with log level: %v", config.GetLogLevel()))
-
-	//emailService := initializeEmailService(config)
 
 	client := api.NewClient(logger)
 
@@ -68,8 +67,12 @@ func main() {
 		tmplManager,
 	)
 
+	campaignRepo := campaign.NewRepository(db.SQL)
+	campaignService := campaign.NewService(campaignRepo)
+	campaignHandler := campaign.NewHandler(campaignService)
+
 	e := server.New(config, logger.(*loggo.Logger), db, tmplManager)
-	server.RegisterRoutes(e, handler)
+	server.RegisterRoutes(e, handler, campaignHandler)
 
 	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
 	if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {
