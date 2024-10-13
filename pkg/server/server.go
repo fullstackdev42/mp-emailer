@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/fullstackdev42/mp-emailer/pkg/config"
-	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -11,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func New(config *config.Config, logger *loggo.Logger, tmplManager *templates.TemplateManager) *echo.Echo {
+func New(config *config.Config, logger *loggo.Logger, tmplManager *TemplateManager) *echo.Echo {
 	e := echo.New()
 	e.Static("/static", "web/public")
 	e.Renderer = echo.Renderer(tmplManager)

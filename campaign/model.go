@@ -11,3 +11,14 @@ type Campaign struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Tokens    []string  `json:"tokens"`
 }
+
+type Representative struct {
+	Name          string `json:"name"`
+	ElectedOffice string `json:"elected_office"`
+	Email         string `json:"email"`
+	Party         string `json:"party"`
+}
+
+type APIResponse struct {
+	RepresentativesCentroid []Representative `json:"representatives_centroid"`
+}

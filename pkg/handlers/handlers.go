@@ -3,9 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/pkg/api"
+	"github.com/fullstackdev42/mp-emailer/pkg/server"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
-	"github.com/fullstackdev42/mp-emailer/pkg/templates"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -13,17 +12,15 @@ import (
 
 type Handler struct {
 	Logger          loggo.LoggerInterface
-	client          api.ClientInterface
 	Store           sessions.Store
 	emailService    services.EmailService
-	templateManager *templates.TemplateManager
+	templateManager *server.TemplateManager
 }
 
-func NewHandler(logger loggo.LoggerInterface, client api.ClientInterface, store sessions.Store, emailService services.EmailService, tmplManager *templates.TemplateManager) *Handler {
+func NewHandler(logger loggo.LoggerInterface, store sessions.Store, emailService services.EmailService, tmplManager *server.TemplateManager) *Handler {
 
 	return &Handler{
 		Logger:          logger,
-		client:          client,
 		Store:           store,
 		emailService:    emailService,
 		templateManager: tmplManager,

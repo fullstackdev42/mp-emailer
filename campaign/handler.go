@@ -9,26 +9,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fullstackdev42/mp-emailer/pkg/api"
-	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
-	service      *Service
-	logger       loggo.LoggerInterface
-	client       api.ClientInterface
-	emailService services.EmailService
+	service                     *Service
+	logger                      loggo.LoggerInterface
+	representativeLookupService *RepresentativeLookupService
+	emailService                services.EmailService
+	client                      ClientInterface
 }
 
-func NewHandler(service *Service, logger loggo.LoggerInterface, client api.ClientInterface, emailService services.EmailService) *Handler {
+func NewHandler(service *Service, logger loggo.LoggerInterface, representativeLookupService *RepresentativeLookupService, emailService services.EmailService, client ClientInterface) *Handler {
 	return &Handler{
-		service:      service,
-		logger:       logger,
-		client:       client,
-		emailService: emailService,
+		service:                     service,
+		logger:                      logger,
+		representativeLookupService: representativeLookupService,
+		emailService:                emailService,
+		client:                      client,
 	}
 }
 
@@ -179,7 +179,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid postal code format")
 	}
 
-	mpFinder := services.NewMPFinder(h.client, h.logger)
+	mpFinder := NewMPFinder(h.client, h.logger)
 
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
@@ -205,8 +205,36 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	return c.Render(http.StatusOK, "email.html", data)
 }
 
-func (h *Handler) composeEmail(mp models.Representative, campaign *Campaign) string {
+func (h *Handler) composeEmail(mp Representative, campaign *Campaign) string {
 	// Here you would use the campaign template and replace any placeholders
 	// with the MP's information. For now, we'll use a simple format:
 	return fmt.Sprintf("Dear %s,\n\n%s\n\nBest regards,\nYour constituent", mp.Name, campaign.Template)
+}
+
+func (h *Handler) HandleMPLookup(c echo.Context) error {
+	postalCode := c.FormValue("postalCode")
+	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Error fetching representatives")
+	}
+
+	return c.JSON(http.StatusOK, representatives)
+}
+
+func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
+	postalCode := c.FormValue("postalCode")
+	representativeType := c.FormValue("type") // e.g., "MP", "Premier", "Prime Minister"
+
+	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
+	if err != nil {
+		return h.handleError(err, http.StatusInternalServerError, "Error fetching representatives")
+	}
+
+	filters := map[string]string{
+		"type": representativeType,
+	}
+
+	filteredRepresentatives := h.representativeLookupService.FilterRepresentatives(representatives, filters)
+
+	return c.JSON(http.StatusOK, filteredRepresentatives)
 }

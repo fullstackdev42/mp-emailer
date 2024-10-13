@@ -1,4 +1,4 @@
-package server
+package routes
 
 import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -49,4 +49,7 @@ func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Ha
 	authGroup.POST("/campaigns/:id/delete", ch.DeleteCampaign)
 	authGroup.GET("/campaigns/:id/edit", ch.EditCampaignForm)
 	authGroup.POST("/campaigns/:id/edit", ch.EditCampaign)
+
+	// Add this new route
+	e.POST("/lookup-representatives", ch.HandleRepresentativeLookup)
 }
