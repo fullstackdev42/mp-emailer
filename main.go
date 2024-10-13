@@ -7,7 +7,7 @@ import (
 	"embed"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/pkg/config"
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	"github.com/fullstackdev42/mp-emailer/pkg/server"

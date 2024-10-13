@@ -1,6 +1,6 @@
 package services
 
-import "github.com/fullstackdev42/mp-emailer/pkg/config"
+import "github.com/fullstackdev42/mp-emailer/config"
 
 type EmailService interface {
 	SendEmail(to, subject, body string) error

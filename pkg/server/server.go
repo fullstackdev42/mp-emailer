@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/fullstackdev42/mp-emailer/pkg/config"
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
