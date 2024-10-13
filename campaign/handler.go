@@ -167,7 +167,7 @@ func (h *Handler) getOwnerIDFromSession(c echo.Context) (int, error) {
 	return ownerID, nil
 }
 
-func (h *Handler) HandleCampaignSubmit(c echo.Context) error {
+func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
 
 	postalCode := c.FormValue("postalCode")
