@@ -5,12 +5,14 @@ go 1.23
 require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/golang/mock v1.6.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jonesrussell/loggo v0.2.0
 	github.com/labstack/echo-contrib v0.17.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/mailgun/mailgun-go/v4 v4.16.0
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/fx v1.23.0
 	golang.org/x/crypto v0.28.0
 )
@@ -20,7 +22,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/samber/lo v1.47.0 // indirect
 	github.com/samber/slog-multi v1.2.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect

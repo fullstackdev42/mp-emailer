@@ -9,11 +9,11 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service ServiceInterface
 	logger  *loggo.Logger
 }
 
-func NewHandler(service *Service, logger *loggo.Logger) *Handler {
+func NewHandler(service ServiceInterface, logger *loggo.Logger) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,

@@ -7,6 +7,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type ServiceInterface interface {
+	RegisterUser(username, email, password string) error
+	VerifyUser(username, password string) (string, error)
+}
+
 type Service struct {
 	repo   *Repository
 	logger *loggo.Logger
