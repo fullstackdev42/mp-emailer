@@ -8,10 +8,10 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/pkg/database"
+	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	"github.com/fullstackdev42/mp-emailer/pkg/server"
-	"github.com/fullstackdev42/mp-emailer/pkg/services"
 	"github.com/fullstackdev42/mp-emailer/routes"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
@@ -43,7 +43,7 @@ func main() {
 	}
 	defer db.SQL.Close()
 
-	emailService := services.NewEmailService(config)
+	emailService := email.NewEmailService(config)
 
 	tmplManager, err := server.NewTemplateManager(templateFS)
 	if err != nil {

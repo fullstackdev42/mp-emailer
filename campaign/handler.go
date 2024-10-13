@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fullstackdev42/mp-emailer/pkg/services"
+	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
@@ -18,11 +18,11 @@ type Handler struct {
 	service                     *Service
 	logger                      loggo.LoggerInterface
 	representativeLookupService *RepresentativeLookupService
-	emailService                services.EmailService
+	emailService                email.Service
 	client                      ClientInterface
 }
 
-func NewHandler(service *Service, logger loggo.LoggerInterface, representativeLookupService *RepresentativeLookupService, emailService services.EmailService, client ClientInterface) *Handler {
+func NewHandler(service *Service, logger loggo.LoggerInterface, representativeLookupService *RepresentativeLookupService, emailService email.Service, client ClientInterface) *Handler {
 	return &Handler{
 		service:                     service,
 		logger:                      logger,
