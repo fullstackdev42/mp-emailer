@@ -12,10 +12,10 @@ import (
 
 type DB struct {
 	SQL    *sql.DB
-	logger loggo.LoggerInterface
+	logger *loggo.Logger
 }
 
-func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB, error) {
+func NewDB(dsn string, logger *loggo.Logger) (*DB, error) {
 	logger.Debug("Attempting to connect to database with DSN: " + dsn)
 
 	db, err := sql.Open("mysql", dsn)
@@ -28,10 +28,6 @@ func NewDB(dsn string, logger loggo.LoggerInterface, migrationsPath string) (*DB
 	}
 
 	logger.Info("Successfully connected to database")
-
-	if err := RunMigrations(dsn, migrationsPath, logger); err != nil {
-		return nil, fmt.Errorf("error running migrations: %w", err)
-	}
 
 	return &DB{SQL: db, logger: logger}, nil
 }

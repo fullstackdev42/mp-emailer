@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
+	"embed"
 	"fmt"
 	"net/http"
-
-	"embed"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
@@ -15,68 +15,100 @@ import (
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 //go:embed web/templates/* web/templates/partials/*
 var templateFS embed.FS
 
-const migrationsPath string = "./migrations"
-
 func main() {
-	config, err := config.Load()
-	if err != nil {
-		fmt.Printf("Error loading configuration: %v\n", err)
-		return
-	}
+	app := fx.New(
+		fx.Provide(
+			config.Load,
+			newLogger,
+			newDB,
+			email.NewEmailService,
+			newTemplateManager,
+			newSessionStore,
+			campaign.NewRepository,
+			campaign.NewService,
+			campaign.NewRepresentativeLookupService,
+			campaign.NewDefaultClient,
+			campaign.NewHandler,
+			user.NewRepository,
+			user.NewService,
+			user.NewHandler,
+			server.New,
+			provideHandler,
+		),
+		fx.Invoke(
+			registerRoutes,
+			startServer,
+		),
+	)
+	app.Run()
+}
 
+func newLogger(config *config.Config) (*loggo.Logger, error) {
 	logger, err := loggo.NewLogger("mp-emailer.log", config.GetLogLevel())
 	if err != nil {
-		fmt.Printf("Error initializing logger: %v\n", err)
-		return
+		return nil, err
 	}
+	return logger.(*loggo.Logger), nil
+}
 
-	db, err := database.NewDB(config.DatabaseDSN(), logger, migrationsPath)
+func newDB(cfg *config.Config, logger *loggo.Logger) (*database.DB, error) {
+	db, err := database.NewDB(cfg.DatabaseDSN(), logger)
 	if err != nil {
-		logger.Error("Error connecting to database", err)
-		return
+		return nil, err
 	}
-	defer db.SQL.Close()
-
-	emailService := email.NewEmailService(config)
-
-	tmplManager, err := server.NewTemplateManager(templateFS)
-	if err != nil {
-		logger.Error("Error initializing templates", err)
-		return
+	// Run migrations after creating the database connection
+	if err := database.RunMigrations(cfg.DatabaseDSN(), cfg.MigrationsPath, logger); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
+	return db, nil
+}
 
-	// Log the current log level
-	logger.Info(fmt.Sprintf("Application started with log level: %v", config.GetLogLevel()))
+func newTemplateManager() (*server.TemplateManager, error) {
+	return server.NewTemplateManager(templateFS)
+}
 
-	// Create a session store (you need to import and configure this)
-	store := sessions.NewCookieStore([]byte(config.SessionSecret))
+func newSessionStore(config *config.Config) sessions.Store {
+	return sessions.NewCookieStore([]byte(config.SessionSecret))
+}
 
-	handler := server.NewHandler(
-		logger,
-		store,
-		emailService,
-		tmplManager,
-	)
+func provideHandler(
+	logger *loggo.Logger,
+	store sessions.Store,
+	emailService email.Service,
+	tmplManager *server.TemplateManager,
+) *server.Handler {
+	return server.NewHandler(logger, store, emailService, tmplManager)
+}
 
-	campaignRepo := campaign.NewRepository(db.SQL)
-	campaignService := campaign.NewService(campaignRepo)
-	representativeLookupService := campaign.NewRepresentativeLookupService(logger)
-	defaultClient := campaign.NewDefaultClient(logger)
-	campaignHandler := campaign.NewHandler(campaignService, logger, representativeLookupService, emailService, defaultClient)
-	userRepo := user.NewRepository(db.SQL, logger.(*loggo.Logger))
-	userService := user.NewService(userRepo, logger.(*loggo.Logger))
-	userHandler := user.NewHandler(userService, logger.(*loggo.Logger))
-
-	e := server.New(config, logger.(*loggo.Logger), tmplManager)
+func registerRoutes(
+	e *echo.Echo,
+	handler *server.Handler,
+	campaignHandler *campaign.Handler,
+	userHandler *user.Handler,
+) {
 	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
+}
 
-	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
-	if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {
-		logger.Error("Error starting server", err)
-	}
+func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger *loggo.Logger) {
+	lc.Append(fx.Hook{
+		OnStart: func(_ context.Context) error {
+			go func() {
+				logger.Info(fmt.Sprintf("Starting server on :%s", config.AppPort))
+				if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {
+					logger.Error("Error starting server", err)
+				}
+			}()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			return e.Shutdown(ctx)
+		},
+	})
 }

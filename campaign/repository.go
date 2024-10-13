@@ -4,26 +4,24 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/fullstackdev42/mp-emailer/internal/database"
 )
 
 type Repository struct {
-	db *sql.DB
+	db *database.DB
 }
 
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db *database.DB) *Repository {
 	return &Repository{db: db}
 }
 
 func (r *Repository) Create(campaign *Campaign) error {
-	query := `
-		INSERT INTO campaigns (name, template, owner_id)
-		VALUES (?, ?, ?)
-	`
-	result, err := r.db.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
+	query := `INSERT INTO campaigns (name, template, owner_id)VALUES (?, ?, ?)`
+	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
-
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("error getting last insert ID: %w", err)
@@ -34,7 +32,7 @@ func (r *Repository) Create(campaign *Campaign) error {
 
 func (r *Repository) GetAll() ([]Campaign, error) {
 	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns"
-	rows, err := r.db.Query(query)
+	rows, err := r.db.SQL.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
@@ -62,7 +60,7 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 
 func (r *Repository) Update(campaign *Campaign) error {
 	query := "UPDATE campaigns SET name = ?, template = ?, updated_at = NOW() WHERE id = ?"
-	_, err := r.db.Exec(query, campaign.Name, campaign.Template, campaign.ID)
+	_, err := r.db.SQL.Exec(query, campaign.Name, campaign.Template, campaign.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
@@ -71,7 +69,7 @@ func (r *Repository) Update(campaign *Campaign) error {
 
 func (r *Repository) Delete(id int) error {
 	query := "DELETE FROM campaigns WHERE id = ?"
-	_, err := r.db.Exec(query, id)
+	_, err := r.db.SQL.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
@@ -80,7 +78,7 @@ func (r *Repository) Delete(id int) error {
 
 func (r *Repository) GetByID(id int) (*Campaign, error) {
 	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
-	row := r.db.QueryRow(query, id)
+	row := r.db.SQL.QueryRow(query, id)
 
 	var c Campaign
 	var createdAt, updatedAt sql.NullString

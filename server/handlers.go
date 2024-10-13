@@ -10,14 +10,18 @@ import (
 )
 
 type Handler struct {
-	Logger          loggo.LoggerInterface
+	Logger          *loggo.Logger
 	Store           sessions.Store
 	emailService    email.Service
 	templateManager *TemplateManager
 }
 
-func NewHandler(logger loggo.LoggerInterface, store sessions.Store, emailService email.Service, tmplManager *TemplateManager) *Handler {
-
+func NewHandler(
+	logger *loggo.Logger,
+	store sessions.Store,
+	emailService email.Service,
+	tmplManager *TemplateManager,
+) *Handler {
 	return &Handler{
 		Logger:          logger,
 		Store:           store,

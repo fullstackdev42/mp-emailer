@@ -10,10 +10,10 @@ import (
 
 type Handler struct {
 	service *Service
-	logger  loggo.LoggerInterface
+	logger  *loggo.Logger
 }
 
-func NewHandler(service *Service, logger loggo.LoggerInterface) *Handler {
+func NewHandler(service *Service, logger *loggo.Logger) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,

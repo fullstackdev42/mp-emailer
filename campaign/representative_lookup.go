@@ -11,11 +11,11 @@ import (
 )
 
 type RepresentativeLookupService struct {
-	logger  loggo.LoggerInterface
+	logger  *loggo.Logger
 	baseURL string
 }
 
-func NewRepresentativeLookupService(logger loggo.LoggerInterface) *RepresentativeLookupService {
+func NewRepresentativeLookupService(logger *loggo.Logger) *RepresentativeLookupService {
 	return &RepresentativeLookupService{
 		logger:  logger,
 		baseURL: "https://represent.opennorth.ca",
@@ -47,13 +47,11 @@ func (s *RepresentativeLookupService) FetchRepresentatives(postalCode string) ([
 		s.logger.Error("Error unmarshaling JSON", err)
 		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
-
 	return apiResp.RepresentativesCentroid, nil
 }
 
 func (s *RepresentativeLookupService) FilterRepresentatives(representatives []Representative, filters map[string]string) []Representative {
 	filtered := make([]Representative, 0)
-
 	for _, rep := range representatives {
 		match := true
 		for key, value := range filters {
@@ -82,6 +80,5 @@ func (s *RepresentativeLookupService) FilterRepresentatives(representatives []Re
 			filtered = append(filtered, rep)
 		}
 	}
-
 	return filtered
 }
