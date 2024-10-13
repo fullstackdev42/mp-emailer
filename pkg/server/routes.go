@@ -1,12 +1,13 @@
 package server
 
 import (
+	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
+func RegisterRoutes(e *echo.Echo, h *handlers.Handler, ch *campaign.Handler) {
 	// Public routes
 	e.GET("/", h.HandleIndex)
 	e.GET("/login", h.HandleLogin)
@@ -24,12 +25,18 @@ func RegisterRoutes(e *echo.Echo, h *handlers.Handler) {
 	authGroup.POST("/echo", h.HandleEcho)
 
 	// Campaign routes
-	e.GET("/campaigns/:id", h.HandleGetCampaign)
-	// (protected)
-	authGroup.GET("/campaigns", h.HandleGetCampaigns)
-	authGroup.GET("/campaigns/new", h.HandleCreateCampaign)
-	authGroup.POST("/campaigns/new", h.HandleCreateCampaign)
-	authGroup.POST("/campaigns/:id/delete", h.HandleDeleteCampaign)
-	authGroup.GET("/campaigns/:id/edit", h.HandleEditCampaign)
-	authGroup.POST("/campaigns/:id/edit", h.HandleEditCampaign)
+	registerCampaignRoutes(e, authGroup, ch)
+}
+
+func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
+	// Public campaign route
+	e.GET("/campaigns/:id", ch.GetCampaign)
+
+	// Protected campaign routes
+	authGroup.GET("/campaigns", ch.GetAllCampaigns)
+	authGroup.GET("/campaigns/new", ch.CreateCampaignForm)
+	authGroup.POST("/campaigns/new", ch.CreateCampaign)
+	authGroup.POST("/campaigns/:id/delete", ch.DeleteCampaign)
+	authGroup.GET("/campaigns/:id/edit", ch.EditCampaignForm)
+	authGroup.POST("/campaigns/:id/edit", ch.EditCampaign)
 }
