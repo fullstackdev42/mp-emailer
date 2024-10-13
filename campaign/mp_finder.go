@@ -1,33 +1,31 @@
-package services
+package campaign
 
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/pkg/api"
-	"github.com/fullstackdev42/mp-emailer/pkg/models"
 	"github.com/jonesrussell/loggo"
 )
 
 // MPFinder is a service that finds Members of Parliament (MPs) based on postal codes.
 type MPFinder struct {
-	client api.ClientInterface
+	client ClientInterface
 	logger loggo.LoggerInterface
 }
 
 // NewMPFinder creates a new instance of MPFinder.
-func NewMPFinder(client api.ClientInterface, logger loggo.LoggerInterface) *MPFinder {
+func NewMPFinder(client ClientInterface, logger loggo.LoggerInterface) *MPFinder {
 	return &MPFinder{client: client, logger: logger}
 }
 
 // FindMP finds the MP for a given postal code.
-func (f *MPFinder) FindMP(postalCode string) (models.Representative, error) {
+func (f *MPFinder) FindMP(postalCode string) (Representative, error) {
 	if f.client == nil {
-		return models.Representative{}, fmt.Errorf("API client is not initialized")
+		return Representative{}, fmt.Errorf("API client is not initialized")
 	}
 
 	representatives, err := f.client.FetchRepresentatives(postalCode)
 	if err != nil {
-		return models.Representative{}, fmt.Errorf("error fetching representatives for postal code %s: %w", postalCode, err)
+		return Representative{}, fmt.Errorf("error fetching representatives for postal code %s: %w", postalCode, err)
 	}
 
 	const mpOffice = "MP"
@@ -40,5 +38,5 @@ func (f *MPFinder) FindMP(postalCode string) (models.Representative, error) {
 	}
 
 	f.logger.Warn("No MP found for postal code", "postalCode", postalCode)
-	return models.Representative{}, fmt.Errorf("no MP found for postal code %s", postalCode)
+	return Representative{}, fmt.Errorf("no MP found for postal code %s", postalCode)
 }

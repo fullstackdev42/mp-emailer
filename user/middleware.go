@@ -1,4 +1,4 @@
-package middleware
+package user
 
 import (
 	"github.com/gorilla/sessions"

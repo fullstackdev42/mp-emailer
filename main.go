@@ -7,13 +7,13 @@ import (
 	"embed"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/pkg/api"
 	"github.com/fullstackdev42/mp-emailer/pkg/config"
 	"github.com/fullstackdev42/mp-emailer/pkg/database"
 	"github.com/fullstackdev42/mp-emailer/pkg/handlers"
 	"github.com/fullstackdev42/mp-emailer/pkg/server"
 	"github.com/fullstackdev42/mp-emailer/pkg/services"
-	"github.com/fullstackdev42/mp-emailer/pkg/templates"
+	"github.com/fullstackdev42/mp-emailer/routes"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 )
@@ -45,7 +45,7 @@ func main() {
 
 	emailService := services.NewEmailService(config)
 
-	tmplManager, err := templates.NewTemplateManager(templateFS)
+	tmplManager, err := server.NewTemplateManager(templateFS)
 	if err != nil {
 		logger.Error("Error initializing templates", err)
 		return
@@ -54,14 +54,11 @@ func main() {
 	// Log the current log level
 	logger.Info(fmt.Sprintf("Application started with log level: %v", config.GetLogLevel()))
 
-	client := api.NewClient(logger)
-
 	// Create a session store (you need to import and configure this)
-	store := sessions.NewCookieStore([]byte("your-secret-key"))
+	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 
 	handler := handlers.NewHandler(
 		logger,
-		client,
 		store,
 		emailService,
 		tmplManager,
@@ -69,10 +66,15 @@ func main() {
 
 	campaignRepo := campaign.NewRepository(db.SQL)
 	campaignService := campaign.NewService(campaignRepo)
-	campaignHandler := campaign.NewHandler(campaignService)
+	representativeLookupService := campaign.NewRepresentativeLookupService(logger)
+	defaultClient := campaign.NewDefaultClient(logger)
+	campaignHandler := campaign.NewHandler(campaignService, logger, representativeLookupService, emailService, defaultClient)
+	userRepo := user.NewRepository(db.SQL)
+	userService := user.NewService(userRepo)
+	userHandler := user.NewHandler(userService, logger)
 
-	e := server.New(config, logger.(*loggo.Logger), db, tmplManager)
-	server.RegisterRoutes(e, handler, campaignHandler)
+	e := server.New(config, logger.(*loggo.Logger), tmplManager)
+	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
 
 	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
 	if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {

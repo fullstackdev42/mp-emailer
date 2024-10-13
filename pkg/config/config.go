@@ -48,6 +48,10 @@ func Load() (*Config, error) {
 		LogLevel:      os.Getenv("LOG_LEVEL"),
 	}
 
+	if config.AppDebug == "true" {
+		config.LogLevel = "debug"
+	}
+
 	if config.SessionSecret == "" {
 		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
 	}

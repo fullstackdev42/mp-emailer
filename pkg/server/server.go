@@ -2,9 +2,7 @@ package server
 
 import (
 	"github.com/fullstackdev42/mp-emailer/pkg/config"
-	"github.com/fullstackdev42/mp-emailer/pkg/database"
-	appmid "github.com/fullstackdev42/mp-emailer/pkg/middleware"
-	"github.com/fullstackdev42/mp-emailer/pkg/templates"
+	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo-contrib/session"
@@ -12,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func New(config *config.Config, logger *loggo.Logger, db *database.DB, tmplManager *templates.TemplateManager) *echo.Echo {
+func New(config *config.Config, logger *loggo.Logger, tmplManager *TemplateManager) *echo.Echo {
 	e := echo.New()
 	e.Static("/static", "web/public")
 	e.Renderer = echo.Renderer(tmplManager)
@@ -22,17 +20,7 @@ func New(config *config.Config, logger *loggo.Logger, db *database.DB, tmplManag
 
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 	e.Use(session.Middleware(store))
-	e.Use(appmid.SetAuthStatusMiddleware(store, logger))
-	e.Use(dbMiddleware(db))
+	e.Use(user.SetAuthStatusMiddleware(store, logger))
 
 	return e
-}
-
-func dbMiddleware(db *database.DB) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("db", db)
-			return next(c)
-		}
-	}
 }
