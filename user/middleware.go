@@ -9,7 +9,7 @@ import (
 )
 
 // SetAuthStatusMiddleware sets the isAuthenticated status for all routes
-func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface) echo.MiddlewareFunc {
+func SetAuthStatusMiddleware(store sessions.Store, logger *loggo.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			isAuthenticated := checkAuthentication(c, store, logger)
@@ -20,7 +20,7 @@ func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface)
 }
 
 // RequireAuthMiddleware allows or denies access to protected routes
-func RequireAuthMiddleware(store sessions.Store, logger loggo.LoggerInterface) echo.MiddlewareFunc {
+func RequireAuthMiddleware(store sessions.Store, logger *loggo.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			isAuthenticated := checkAuthentication(c, store, logger)
@@ -32,7 +32,7 @@ func RequireAuthMiddleware(store sessions.Store, logger loggo.LoggerInterface) e
 	}
 }
 
-func checkAuthentication(c echo.Context, store sessions.Store, logger loggo.LoggerInterface) bool {
+func checkAuthentication(c echo.Context, store sessions.Store, logger *loggo.Logger) bool {
 	sess, err := store.Get(c.Request(), "mpe")
 	if err != nil {
 		logger.Error("Error getting session", err)

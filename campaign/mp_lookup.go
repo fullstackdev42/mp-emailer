@@ -10,10 +10,10 @@ import (
 )
 
 type MPLookupService struct {
-	logger loggo.LoggerInterface
+	logger *loggo.Logger
 }
 
-func NewMPLookupService(logger loggo.LoggerInterface) *MPLookupService {
+func NewMPLookupService(logger *loggo.Logger) *MPLookupService {
 	return &MPLookupService{logger: logger}
 }
 

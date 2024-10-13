@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	// Import the MySQL driver for database/sql
@@ -11,7 +12,15 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
+func RunMigrations(dsn string, migrationsPath string, logger *loggo.Logger) error {
+	// Log the migrations path for debugging
+	logger.Info("Migrations path: " + migrationsPath)
+
+	// Ensure the migrations directory exists
+	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
+		return fmt.Errorf("migrations directory does not exist: %s", migrationsPath)
+	}
+
 	m, err := migrate.New(
 		fmt.Sprintf("file://%s", migrationsPath),
 		fmt.Sprintf("mysql://%s", dsn),

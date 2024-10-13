@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"net/http"
-
-	"embed"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
@@ -28,7 +27,19 @@ func main() {
 		fx.Provide(
 			config.Load,
 			newLogger,
-			newDB,
+			func(cfg *config.Config, logger *loggo.Logger) (*database.DB, error) {
+				db, err := database.NewDB(cfg.DatabaseDSN(), logger)
+				if err != nil {
+					return nil, err
+				}
+
+				// Run migrations after creating the database connection
+				if err := database.RunMigrations(cfg.DatabaseDSN(), cfg.MigrationsPath, logger); err != nil {
+					return nil, fmt.Errorf("failed to run migrations: %w", err)
+				}
+
+				return db, nil
+			},
 			email.NewEmailService,
 			newTemplateManager,
 			newSessionStore,
@@ -45,7 +56,6 @@ func main() {
 		),
 		fx.Invoke(registerRoutes, startServer),
 	)
-
 	app.Run()
 }
 
@@ -55,10 +65,6 @@ func newLogger(config *config.Config) (*loggo.Logger, error) {
 		return nil, err
 	}
 	return logger.(*loggo.Logger), nil
-}
-
-func newDB(config *config.Config, logger *loggo.Logger) (*database.DB, error) {
-	return database.NewDB(config.DatabaseDSN(), logger, config.MigrationsPath)
 }
 
 func newTemplateManager() (*server.TemplateManager, error) {
