@@ -1,8 +1,13 @@
 {{template "header" .}}
 {{template "nav" .}}
-<main>
-    <h1>Email to Member of Parliament</h1>
-    <p>To: {{.Email}}</p>
-    <pre>{{.Content}}</pre>
+<main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-4">Email to Member of Parliament</h1>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <p class="mb-4"><strong>To:</strong> {{.Email}}</p>
+        <div class="border-t pt-4">
+            <h2 class="text-xl font-semibold mb-2">Email Content:</h2>
+            <div class="whitespace-pre-wrap">{{.Content}}</div>
+        </div>
+    </div>
 </main>
 {{template "footer" .}}

@@ -175,7 +175,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		h.logger.Debug("Form value", "key", key, "values", values)
 	}
 
-	postalCode := c.FormValue("postal_code") // Changed from "postalCode" to "postal_code"
+	postalCode := c.FormValue("postal_code")
 	h.logger.Debug("Raw postal code received", "postalCode", postalCode)
 
 	if postalCode == "" {
@@ -198,16 +198,33 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 
 	mp, err := mpFinder.FindMP(postalCode)
 	if err != nil {
+		h.logger.Error("Error finding MP", err)
 		return h.handleError(err, http.StatusInternalServerError, "Error finding MP")
 	}
+	h.logger.Debug("MP found", "name", mp.Name, "email", mp.Email)
 
 	campaignID := c.Param("id")
+	h.logger.Debug("Campaign ID", "id", campaignID)
 	campaign, err := h.service.GetCampaignByID(campaignID)
 	if err != nil {
+		h.logger.Error("Error fetching campaign", err)
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching campaign")
 	}
+	h.logger.Debug("Campaign fetched", "name", campaign.Name)
 
-	emailContent := h.composeEmail(mp, campaign)
+	userData := map[string]string{
+		"First Name":    c.FormValue("first_name"),
+		"Last Name":     c.FormValue("last_name"),
+		"Address 1":     c.FormValue("address_1"),
+		"City":          c.FormValue("city"),
+		"Province":      c.FormValue("province"),
+		"Postal Code":   c.FormValue("postal_code"),
+		"Email Address": c.FormValue("email"),
+	}
+	h.logger.Debug("User data", "userData", userData)
+
+	emailContent := h.composeEmail(mp, campaign, userData)
+	h.logger.Debug("Composed email content", "content", emailContent)
 
 	data := struct {
 		Email   string
@@ -216,18 +233,38 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		Email:   mp.Email,
 		Content: emailContent,
 	}
+	h.logger.Debug("Data for email template", "data", data)
 
-	return c.Render(http.StatusOK, "email.html", data)
+	err = c.Render(http.StatusOK, "email.html", data)
+	if err != nil {
+		h.logger.Error("Error rendering email template", err)
+		return h.handleError(err, http.StatusInternalServerError, "Error rendering email template")
+	}
+
+	h.logger.Info("Email template rendered successfully")
+	return nil
 }
 
-func (h *Handler) composeEmail(mp Representative, campaign *Campaign) string {
-	// Here you would use the campaign template and replace any placeholders
-	// with the MP's information. For now, we'll use a simple format:
-	return fmt.Sprintf("Dear %s,\n\n%s\n\nBest regards,\nYour constituent", mp.Name, campaign.Template)
+func (h *Handler) composeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
+	content := campaign.Template
+
+	// Replace MP information
+	content = strings.ReplaceAll(content, "{{MP's Name}}", mp.Name)
+
+	// Replace user information
+	for key, value := range userData {
+		content = strings.ReplaceAll(content, "{{"+key+"}}", value)
+	}
+
+	// Replace date
+	currentDate := time.Now().Format("January 2, 2006")
+	content = strings.ReplaceAll(content, "{{Date}}", currentDate)
+
+	return content
 }
 
 func (h *Handler) HandleMPLookup(c echo.Context) error {
-	postalCode := c.FormValue("postalCode")
+	postalCode := c.FormValue("postal_code")
 	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil {
 		return h.handleError(err, http.StatusInternalServerError, "Error fetching representatives")
@@ -237,7 +274,7 @@ func (h *Handler) HandleMPLookup(c echo.Context) error {
 }
 
 func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
-	postalCode := c.FormValue("postalCode")
+	postalCode := c.FormValue("postal_code")
 	representativeType := c.FormValue("type") // e.g., "MP", "Premier", "Prime Minister"
 
 	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
