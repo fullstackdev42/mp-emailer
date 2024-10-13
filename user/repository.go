@@ -3,35 +3,40 @@ package user
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/jonesrussell/loggo"
 )
 
 type Repository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *loggo.Logger
 }
 
-func NewRepository(db *sql.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *sql.DB, logger *loggo.Logger) *Repository {
+	return &Repository{db: db, logger: logger}
 }
 
 func (r *Repository) CreateUser(username, email, passwordHash string) error {
+	r.logger.Info(fmt.Sprintf("Creating user: %s", username))
 	query := "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
 	_, err := r.db.Exec(query, username, email, passwordHash)
 	if err != nil {
+		r.logger.Error(fmt.Sprintf("Error creating user: %s", username), err)
 		return fmt.Errorf("error creating user: %w", err)
 	}
 	return nil
 }
 
 func (r *Repository) GetUserByUsername(username string) (*User, error) {
-	query := "SELECT id, username, email, password_hash, created_at FROM users WHERE username = ?"
 	var user User
-	err := r.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt)
+
+	query := "SELECT id, username, password_hash FROM users WHERE username = ?"
+	err := r.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
-		}
+		r.logger.Error(fmt.Sprintf("Error getting user: %s", username), err)
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
+
 	return &user, nil
 }
 

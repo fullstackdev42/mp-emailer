@@ -68,9 +68,9 @@ func main() {
 	representativeLookupService := campaign.NewRepresentativeLookupService(logger)
 	defaultClient := campaign.NewDefaultClient(logger)
 	campaignHandler := campaign.NewHandler(campaignService, logger, representativeLookupService, emailService, defaultClient)
-	userRepo := user.NewRepository(db.SQL)
-	userService := user.NewService(userRepo)
-	userHandler := user.NewHandler(userService, logger)
+	userRepo := user.NewRepository(db.SQL, logger.(*loggo.Logger))
+	userService := user.NewService(userRepo, logger.(*loggo.Logger))
+	userHandler := user.NewHandler(userService, logger.(*loggo.Logger))
 
 	e := server.New(config, logger.(*loggo.Logger), tmplManager)
 	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
