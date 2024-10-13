@@ -58,7 +58,7 @@ func main() {
 	client := api.NewClient(logger)
 
 	// Create a session store (you need to import and configure this)
-	store := sessions.NewCookieStore([]byte("your-secret-key"))
+	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 
 	handler := handlers.NewHandler(
 		logger,
@@ -75,7 +75,7 @@ func main() {
 	userService := user.NewService(userRepo)
 	userHandler := user.NewHandler(userService, logger)
 
-	e := server.New(config, logger.(*loggo.Logger), db, tmplManager)
+	e := server.New(config, logger.(*loggo.Logger), tmplManager)
 	server.RegisterRoutes(e, handler, campaignHandler, userHandler)
 
 	logger.Info(fmt.Sprintf("Attempting to start server on :%s", config.AppPort))
