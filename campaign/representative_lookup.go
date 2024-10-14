@@ -11,13 +11,13 @@ import (
 )
 
 type RepresentativeLookupService struct {
-	logger  *loggo.Logger
+	logger  loggo.LoggerInterface
 	baseURL string
 }
 
-func NewRepresentativeLookupService(logger *loggo.Logger) *RepresentativeLookupService {
+func NewRepresentativeLookupService(logger loggo.LoggerInterface) *RepresentativeLookupService {
 	return &RepresentativeLookupService{
-		logger:  logger,
+		logger:  logger.(*loggo.Logger),
 		baseURL: "https://represent.opennorth.ca",
 	}
 }

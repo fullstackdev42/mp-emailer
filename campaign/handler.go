@@ -22,14 +22,14 @@ type Handler struct {
 
 func NewHandler(
 	service *Service,
-	logger *loggo.Logger,
+	logger loggo.LoggerInterface,
 	representativeLookupService *RepresentativeLookupService,
 	emailService email.Service,
 	client ClientInterface,
 ) *Handler {
 	return &Handler{
 		service:                     service,
-		logger:                      logger,
+		logger:                      logger.(*loggo.Logger),
 		representativeLookupService: representativeLookupService,
 		emailService:                emailService,
 		client:                      client,

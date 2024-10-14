@@ -96,7 +96,12 @@ func registerRoutes(
 	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
 }
 
-func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger *loggo.Logger) {
+func startServer(
+	lc fx.Lifecycle,
+	e *echo.Echo,
+	config *config.Config,
+	logger loggo.LoggerInterface,
+) {
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			go func() {

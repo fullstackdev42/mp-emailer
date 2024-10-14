@@ -12,11 +12,11 @@ type ClientInterface interface {
 // DefaultClient implements ClientInterface
 type DefaultClient struct {
 	lookupService *RepresentativeLookupService
-	logger        *loggo.Logger
+	logger        loggo.LoggerInterface
 }
 
 // NewDefaultClient creates a new DefaultClient
-func NewDefaultClient(logger *loggo.Logger) ClientInterface {
+func NewDefaultClient(logger loggo.LoggerInterface) ClientInterface {
 	return &DefaultClient{
 		lookupService: NewRepresentativeLookupService(logger),
 		logger:        logger,
