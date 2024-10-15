@@ -9,11 +9,11 @@ import (
 // MPFinder is a service that finds Members of Parliament (MPs) based on postal codes.
 type MPFinder struct {
 	client ClientInterface
-	logger *loggo.Logger
+	logger loggo.LoggerInterface
 }
 
 // NewMPFinder creates a new instance of MPFinder.
-func NewMPFinder(client ClientInterface, logger *loggo.Logger) *MPFinder {
+func NewMPFinder(client ClientInterface, logger loggo.LoggerInterface) *MPFinder {
 	return &MPFinder{client: client, logger: logger}
 }
 

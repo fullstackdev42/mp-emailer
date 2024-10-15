@@ -9,10 +9,14 @@ import (
 )
 
 // SetAuthStatusMiddleware sets the isAuthenticated status for all routes
-func SetAuthStatusMiddleware(store sessions.Store, logger *loggo.Logger) echo.MiddlewareFunc {
+func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			logger.Debug("SetAuthStatusMiddleware: Starting")
+
+			// Set the logger in the context
+			c.Set("logger", logger)
+
 			isAuthenticated := checkAuthentication(c, store, logger)
 			logger.Debug("SetAuthStatusMiddleware: Authentication check result", "isAuthenticated", isAuthenticated)
 			c.Set("isAuthenticated", isAuthenticated)
@@ -23,9 +27,15 @@ func SetAuthStatusMiddleware(store sessions.Store, logger *loggo.Logger) echo.Mi
 }
 
 // RequireAuthMiddleware allows or denies access to protected routes
-func RequireAuthMiddleware(store sessions.Store, logger *loggo.Logger) echo.MiddlewareFunc {
+func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			logger, ok := c.Get("logger").(loggo.LoggerInterface)
+			if !ok {
+				// If logger is not in context, use the provided logger
+				return fmt.Errorf("logger not found in context")
+			}
+
 			logger.Debug("RequireAuthMiddleware: Starting")
 			isAuthenticated := checkAuthentication(c, store, logger)
 			logger.Debug("RequireAuthMiddleware: Authentication check result", "isAuthenticated", isAuthenticated)
@@ -39,7 +49,7 @@ func RequireAuthMiddleware(store sessions.Store, logger *loggo.Logger) echo.Midd
 	}
 }
 
-func checkAuthentication(c echo.Context, store sessions.Store, logger *loggo.Logger) bool {
+func checkAuthentication(c echo.Context, store sessions.Store, logger loggo.LoggerInterface) bool {
 	logger.Debug("checkAuthentication: Starting")
 	sess, err := store.Get(c.Request(), "mpe")
 	if err != nil {
@@ -66,7 +76,11 @@ func checkAuthentication(c echo.Context, store sessions.Store, logger *loggo.Log
 
 // GetOwnerIDFromSession retrieves the owner ID from the session
 func GetOwnerIDFromSession(c echo.Context) (int, error) {
-	logger := c.Get("logger").(*loggo.Logger)
+	logger, ok := c.Get("logger").(loggo.LoggerInterface)
+	if !ok {
+		// If logger is not set return an error
+		return 0, fmt.Errorf("logger not found in context")
+	}
 	logger.Debug("GetOwnerIDFromSession: Starting")
 
 	ownerID, ok := c.Get("user_id").(int)

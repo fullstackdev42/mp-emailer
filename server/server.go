@@ -20,7 +20,7 @@ func New(config *config.Config, logger loggo.LoggerInterface, tmplManager *Templ
 
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 	e.Use(session.Middleware(store))
-	e.Use(user.SetAuthStatusMiddleware(store, logger.(*loggo.Logger)))
+	e.Use(user.SetAuthStatusMiddleware(store, logger))
 
 	return e
 }

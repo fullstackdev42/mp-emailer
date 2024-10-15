@@ -14,7 +14,7 @@ import (
 
 type Handler struct {
 	service                     *Service
-	logger                      *loggo.Logger
+	logger                      loggo.LoggerInterface
 	representativeLookupService *RepresentativeLookupService
 	emailService                email.Service
 	client                      ClientInterface
@@ -29,7 +29,7 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		service:                     service,
-		logger:                      logger.(*loggo.Logger),
+		logger:                      logger,
 		representativeLookupService: representativeLookupService,
 		emailService:                emailService,
 		client:                      client,

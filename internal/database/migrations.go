@@ -12,7 +12,7 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-func RunMigrations(dsn string, migrationsPath string, logger *loggo.Logger) error {
+func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
 	// Log the migrations path for debugging
 	logger.Info("Migrations path: " + migrationsPath)
 

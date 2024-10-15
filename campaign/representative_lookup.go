@@ -17,7 +17,7 @@ type RepresentativeLookupService struct {
 
 func NewRepresentativeLookupService(logger loggo.LoggerInterface) *RepresentativeLookupService {
 	return &RepresentativeLookupService{
-		logger:  logger.(*loggo.Logger),
+		logger:  logger,
 		baseURL: "https://represent.opennorth.ca",
 	}
 }

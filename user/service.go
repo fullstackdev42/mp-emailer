@@ -43,8 +43,12 @@ func (s *Service) VerifyUser(username, password string) (string, error) {
 
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
+		if err.Error() == "user not found" {
+			s.logger.Warn(fmt.Sprintf("User not found: %s", username))
+			return "", fmt.Errorf("invalid username or password")
+		}
 		s.logger.Error(fmt.Sprintf("Error getting user: %s", username), err)
-		return "", fmt.Errorf("error getting user: %w", err)
+		return "", fmt.Errorf("error verifying user: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))

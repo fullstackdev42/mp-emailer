@@ -16,7 +16,7 @@ func RegisterRoutes(e *echo.Echo, h *server.Handler, ch *campaign.Handler, uh *u
 
 	// Protected routes
 	authGroup := e.Group("")
-	authGroup.Use(user.RequireAuthMiddleware(h.Store, h.Logger))
+	authGroup.Use(user.RequireAuthMiddleware(h.Store))
 	authGroup.POST("/echo", h.HandleEcho)
 
 	// Campaign routes

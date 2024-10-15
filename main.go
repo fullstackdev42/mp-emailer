@@ -84,7 +84,13 @@ func provideHandler(
 	tmplManager *server.TemplateManager,
 	userService user.ServiceInterface,
 ) *server.Handler {
-	return server.NewHandler(logger.(*loggo.Logger), store, emailService, tmplManager, userService)
+	return server.NewHandler(
+		logger,
+		store,
+		emailService,
+		tmplManager,
+		userService,
+	)
 }
 
 func registerRoutes(

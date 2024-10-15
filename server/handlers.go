@@ -11,7 +11,7 @@ import (
 )
 
 type Handler struct {
-	Logger          *loggo.Logger
+	Logger          loggo.LoggerInterface
 	Store           sessions.Store
 	emailService    email.Service
 	templateManager *TemplateManager
@@ -19,7 +19,7 @@ type Handler struct {
 }
 
 func NewHandler(
-	logger *loggo.Logger,
+	logger loggo.LoggerInterface,
 	store sessions.Store,
 	emailService email.Service,
 	tmplManager *TemplateManager,

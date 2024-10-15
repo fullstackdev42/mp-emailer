@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
@@ -32,10 +33,13 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	query := "SELECT id, username, password_hash FROM users WHERE username = ?"
 	err := r.db.SQL.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			r.logger.Warn(fmt.Sprintf("User not found: %s", username))
+			return nil, fmt.Errorf("user not found")
+		}
 		r.logger.Error(fmt.Sprintf("Error getting user: %s", username), err)
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
-
 	return &user, nil
 }
 
@@ -44,7 +48,7 @@ func (r *Repository) UserExists(username, email string) (bool, error) {
 	var count int
 	err := r.db.SQL.QueryRow(query, username, email).Scan(&count)
 	if err != nil {
-		r.logger.Error("Error checking user existence", err)
+		r.logger.Error(fmt.Sprintf("Error checking user existence: %s, %s", username, email), err)
 		return false, fmt.Errorf("error checking user existence: %w", err)
 	}
 	return count > 0, nil
