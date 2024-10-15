@@ -28,22 +28,28 @@ func NewHandler(
 }
 
 func (h *Handler) HandleRegister(c echo.Context) error {
-	if c.Request().Method == http.MethodGet {
-		return c.Render(http.StatusOK, "register.html", nil)
+	var input struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
-	username := c.FormValue("username")
-	email := c.FormValue("email")
-	password := c.FormValue("password")
-	err := h.service.RegisterUser(username, email, password)
-	if err != nil {
-		h.logger.Error("Registration error", err)
-		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
-			"Error": err.Error(),
-		})
+	if err := c.Bind(&input); err != nil {
+		h.logger.Warn("Invalid request body", err, []interface{}{})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid request body"})
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/login")
+	if input.Username == "" || input.Password == "" || input.Email == "" {
+		h.logger.Warn("Missing required fields", nil, []interface{}{input})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Username, password, and email are required"})
+	}
+	if err := h.service.RegisterUser(input.Username, input.Password, input.Email); err != nil {
+		h.logger.Error("Failed to register user", err, []interface{}{})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to register user"})
+	}
+
+	h.logger.Debug("User registered successfully", nil, []interface{}{input.Username})
+	return c.JSON(http.StatusCreated, map[string]string{"message": "User registered successfully"})
 }
 
 func (h *Handler) HandleLogin(c echo.Context) error {

@@ -70,6 +70,93 @@ func (m *mockSessionStore) Save(_ *http.Request, _ http.ResponseWriter, s *sessi
 
 const testSessionName = "test_session"
 
+func TestHandler_HandleRegister(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupMock      func(*MockService, *loggo.MockLogger)
+		inputBody      string
+		wantStatusCode int
+		wantBody       string
+	}{
+		{
+			name: "Successful registration",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("RegisterUser", "newuser", "password123", "newuser@example.com").Return(nil)
+				ml.On("Debug", "User registered successfully", mock.AnythingOfType("[]interface {}")).Return()
+			},
+			inputBody:      `{"username":"newuser","password":"password123","email":"newuser@example.com"}`,
+			wantStatusCode: http.StatusCreated,
+			wantBody:       `{"message":"User registered successfully"}`,
+		},
+		{
+			name: "Invalid JSON",
+			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+				ml.On("Warn", "Invalid request body", mock.Anything).Return()
+			},
+			inputBody:      `{"username":"newuser","password":"password123","email":}`,
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       `{"message":"Invalid request body"}`,
+		},
+		{
+			name: "Missing required fields",
+			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+				ml.On("Warn", "Missing required fields", mock.AnythingOfType("[]interface {}")).Return()
+			},
+			inputBody:      `{"username":"newuser","password":""}`,
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       `{"message":"Username, password, and email are required"}`,
+		},
+		{
+			name: "User already exists",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("RegisterUser", "existinguser", "password123", "existing@example.com").Return(fmt.Errorf("user already exists"))
+				ml.On("Error", "Failed to register user", mock.AnythingOfType("*errors.errorString"), mock.AnythingOfType("[]interface {}")).Return()
+			},
+			inputBody:      `{"username":"existinguser","password":"password123","email":"existing@example.com"}`,
+			wantStatusCode: http.StatusInternalServerError,
+			wantBody:       `{"message":"Failed to register user"}`,
+		},
+		{
+			name: "Internal server error",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("RegisterUser", "newuser", "password123", "newuser@example.com").Return(fmt.Errorf("database error"))
+				ml.On("Error", "Failed to register user", mock.AnythingOfType("*errors.errorString"), mock.AnythingOfType("[]interface {}")).Return()
+			},
+			inputBody:      `{"username":"newuser","password":"password123","email":"newuser@example.com"}`,
+			wantStatusCode: http.StatusInternalServerError,
+			wantBody:       `{"message":"Failed to register user"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := new(MockService)
+			mockLogger := new(loggo.MockLogger)
+
+			if tt.setupMock != nil {
+				tt.setupMock(mockService, mockLogger)
+			}
+
+			handler := NewHandler(mockService, mockLogger, &config.Config{})
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(tt.inputBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			err := handler.HandleRegister(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantStatusCode, rec.Code)
+			assert.JSONEq(t, tt.wantBody, rec.Body.String())
+
+			mockService.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
+}
+
 func TestHandler_HandleLogin(t *testing.T) {
 	tests := []struct {
 		name           string
