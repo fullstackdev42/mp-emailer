@@ -28,10 +28,8 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("error loading .env file: %v", err)
-	}
+	// Load .env file if it exists, but don't return an error if it doesn't
+	_ = godotenv.Load()
 
 	config := &Config{
 		AppDebug:       os.Getenv("APP_DEBUG"),
@@ -52,16 +50,18 @@ func Load() (*Config, error) {
 		LogLevel:       os.Getenv("LOG_LEVEL"),
 	}
 
+	// Set default values or perform validations
 	if config.AppDebug == "true" {
 		config.LogLevel = "debug"
 	}
-
 	if config.SessionSecret == "" {
 		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
 	}
-
 	if config.AppPort == "" {
-		config.AppPort = "8080"
+		config.AppPort = "8080" // Set default port
+	}
+	if config.LogLevel == "" {
+		config.LogLevel = "info" // Set default log level
 	}
 
 	return config, nil
