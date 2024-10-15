@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -56,29 +57,13 @@ func NewHandler(
 func (h *Handler) GetCampaign(c echo.Context) error {
 	id := c.Param("id")
 	campaign, err := h.service.GetCampaignByID(id)
-
 	if err != nil {
-		var status int
-		var msg string
-
-		if err == echo.ErrNotFound {
-			status = http.StatusNotFound
-			msg = "Campaign not found"
-		} else {
-			status = http.StatusInternalServerError
-			msg = "Internal server error"
+		if errors.Is(err, echo.ErrNotFound) {
+			return c.NoContent(http.StatusNotFound)
 		}
-
-		h.logger.Error(msg, err)
-		return c.Render(status, "error.html", map[string]interface{}{
-			"Error": msg,
-		})
+		return c.String(http.StatusInternalServerError, "Internal server error")
 	}
-
-	return c.Render(http.StatusOK, "campaign_detail.html", map[string]interface{}{
-		"Campaign": campaign,
-		"Template": template.HTML(campaign.Template),
-	})
+	return c.JSON(http.StatusOK, campaign)
 }
 
 func (h *Handler) GetAllCampaigns(c echo.Context) error {
