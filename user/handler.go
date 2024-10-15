@@ -3,6 +3,7 @@ package user
 import (
 	"net/http"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -11,12 +12,14 @@ import (
 type Handler struct {
 	service ServiceInterface
 	logger  loggo.LoggerInterface
+	config  *config.Config
 }
 
-func NewHandler(service ServiceInterface, logger loggo.LoggerInterface) *Handler {
+func NewHandler(service ServiceInterface, logger loggo.LoggerInterface, config *config.Config) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,
+		config:  config,
 	}
 }
 
@@ -61,7 +64,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
 	}
 
-	sess, err := session.Get("mpe", c)
+	sess, err := session.Get(h.config.SessionName, c)
 	if err != nil {
 		h.logger.Error("Failed to get session", err)
 		return c.String(http.StatusInternalServerError, "Failed to get session")
@@ -78,7 +81,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
-	sess, err := session.Get("mpe", c)
+	sess, err := session.Get(h.config.SessionName, c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to get session")
 	}

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -59,6 +60,8 @@ func (m *mockSessionStore) Save(_ *http.Request, _ http.ResponseWriter, s *sessi
 	return nil
 }
 
+const testSessionName = "test_session"
+
 func TestHandler_HandleLogin(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -69,7 +72,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		wantStatusCode int
 		wantBody       string
 		wantRedirect   string
-		checkSession   func(*testing.T, *http.Response, *mockSessionStore)
+		checkSession   func(*testing.T, *http.Response, *mockSessionStore, *config.Config)
 	}{
 		{
 			name: "Successful login",
@@ -82,11 +85,9 @@ func TestHandler_HandleLogin(t *testing.T) {
 			password:       "validpass",
 			wantStatusCode: http.StatusSeeOther,
 			wantRedirect:   "/campaigns",
-			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore) {
-				sess, ok := mss.sessions["mpe"]
+			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore, cfg *config.Config) {
+				sess, ok := mss.sessions[cfg.SessionName]
 				assert.True(t, ok, "Session should be created")
-				assert.Equal(t, "123", sess.Values["userID"])
-				assert.Equal(t, "validuser", sess.Values["username"])
 				assert.Equal(t, "123", sess.Values["userID"])
 				assert.Equal(t, "validuser", sess.Values["username"])
 			},
@@ -140,12 +141,12 @@ func TestHandler_HandleLogin(t *testing.T) {
 			password:       "validpass",
 			wantStatusCode: http.StatusSeeOther,
 			wantRedirect:   "/campaigns",
-			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore) {
-				_, ok := mss.sessions["mpe"]
+			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore, cfg *config.Config) {
+				_, ok := mss.sessions[cfg.SessionName]
 				assert.True(t, ok, "Session should be created")
 				// Simulate session expiration
-				delete(mss.sessions, "mpe")
-				_, ok = mss.sessions["mpe"]
+				delete(mss.sessions, cfg.SessionName)
+				_, ok = mss.sessions[cfg.SessionName]
 				assert.False(t, ok, "Session should be expired")
 			},
 		},
@@ -161,7 +162,10 @@ func TestHandler_HandleLogin(t *testing.T) {
 				tt.setupMock(mockService, mockLogger)
 			}
 
-			handler := NewHandler(mockService, mockLogger)
+			config := &config.Config{
+				SessionName: testSessionName,
+			}
+			handler := NewHandler(mockService, mockLogger, config)
 
 			e := echo.New()
 			req := httptest.NewRequest(tt.method, "/login", strings.NewReader(url.Values{
@@ -186,7 +190,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 				assert.Equal(t, tt.wantStatusCode, rec.Code)
 				assert.Equal(t, tt.wantRedirect, rec.Header().Get("Location"))
 				if tt.checkSession != nil {
-					tt.checkSession(t, rec.Result(), mockSessionStore)
+					tt.checkSession(t, rec.Result(), mockSessionStore, config)
 				}
 			} else {
 				if assert.Error(t, err) {

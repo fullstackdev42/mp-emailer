@@ -22,6 +22,7 @@ type Config struct {
 	MailpitHost    string
 	MailpitPort    string
 	MigrationsPath string
+	SessionName    string
 	SessionSecret  string
 	LogLevel       string
 }
@@ -46,6 +47,7 @@ func Load() (*Config, error) {
 		MailpitHost:    os.Getenv("MAILPIT_HOST"),
 		MailpitPort:    os.Getenv("MAILPIT_PORT"),
 		MigrationsPath: os.Getenv("MIGRATIONS_PATH"),
+		SessionName:    os.Getenv("SESSION_NAME"),
 		SessionSecret:  os.Getenv("SESSION_SECRET"),
 		LogLevel:       os.Getenv("LOG_LEVEL"),
 	}
