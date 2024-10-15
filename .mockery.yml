@@ -1,0 +1,13 @@
+with-expecter: true
+packages:
+  github.com/fullstackdev42/mp-emailer/user:
+    interfaces:
+      ServiceInterface:
+  github.com/fullstackdev42/mp-emailer/campaign:
+    interfaces:
+      ServiceInterface:
+      RepresentativeLookupServiceInterface:
+      ClientInterface:
+  github.com/fullstackdev42/mp-emailer/email:
+    interfaces:
+      Service:
