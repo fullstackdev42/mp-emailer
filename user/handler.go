@@ -53,9 +53,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Warn("Login failed for user: " + username)
-		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
-			"Error": "Invalid username or password",
-		})
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
 	}
 
 	sess, err := session.Get("mpe", c)

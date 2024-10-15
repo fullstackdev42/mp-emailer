@@ -1,7 +1,6 @@
 package user
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -50,11 +49,10 @@ func TestHandler_HandleLogin(t *testing.T) {
 		{
 			name: "Invalid credentials",
 			setupMock: func() {
-				mockService.On("VerifyUser", "testuser", "wrongpassword").Return("", echo.NewHTTPError(http.StatusUnauthorized, map[string]string{"error": "Invalid username or password"}))
+				mockService.On("VerifyUser", "testuser", "wrongpassword").Return("", echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password"))
 				mockLogger.EXPECT().Debug("HandleLogin called with method: POST").Times(1)
 				mockLogger.EXPECT().Debug("Login attempt for username: testuser").Times(1)
 				mockLogger.EXPECT().Warn("Login failed for user: testuser").Times(1)
-				mockLogger.EXPECT().Error("Invalid username or password", gomock.Any()).Times(1)
 			},
 			wantStatusCode: http.StatusUnauthorized,
 			wantBody:       "Invalid username or password",
@@ -77,25 +75,13 @@ func TestHandler_HandleLogin(t *testing.T) {
 				httpError, ok := err.(*echo.HTTPError)
 				if ok {
 					assert.Equal(t, tt.wantStatusCode, httpError.Code)
-					// Directly assert the map
-					responseBody, ok := httpError.Message.(map[string]string)
-					if ok {
-						assert.Contains(t, responseBody["error"], tt.wantBody)
-					} else {
-						t.Fatalf("expected map[string]string, got %T", httpError.Message)
-					}
+					assert.Contains(t, httpError.Message, tt.wantBody)
 				} else {
 					t.Fatalf("expected HTTPError, got %v", err)
 				}
 			} else {
 				assert.Equal(t, tt.wantStatusCode, rec.Code)
-				// Parse the JSON response
-				var responseBody map[string]string
-				if err := json.Unmarshal(rec.Body.Bytes(), &responseBody); err == nil {
-					assert.Contains(t, responseBody["error"], tt.wantBody)
-				} else {
-					t.Fatalf("failed to parse JSON response: %v", err)
-				}
+				assert.Contains(t, rec.Body.String(), tt.wantBody)
 			}
 
 			mockService.AssertExpectations(t)
