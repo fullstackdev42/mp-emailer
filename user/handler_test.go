@@ -1,13 +1,14 @@
 package user
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -28,63 +29,154 @@ func (m *MockService) RegisterUser(username, password, email string) error {
 	return args.Error(0)
 }
 
-func TestHandler_HandleLogin(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+type mockSessionStore struct {
+	sessions map[string]*sessions.Session
+}
 
-	mockLogger := loggo.NewMockLogger(ctrl)
-	mockService := new(MockService)
-
-	h := &Handler{
-		service: mockService,
-		logger:  mockLogger,
+func newMockSessionStore() *mockSessionStore {
+	return &mockSessionStore{
+		sessions: make(map[string]*sessions.Session),
 	}
+}
 
+func (m *mockSessionStore) Get(r *http.Request, name string) (*sessions.Session, error) {
+	session, ok := m.sessions[name]
+	if !ok {
+		session = sessions.NewSession(m, name)
+		m.sessions[name] = session
+	}
+	return session, nil
+}
+
+func (m *mockSessionStore) New(r *http.Request, name string) (*sessions.Session, error) {
+	session := sessions.NewSession(m, name)
+	m.sessions[name] = session
+	return session, nil
+}
+
+func (m *mockSessionStore) Save(r *http.Request, w http.ResponseWriter, s *sessions.Session) error {
+	m.sessions[s.Name()] = s
+	return nil
+}
+
+func TestHandler_HandleLogin(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func()
+		setupMock      func(*MockService, *loggo.MockLogger)
+		method         string
+		username       string
+		password       string
 		wantStatusCode int
 		wantBody       string
+		wantRedirect   string
+		checkSession   func(*testing.T, *http.Response, *mockSessionStore)
 	}{
 		{
-			name: "Invalid credentials",
-			setupMock: func() {
-				mockService.On("VerifyUser", "testuser", "wrongpassword").Return("", echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password"))
-				mockLogger.EXPECT().Debug("HandleLogin called with method: POST").Times(1)
-				mockLogger.EXPECT().Debug("Login attempt for username: testuser").Times(1)
-				mockLogger.EXPECT().Warn("Login failed for user: testuser").Times(1)
+			name: "Successful login",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("VerifyUser", "validuser", "validpass").Return("123", nil)
+				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 			},
+			method:         http.MethodPost,
+			username:       "validuser",
+			password:       "validpass",
+			wantStatusCode: http.StatusSeeOther,
+			wantRedirect:   "/campaigns",
+			checkSession: func(t *testing.T, resp *http.Response, mss *mockSessionStore) {
+				sess, ok := mss.sessions["mpe"]
+				assert.True(t, ok, "Session should be created")
+				assert.Equal(t, "123", sess.Values["userID"])
+				assert.Equal(t, "validuser", sess.Values["username"])
+			},
+		},
+		{
+			name: "Invalid credentials",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("VerifyUser", "testuser", "wrongpassword").Return("", fmt.Errorf("invalid username or password"))
+				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
+				ml.On("Warn", mock.Anything, mock.Anything).Return()
+			},
+			method:         http.MethodPost,
+			username:       "testuser",
+			password:       "wrongpassword",
 			wantStatusCode: http.StatusUnauthorized,
 			wantBody:       "Invalid username or password",
+		},
+		{
+			name: "Empty username",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
+				ml.On("Warn", mock.Anything, mock.Anything).Return()
+			},
+			method:         http.MethodPost,
+			username:       "",
+			password:       "somepassword",
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "Username and password are required",
+		},
+		{
+			name: "Empty password",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
+				ml.On("Warn", mock.Anything, mock.Anything).Return()
+			},
+			method:         http.MethodPost,
+			username:       "someuser",
+			password:       "",
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "Username and password are required",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
+			mockService := new(MockService)
+			mockLogger := new(loggo.MockLogger)
+			mockSessionStore := newMockSessionStore()
+
+			if tt.setupMock != nil {
+				tt.setupMock(mockService, mockLogger)
+			}
+
+			handler := NewHandler(mockService, mockLogger)
 
 			e := echo.New()
-			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(url.Values{"username": {"testuser"}, "password": {"wrongpassword"}}.Encode()))
+			req := httptest.NewRequest(tt.method, "/login", strings.NewReader(url.Values{
+				"username": {tt.username},
+				"password": {tt.password},
+			}.Encode()))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			err := h.HandleLogin(c)
+			// Set up the session store
+			c.Set("_session_store", mockSessionStore)
 
-			if err != nil {
-				httpError, ok := err.(*echo.HTTPError)
-				if ok {
-					assert.Equal(t, tt.wantStatusCode, httpError.Code)
-					assert.Contains(t, httpError.Message, tt.wantBody)
-				} else {
-					t.Fatalf("expected HTTPError, got %v", err)
+			err := handler.HandleLogin(c)
+
+			t.Logf("Response status: %d", rec.Code)
+			t.Logf("Response headers: %+v", rec.Header())
+			t.Logf("Response body: %s", rec.Body.String())
+
+			if tt.wantStatusCode == http.StatusSeeOther {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantStatusCode, rec.Code)
+				assert.Equal(t, tt.wantRedirect, rec.Header().Get("Location"))
+				if tt.checkSession != nil {
+					tt.checkSession(t, rec.Result(), mockSessionStore)
 				}
 			} else {
-				assert.Equal(t, tt.wantStatusCode, rec.Code)
-				assert.Contains(t, rec.Body.String(), tt.wantBody)
+				if assert.Error(t, err) {
+					httpError, ok := err.(*echo.HTTPError)
+					if assert.True(t, ok) {
+						assert.Equal(t, tt.wantStatusCode, httpError.Code)
+						assert.Equal(t, tt.wantBody, httpError.Message)
+					}
+				}
 			}
 
 			mockService.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
 		})
 	}
 }

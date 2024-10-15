@@ -50,6 +50,11 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	h.logger.Debug("HandleLogin called with method: POST")
 	h.logger.Debug("Login attempt for username: " + username)
 
+	if username == "" || password == "" {
+		h.logger.Warn("Login attempt with empty username or password")
+		return echo.NewHTTPError(http.StatusBadRequest, "Username and password are required")
+	}
+
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Warn("Login failed for user: " + username)
