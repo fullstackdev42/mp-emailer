@@ -70,6 +70,27 @@ func (m *mockSessionStore) Save(_ *http.Request, _ http.ResponseWriter, s *sessi
 
 const testSessionName = "test_session"
 
+func TestNewHandler(t *testing.T) {
+	// Create mock dependencies
+	mockService := new(MockService)
+	mockLogger := new(loggo.MockLogger)
+	mockConfig := &config.Config{}
+
+	// Call NewHandler
+	handler := NewHandler(mockService, mockLogger, mockConfig)
+
+	// Assert that the handler is not nil
+	assert.NotNil(t, handler)
+
+	// Assert that the handler has the correct type
+	assert.IsType(t, &Handler{}, handler)
+
+	// Assert that the handler's fields are set correctly
+	assert.Equal(t, mockService, handler.service)
+	assert.Equal(t, mockLogger, handler.logger)
+	assert.Equal(t, mockConfig, handler.config)
+}
+
 func TestHandler_HandleRegister(t *testing.T) {
 	tests := []struct {
 		name           string
