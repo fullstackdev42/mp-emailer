@@ -16,17 +16,22 @@ func TestLoad(t *testing.T) {
 
 		// Set up environment variables
 		envVars := map[string]string{
-			"APP_DEBUG":      "true",
-			"APP_ENV":        "test",
-			"APP_PORT":       "8080",
-			"DB_HOST":        "localhost",
-			"DB_NAME":        "testdb",
-			"DB_PASS":        "password",
-			"DB_PORT":        "5432",
-			"DB_USER":        "testuser",
-			"SESSION_NAME":   "testsession",
-			"SESSION_SECRET": "testsecret",
-			"LOG_LEVEL":      "debug",
+			"APP_DEBUG":       "true",
+			"APP_ENV":         "test",
+			"APP_PORT":        "9090",
+			"DB_HOST":         "testhost",
+			"DB_NAME":         "testdb",
+			"DB_PASS":         "testpass",
+			"DB_PORT":         "3307",
+			"DB_USER":         "testuser",
+			"MAILGUN_API_KEY": "testkey",
+			"MAILGUN_DOMAIN":  "testdomain",
+			"MAILPIT_HOST":    "testmailpit",
+			"MAILPIT_PORT":    "2025",
+			"MIGRATIONS_PATH": "testmigrations",
+			"SESSION_NAME":    "testsession",
+			"SESSION_SECRET":  "testsecret",
+			"LOG_LEVEL":       "debug",
 		}
 
 		for key, value := range envVars {
@@ -45,19 +50,24 @@ func TestLoad(t *testing.T) {
 		// Assert config values
 		assert.Equal(t, "true", config.AppDebug)
 		assert.Equal(t, "test", config.AppEnv)
-		assert.Equal(t, "8080", config.AppPort)
-		assert.Equal(t, "localhost", config.DBHost)
+		assert.Equal(t, "9090", config.AppPort)
+		assert.Equal(t, "testhost", config.DBHost)
 		assert.Equal(t, "testdb", config.DBName)
-		assert.Equal(t, "password", config.DBPass)
-		assert.Equal(t, "5432", config.DBPort)
+		assert.Equal(t, "testpass", config.DBPass)
+		assert.Equal(t, "3307", config.DBPort)
 		assert.Equal(t, "testuser", config.DBUser)
+		assert.Equal(t, "testkey", config.MailgunAPIKey)
+		assert.Equal(t, "testdomain", config.MailgunDomain)
+		assert.Equal(t, "testmailpit", config.MailpitHost)
+		assert.Equal(t, "2025", config.MailpitPort)
+		assert.Equal(t, "testmigrations", config.MigrationsPath)
 		assert.Equal(t, "testsession", config.SessionName)
 		assert.Equal(t, "testsecret", config.SessionSecret)
 		assert.Equal(t, "debug", config.LogLevel)
 	})
 
-	// Test case 2: Missing required environment variable
-	t.Run("MissingRequiredVariable", func(t *testing.T) {
+	// Test case 2: Missing required environment variables
+	t.Run("MissingRequiredVariables", func(t *testing.T) {
 		// Clear all environment variables
 		os.Clearenv()
 
@@ -66,15 +76,36 @@ func TestLoad(t *testing.T) {
 
 		// Assert error
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "SESSION_SECRET is not set")
+		assert.Contains(t, err.Error(), "DB_USER, DB_NAME, and DB_PASS must be set in the environment")
 	})
 
-	// Test case 3: Default values
+	// Test case 3: Missing SESSION_SECRET
+	t.Run("MissingSessionSecret", func(t *testing.T) {
+		// Clear all environment variables
+		os.Clearenv()
+
+		// Set required DB variables
+		os.Setenv("DB_USER", "testuser")
+		os.Setenv("DB_NAME", "testdb")
+		os.Setenv("DB_PASS", "testpass")
+
+		// Load configuration
+		_, err := Load()
+
+		// Assert error
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "SESSION_SECRET is not set in the environment")
+	})
+
+	// Test case 4: Default values
 	t.Run("DefaultValues", func(t *testing.T) {
 		// Clear all environment variables
 		os.Clearenv()
 
 		// Set only required variables
+		os.Setenv("DB_USER", "testuser")
+		os.Setenv("DB_NAME", "testdb")
+		os.Setenv("DB_PASS", "testpass")
 		os.Setenv("SESSION_SECRET", "testsecret")
 
 		// Load configuration
@@ -84,7 +115,17 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert default values
+		assert.Equal(t, "false", config.AppDebug)
+		assert.Equal(t, "development", config.AppEnv)
 		assert.Equal(t, "8080", config.AppPort)
+		assert.Equal(t, "localhost", config.DBHost)
+		assert.Equal(t, "3306", config.DBPort)
+		assert.Equal(t, "", config.MailgunAPIKey)
+		assert.Equal(t, "", config.MailgunDomain)
+		assert.Equal(t, "localhost", config.MailpitHost)
+		assert.Equal(t, "1025", config.MailpitPort)
+		assert.Equal(t, "migrations", config.MigrationsPath)
+		assert.Equal(t, "session", config.SessionName)
 		assert.Equal(t, "info", config.LogLevel)
 	})
 }
@@ -115,10 +156,10 @@ func TestConfig_DatabaseDSN(t *testing.T) {
 		DBUser: "testuser",
 		DBPass: "testpass",
 		DBHost: "localhost",
-		DBPort: "5432",
+		DBPort: "3306",
 		DBName: "testdb",
 	}
 
-	expectedDSN := "testuser:testpass@tcp(localhost:5432)/testdb"
+	expectedDSN := "testuser:testpass@tcp(localhost:3306)/testdb?parseTime=true"
 	assert.Equal(t, expectedDSN, config.DatabaseDSN())
 }

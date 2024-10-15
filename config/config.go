@@ -28,43 +28,45 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	// Load .env file if it exists, but don't return an error if it doesn't
+	// Load .env file if it exists
 	_ = godotenv.Load()
 
 	config := &Config{
-		AppDebug:       os.Getenv("APP_DEBUG"),
-		AppEnv:         os.Getenv("APP_ENV"),
-		AppPort:        os.Getenv("APP_PORT"),
-		DBHost:         os.Getenv("DB_HOST"),
+		AppDebug:       getEnv("APP_DEBUG", "false"),
+		AppEnv:         getEnv("APP_ENV", "development"),
+		AppPort:        getEnv("APP_PORT", "8080"),
+		DBHost:         getEnv("DB_HOST", "localhost"),
 		DBName:         os.Getenv("DB_NAME"),
 		DBPass:         os.Getenv("DB_PASS"),
-		DBPort:         os.Getenv("DB_PORT"),
+		DBPort:         getEnv("DB_PORT", "3306"), // MariaDB default port
 		DBUser:         os.Getenv("DB_USER"),
-		MailgunAPIKey:  os.Getenv("MAILGUN_API_KEY"),
-		MailgunDomain:  os.Getenv("MAILGUN_DOMAIN"),
-		MailpitHost:    os.Getenv("MAILPIT_HOST"),
-		MailpitPort:    os.Getenv("MAILPIT_PORT"),
-		MigrationsPath: os.Getenv("MIGRATIONS_PATH"),
-		SessionName:    os.Getenv("SESSION_NAME"),
+		MailgunAPIKey:  getEnv("MAILGUN_API_KEY", ""),
+		MailgunDomain:  getEnv("MAILGUN_DOMAIN", ""),
+		MailpitHost:    getEnv("MAILPIT_HOST", "localhost"),
+		MailpitPort:    getEnv("MAILPIT_PORT", "1025"),
+		MigrationsPath: getEnv("MIGRATIONS_PATH", "migrations"),
+		SessionName:    getEnv("SESSION_NAME", "session"),
 		SessionSecret:  os.Getenv("SESSION_SECRET"),
-		LogLevel:       os.Getenv("LOG_LEVEL"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
 	}
 
-	// Set default values or perform validations
-	if config.AppDebug == "true" {
-		config.LogLevel = "debug"
+	// Validate required variables
+	if config.DBUser == "" || config.DBName == "" || config.DBPass == "" {
+		return nil, fmt.Errorf("DB_USER, DB_NAME, and DB_PASS must be set in the environment")
 	}
 	if config.SessionSecret == "" {
 		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
 	}
-	if config.AppPort == "" {
-		config.AppPort = "8080" // Set default port
-	}
-	if config.LogLevel == "" {
-		config.LogLevel = "info" // Set default log level
-	}
 
 	return config, nil
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func (c *Config) GetLogLevel() loggo.Level {
@@ -82,7 +84,7 @@ func (c *Config) GetLogLevel() loggo.Level {
 	}
 }
 
-// Add this method to the Config struct
 func (c *Config) DatabaseDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
+	// DSN format specific to MariaDB
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
 }
