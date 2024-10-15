@@ -42,10 +42,7 @@ func main() {
 			user.NewRepository,
 			user.NewService,
 		),
-		fx.Invoke(
-			registerRoutes,
-			startServer,
-		),
+		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
 }
@@ -60,8 +57,8 @@ func newLogger(config *config.Config) (loggo.LoggerInterface, error) {
 
 func newDB(logger loggo.LoggerInterface, config *config.Config) (*database.DB, error) {
 	logger.Info("Initializing database connection")
-	dsn := config.DatabaseDSN()            // Get the DSN from the config
-	db, err := database.NewDB(dsn, logger) // Call NewDB with DSN and logger
+	dsn := config.DatabaseDSN()
+	db, err := database.NewDB(dsn, logger)
 	if err != nil {
 		logger.Error("Failed to initialize database", err)
 		return nil, err
@@ -84,13 +81,7 @@ func provideHandler(
 	tmplManager *server.TemplateManager,
 	userService user.ServiceInterface,
 ) *server.Handler {
-	return server.NewHandler(
-		logger,
-		store,
-		emailService,
-		tmplManager,
-		userService,
-	)
+	return server.NewHandler(logger, store, emailService, tmplManager, userService)
 }
 
 func registerRoutes(
