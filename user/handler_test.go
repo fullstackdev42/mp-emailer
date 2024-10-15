@@ -166,7 +166,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			err := handler.HandleRegister(c)
+			err := handler.RegisterGET(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantStatusCode, rec.Code)

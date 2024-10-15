@@ -50,12 +50,6 @@ func (m *MockService) DeleteCampaign(id int) error {
 	return args.Error(0)
 }
 
-// Add the missing ExtractAndValidatePostalCode method
-func (m *MockService) ExtractAndValidatePostalCode(c echo.Context) (string, error) {
-	args := m.Called(c)
-	return args.String(0), args.Error(1)
-}
-
 // Add the missing UpdateCampaign method
 func (m *MockService) UpdateCampaign(campaign *Campaign) error {
 	args := m.Called(campaign)

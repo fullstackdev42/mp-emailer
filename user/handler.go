@@ -27,29 +27,59 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) HandleRegister(c echo.Context) error {
-	var input struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		Email    string `json:"email"`
+func (h *Handler) RegisterGET(c echo.Context) error {
+	sess, err := session.Get(h.config.SessionName, c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
-	if err := c.Bind(&input); err != nil {
-		h.logger.Warn("Invalid request body", err, []interface{}{})
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid request body"})
+	data := map[string]interface{}{}
+	flashes := sess.Flashes()
+	if len(flashes) > 0 {
+		data["Error"] = flashes[0]
+	}
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.logger.Error("Failed to save session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
-	if input.Username == "" || input.Password == "" || input.Email == "" {
-		h.logger.Warn("Missing required fields", nil, []interface{}{input})
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Username, password, and email are required"})
-	}
-	if err := h.service.RegisterUser(input.Username, input.Password, input.Email); err != nil {
-		h.logger.Error("Failed to register user", err, []interface{}{})
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to register user"})
+	return c.Render(http.StatusOK, "register.html", data)
+}
+
+func (h *Handler) RegisterPOST(c echo.Context) error {
+	sess, err := session.Get(h.config.SessionName, c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
-	h.logger.Debug("User registered successfully", nil, []interface{}{input.Username})
-	return c.JSON(http.StatusCreated, map[string]string{"message": "User registered successfully"})
+	username := c.FormValue("username")
+	password := c.FormValue("password")
+	email := c.FormValue("email")
+
+	if username == "" || password == "" || email == "" {
+		h.logger.Warn("Missing required fields", "username", username, "email", email, "password", "***")
+		sess.AddFlash("Username, password, and email are required")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			h.logger.Error("Failed to save session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		}
+		return c.Redirect(http.StatusSeeOther, "/register")
+	}
+
+	if err := h.service.RegisterUser(username, password, email); err != nil {
+		h.logger.Error("Failed to register user", err)
+		sess.AddFlash("Failed to register user. Please try again.")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			h.logger.Error("Failed to save session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		}
+		return c.Redirect(http.StatusSeeOther, "/register")
+	}
+
+	h.logger.Debug("User registered successfully")
+	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
 func (h *Handler) HandleLogin(c echo.Context) error {

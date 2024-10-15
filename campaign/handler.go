@@ -38,42 +38,6 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) ExtractUserData(c echo.Context) map[string]string {
-	return map[string]string{
-		"First Name":    c.FormValue("first_name"),
-		"Last Name":     c.FormValue("last_name"),
-		"Address 1":     c.FormValue("address_1"),
-		"City":          c.FormValue("city"),
-		"Province":      c.FormValue("province"),
-		"Postal Code":   c.FormValue("postal_code"),
-		"Email Address": c.FormValue("email"),
-	}
-}
-
-func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
-	data := struct {
-		Email   string
-		Content template.HTML
-	}{
-		Email:   email,
-		Content: template.HTML(content),
-	}
-
-	h.logger.Debug("Data for email template", "data", data)
-	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
-	if err != nil {
-		h.logger.Error("Error rendering email template", err)
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
-	}
-	h.logger.Info("Email template rendered successfully")
-	return nil
-}
-
-func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
-	h.logger.Error(message, err)
-	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
-}
-
 func (h *Handler) GetCampaign(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id")) // Convert string to int
 	if err != nil {
@@ -168,7 +132,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
-	postalCode, err := ExtractAndValidatePostalCode(c)
+	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
 		h.logger.Warn("Invalid postal code submitted", "error", err)
 		return c.Render(http.StatusBadRequest, "error.html", map[string]interface{}{
@@ -187,7 +151,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	if err != nil {
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
-	userData := h.ExtractUserData(c)
+	userData := extractUserData(c)
 
 	// Assuming mp is a slice of Representatives, we'll use the first one
 	if len(mp) == 0 {
@@ -199,14 +163,28 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }
 
-func (h *Handler) HandleMPLookup(c echo.Context) error {
-	postalCode := c.FormValue("postal_code")
-	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
-	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching representatives")
+func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
+	h.logger.Error(message, err)
+	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
+}
+
+func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
+	data := struct {
+		Email   string
+		Content template.HTML
+	}{
+		Email:   email,
+		Content: template.HTML(content),
 	}
 
-	return c.JSON(http.StatusOK, representatives)
+	h.logger.Debug("Data for email template", "data", data)
+	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
+	if err != nil {
+		h.logger.Error("Error rendering email template", err)
+		return h.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
+	}
+	h.logger.Info("Email template rendered successfully")
+	return nil
 }
 
 func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {

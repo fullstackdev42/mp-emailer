@@ -8,7 +8,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ValidatePostalCode(postalCode string) (string, error) {
+func extractUserData(c echo.Context) map[string]string {
+	return map[string]string{
+		"First Name":    c.FormValue("first_name"),
+		"Last Name":     c.FormValue("last_name"),
+		"Address 1":     c.FormValue("address_1"),
+		"City":          c.FormValue("city"),
+		"Province":      c.FormValue("province"),
+		"Postal Code":   c.FormValue("postal_code"),
+		"Email Address": c.FormValue("email"),
+	}
+}
+
+func validatePostalCode(postalCode string) (string, error) {
 	if postalCode == "" {
 		return "", fmt.Errorf("postal code is required")
 	}
@@ -20,9 +32,9 @@ func ValidatePostalCode(postalCode string) (string, error) {
 	return postalCode, nil
 }
 
-func ExtractAndValidatePostalCode(c echo.Context) (string, error) {
+func extractAndValidatePostalCode(c echo.Context) (string, error) {
 	postalCode := c.FormValue("postal_code")
-	validatedPostalCode, err := ValidatePostalCode(postalCode)
+	validatedPostalCode, err := validatePostalCode(postalCode)
 	if err != nil {
 		return "", fmt.Errorf("invalid postal code: %w", err)
 	}
