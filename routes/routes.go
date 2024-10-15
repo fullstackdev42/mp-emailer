@@ -28,7 +28,7 @@ func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 	e.GET("/login", uh.LoginGET)
 	e.POST("/login", uh.LoginPOST)
 
-	e.GET("/logout", uh.HandleLogout)
+	e.GET("/logout", uh.LogoutGET)
 	e.GET("/register", uh.RegisterGET)
 	e.POST("/register", uh.RegisterPOST)
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -96,62 +97,67 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // Handler for POST requests
 func (h *Handler) LoginPOST(c echo.Context) error {
-	sess, err := session.Get(h.config.SessionName, c)
-	if err != nil {
-		h.logger.Error("Failed to get session", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
-	}
+	h.logger.Debug("Handling login request", "path", c.Path())
+
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	h.logger.Debug("Login called with method: POST")
-	h.logger.Debug("Login attempt for username: " + username)
-
 	if username == "" || password == "" {
-		h.logger.Warn("Login attempt with empty username or password")
-		sess.AddFlash("Username and password are required", "error")
-		if err := sess.Save(c.Request(), c.Response()); err != nil {
-			h.logger.Error("Failed to save session", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
-		}
-		return c.Redirect(http.StatusSeeOther, "/login")
+		h.logger.Warn("Empty username or password", "username", username)
+		return echo.NewHTTPError(http.StatusBadRequest, "Username and password are required")
 	}
 
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
-		h.logger.Warn("Login failed for user: " + username)
-		sess.AddFlash("Invalid username or password", "error")
-		if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.logger.Warn("Invalid login attempt", "username", username, "error", err)
+		session, _ := h.getSession(c)
+		session.Values["error"] = "Invalid username or password"
+		if err := session.Save(c.Request(), c.Response()); err != nil {
 			h.logger.Error("Failed to save session", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 		}
 		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
-	sess.Values["userID"] = userID
-	sess.Values["username"] = username
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
+	session, _ := h.getSession(c)
+	session.Values["userID"] = userID
+	session.Values["username"] = username
+	if err := session.Save(c.Request(), c.Response()); err != nil {
 		h.logger.Error("Failed to save session", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
+	h.logger.Debug("User logged in successfully", "username", username)
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 
-func (h *Handler) HandleLogout(c echo.Context) error {
-	h.logger.Debug("Handling logout request")
-	sess, err := session.Get(h.config.SessionName, c)
+func (h *Handler) LogoutGET(c echo.Context) error {
+	h.logger.Debug("Handling logout request", map[string]interface{}{"path": c.Path()})
+
+	session, err := h.getSession(c)
 	if err != nil {
 		h.logger.Error("Failed to get session", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
+
 	// Clear session
-	sess.Values["userID"] = nil
-	sess.Values["username"] = nil
-	sess.Options.MaxAge = -1
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
+	session.Options.MaxAge = -1
+	session.Values["userID"] = nil
+	session.Values["username"] = nil
+
+	if err := session.Save(c.Request(), c.Response()); err != nil {
 		h.logger.Error("Failed to save session", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
+
 	return c.Redirect(http.StatusSeeOther, "/")
+}
+
+func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
+	sess, err := session.Get(h.config.SessionName, c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return nil, err
+	}
+	return sess, nil
 }
