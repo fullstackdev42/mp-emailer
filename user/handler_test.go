@@ -39,7 +39,7 @@ func newMockSessionStore() *mockSessionStore {
 	}
 }
 
-func (m *mockSessionStore) Get(r *http.Request, name string) (*sessions.Session, error) {
+func (m *mockSessionStore) Get(_ *http.Request, name string) (*sessions.Session, error) {
 	session, ok := m.sessions[name]
 	if !ok {
 		session = sessions.NewSession(m, name)
@@ -48,13 +48,13 @@ func (m *mockSessionStore) Get(r *http.Request, name string) (*sessions.Session,
 	return session, nil
 }
 
-func (m *mockSessionStore) New(r *http.Request, name string) (*sessions.Session, error) {
+func (m *mockSessionStore) New(_ *http.Request, name string) (*sessions.Session, error) {
 	session := sessions.NewSession(m, name)
 	m.sessions[name] = session
 	return session, nil
 }
 
-func (m *mockSessionStore) Save(r *http.Request, w http.ResponseWriter, s *sessions.Session) error {
+func (m *mockSessionStore) Save(_ *http.Request, _ http.ResponseWriter, s *sessions.Session) error {
 	m.sessions[s.Name()] = s
 	return nil
 }
@@ -82,9 +82,11 @@ func TestHandler_HandleLogin(t *testing.T) {
 			password:       "validpass",
 			wantStatusCode: http.StatusSeeOther,
 			wantRedirect:   "/campaigns",
-			checkSession: func(t *testing.T, resp *http.Response, mss *mockSessionStore) {
+			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore) {
 				sess, ok := mss.sessions["mpe"]
 				assert.True(t, ok, "Session should be created")
+				assert.Equal(t, "123", sess.Values["userID"])
+				assert.Equal(t, "validuser", sess.Values["username"])
 				assert.Equal(t, "123", sess.Values["userID"])
 				assert.Equal(t, "validuser", sess.Values["username"])
 			},
@@ -104,7 +106,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		},
 		{
 			name: "Empty username",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 				ml.On("Warn", mock.Anything, mock.Anything).Return()
 			},
@@ -116,7 +118,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		},
 		{
 			name: "Empty password",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 				ml.On("Warn", mock.Anything, mock.Anything).Return()
 			},
@@ -125,6 +127,27 @@ func TestHandler_HandleLogin(t *testing.T) {
 			password:       "",
 			wantStatusCode: http.StatusBadRequest,
 			wantBody:       "Username and password are required",
+		},
+		// Session expiration
+		{
+			name: "Session Expired",
+			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
+				ms.On("VerifyUser", "validuser", "validpass").Return("123", nil)
+				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
+			},
+			method:         http.MethodPost,
+			username:       "validuser",
+			password:       "validpass",
+			wantStatusCode: http.StatusSeeOther,
+			wantRedirect:   "/campaigns",
+			checkSession: func(t *testing.T, _ *http.Response, mss *mockSessionStore) {
+				_, ok := mss.sessions["mpe"]
+				assert.True(t, ok, "Session should be created")
+				// Simulate session expiration
+				delete(mss.sessions, "mpe")
+				_, ok = mss.sessions["mpe"]
+				assert.False(t, ok, "Session should be expired")
+			},
 		},
 	}
 
