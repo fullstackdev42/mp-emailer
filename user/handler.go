@@ -15,7 +15,11 @@ type Handler struct {
 	config  *config.Config
 }
 
-func NewHandler(service ServiceInterface, logger loggo.LoggerInterface, config *config.Config) *Handler {
+func NewHandler(
+	service ServiceInterface,
+	logger loggo.LoggerInterface,
+	config *config.Config,
+) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,
