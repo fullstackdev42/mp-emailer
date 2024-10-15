@@ -6,7 +6,7 @@ type Service interface {
 	SendEmail(to, subject, body string) error
 }
 
-func NewEmailService(config *config.Config) Service {
+func New(config *config.Config) Service {
 	if config.AppEnv == "production" {
 		return NewMailgunEmailService(config.MailgunDomain, config.MailgunAPIKey)
 	}

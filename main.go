@@ -28,7 +28,7 @@ func main() {
 			config.Load,
 			newLogger,
 			newDB,
-			email.NewEmailService,
+			email.New,
 			newTemplateManager,
 			newSessionStore,
 			campaign.NewRepository,
