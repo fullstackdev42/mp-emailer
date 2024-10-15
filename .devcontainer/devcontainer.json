@@ -34,7 +34,8 @@
 			"extensions": [
 				"golang.Go",
 				"ms-azuretools.vscode-docker",
-				"jinliming2.vscode-go-template"
+				"jinliming2.vscode-go-template",
+				"GitHub.vscode-github-actions"
 			]
 		}
 	}
