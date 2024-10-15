@@ -82,39 +82,57 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func (h *Handler) HandleLogin(c echo.Context) error {
-	if c.Request().Method == http.MethodGet {
-		return c.Render(http.StatusOK, "login.html", nil)
+// Handler for GET requests
+func (h *Handler) LoginGET(c echo.Context) error {
+	sess, err := session.Get(h.config.SessionName, c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
+	return c.Render(http.StatusOK, "login.html", map[string]interface{}{
+		"Error": sess.Flashes("error"),
+	})
+}
 
+// Handler for POST requests
+func (h *Handler) LoginPOST(c echo.Context) error {
+	sess, err := session.Get(h.config.SessionName, c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+	}
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	h.logger.Debug("HandleLogin called with method: POST")
+	h.logger.Debug("Login called with method: POST")
 	h.logger.Debug("Login attempt for username: " + username)
 
 	if username == "" || password == "" {
 		h.logger.Warn("Login attempt with empty username or password")
-		return echo.NewHTTPError(http.StatusBadRequest, "Username and password are required")
+		sess.AddFlash("Username and password are required", "error")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			h.logger.Error("Failed to save session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		}
+		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Warn("Login failed for user: " + username)
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
-	}
-
-	sess, err := session.Get(h.config.SessionName, c)
-	if err != nil {
-		h.logger.Error("Failed to get session", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		sess.AddFlash("Invalid username or password", "error")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			h.logger.Error("Failed to save session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		}
+		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
 	sess.Values["userID"] = userID
 	sess.Values["username"] = username
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		h.logger.Error("Failed to save session", err)
-		return c.String(http.StatusInternalServerError, "Failed to save session")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
