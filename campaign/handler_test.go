@@ -5,11 +5,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -18,13 +20,12 @@ type MockService struct {
 	mock.Mock
 }
 
-// Update the GetAllCampaigns method to match the interface
-func (m *MockService) GetAllCampaigns() ([]*Campaign, error) {
+func (m *MockService) GetAllCampaigns() ([]Campaign, error) {
 	args := m.Called()
-	return args.Get(0).([]*Campaign), args.Error(1)
+	return args.Get(0).([]Campaign), args.Error(1)
 }
 
-func (m *MockService) GetCampaignByID(id string) (*Campaign, error) {
+func (m *MockService) GetCampaignByID(id int) (*Campaign, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -59,6 +60,11 @@ func (m *MockService) ExtractAndValidatePostalCode(c echo.Context) (string, erro
 func (m *MockService) UpdateCampaign(campaign *Campaign) error {
 	args := m.Called(campaign)
 	return args.Error(0)
+}
+
+func (m *MockService) FetchCampaign(id int) (*Campaign, error) {
+	args := m.Called(id)
+	return args.Get(0).(*Campaign), args.Error(1)
 }
 
 // MockRepresentativeLookupService is a mock of RepresentativeLookupService
@@ -211,28 +217,32 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_GetCampaign(t *testing.T) {
 	tests := []struct {
 		name         string
-		campaignID   string
-		mockReturn   interface{}
+		campaignID   int
+		mockReturn   *Campaign
 		mockError    error
 		expectedCode int
+		expectedBody string
 	}{
 		{
 			name:         "Successful campaign retrieval",
-			campaignID:   "1",
+			campaignID:   1,
 			mockReturn:   &Campaign{ID: 1, Name: "Test Campaign"},
 			expectedCode: http.StatusOK,
+			expectedBody: `{"id":1,"name":"Test Campaign","template":"","owner_id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","tokens":null}`,
 		},
 		{
 			name:         "Campaign not found",
-			campaignID:   "999",
-			mockError:    echo.ErrNotFound, // Ensure this error is returned for not found
+			campaignID:   999,
+			mockError:    echo.ErrNotFound,
 			expectedCode: http.StatusNotFound,
+			expectedBody: "Error page",
 		},
 		{
 			name:         "Internal server error",
-			campaignID:   "1",
+			campaignID:   1,
 			mockError:    errors.New("database error"),
 			expectedCode: http.StatusInternalServerError,
+			expectedBody: "Error page",
 		},
 	}
 
@@ -243,39 +253,40 @@ func TestHandler_GetCampaign(t *testing.T) {
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
-			// Set up logger expectations
 			mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 			mockLogger.On("Error", mock.Anything, mock.Anything, mock.Anything).Return()
 
-			if tt.mockError != nil {
-				mockService.On("GetCampaignByID", tt.campaignID).Return(nil, tt.mockError)
-			} else {
-				mockService.On("GetCampaignByID", tt.campaignID).Return(tt.mockReturn, nil)
-			}
+			mockService.On("FetchCampaign", tt.campaignID).Return(tt.mockReturn, tt.mockError)
 
 			h := &Handler{
-				service:                     mockService,
-				logger:                      mockLogger,
-				representativeLookupService: new(MockRepresentativeLookupService),
-				emailService:                &MockEmailService{},
-				client:                      &MockClient{},
+				service: mockService,
+				logger:  mockLogger,
 			}
 
-			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+tt.campaignID, nil)
+			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+strconv.Itoa(tt.campaignID), nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 			c.SetParamNames("id")
-			c.SetParamValues(tt.campaignID)
+			c.SetParamValues(strconv.Itoa(tt.campaignID))
 
 			err := h.GetCampaign(c)
 
-			if err != nil && err.Error() != tt.mockError.Error() {
-				t.Errorf("Handler.GetCampaign() unexpected error = %v, want %v", err, tt.mockError)
+			if tt.mockError != nil {
+				if tt.mockError == echo.ErrNotFound {
+					assert.Equal(t, tt.expectedCode, rec.Code)
+					assert.Contains(t, rec.Body.String(), tt.expectedBody)
+				} else {
+					assert.Error(t, err)
+					assert.Equal(t, tt.mockError.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedCode, rec.Code)
+				assert.JSONEq(t, tt.expectedBody, rec.Body.String())
 			}
 
-			if rec.Code != tt.expectedCode {
-				t.Errorf("Handler.GetCampaign() status code = %v, want %v", rec.Code, tt.expectedCode)
-			}
+			mockService.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
 		})
 	}
 }

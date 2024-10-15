@@ -12,23 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ServiceInterface defines the interface for the campaign service
-type ServiceInterface interface {
-	GetCampaignByID(id string) (*Campaign, error)
-	GetAllCampaigns() ([]*Campaign, error)
-	CreateCampaign(campaign *Campaign) error
-	DeleteCampaign(id int) error
-	UpdateCampaign(campaign *Campaign) error
-	ExtractAndValidatePostalCode(c echo.Context) (string, error)
-	ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string
-}
-
-// RepresentativeLookupServiceInterface defines the interface for the representative lookup service
-type RepresentativeLookupServiceInterface interface {
-	FetchRepresentatives(postalCode string) ([]Representative, error)
-	FilterRepresentatives(representatives []Representative, filters map[string]string) []Representative
-}
-
 // Handler handles the HTTP requests for the campaign service
 type Handler struct {
 	service                     ServiceInterface
@@ -38,6 +21,7 @@ type Handler struct {
 	client                      ClientInterface
 }
 
+// NewHandler initializes a new Handler
 func NewHandler(
 	service ServiceInterface,
 	logger loggo.LoggerInterface,
@@ -54,14 +38,50 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) GetCampaign(c echo.Context) error {
-	id := c.Param("id")
-	campaign, err := h.service.GetCampaignByID(id)
+func (h *Handler) ExtractUserData(c echo.Context) map[string]string {
+	return map[string]string{
+		"First Name":    c.FormValue("first_name"),
+		"Last Name":     c.FormValue("last_name"),
+		"Address 1":     c.FormValue("address_1"),
+		"City":          c.FormValue("city"),
+		"Province":      c.FormValue("province"),
+		"Postal Code":   c.FormValue("postal_code"),
+		"Email Address": c.FormValue("email"),
+	}
+}
+
+func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
+	data := struct {
+		Email   string
+		Content template.HTML
+	}{
+		Email:   email,
+		Content: template.HTML(content),
+	}
+
+	h.logger.Debug("Data for email template", "data", data)
+	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
 	if err != nil {
-		if errors.Is(err, echo.ErrNotFound) {
-			return c.NoContent(http.StatusNotFound)
-		}
-		return c.String(http.StatusInternalServerError, "Internal server error")
+		h.logger.Error("Error rendering email template", err)
+		return h.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
+	}
+	h.logger.Info("Email template rendered successfully")
+	return nil
+}
+
+func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
+	h.logger.Error(message, err)
+	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
+}
+
+func (h *Handler) GetCampaign(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id")) // Convert string to int
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+	}
+	campaign, err := h.service.FetchCampaign(id) // Use the converted int
+	if err != nil {
+		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 	return c.JSON(http.StatusOK, campaign)
 }
@@ -108,8 +128,11 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 }
 
 func (h *Handler) EditCampaignForm(c echo.Context) error {
-	id := c.Param("id")
-	campaign, err := h.service.GetCampaignByID(id)
+	id, err := strconv.Atoi(c.Param("id")) // Convert string to int
+	if err != nil {
+		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+	}
+	campaign, err := h.service.FetchCampaign(id) // Use the converted int
 	if err != nil {
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
@@ -145,24 +168,35 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
-	postalCode, err := h.service.ExtractAndValidatePostalCode(c)
+	postalCode, err := ExtractAndValidatePostalCode(c)
 	if err != nil {
 		h.logger.Warn("Invalid postal code submitted", "error", err)
 		return c.Render(http.StatusBadRequest, "error.html", map[string]interface{}{
 			"Error": "Invalid postal code",
 		})
 	}
-	mp, err := h.findMP(postalCode)
+	mp, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil {
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error finding MP")
 	}
-	campaign, err := h.FetchCampaign(c.Param("id"))
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+	}
+	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 	userData := h.ExtractUserData(c)
-	emailContent := h.service.ComposeEmail(mp, campaign, userData)
-	return h.RenderEmailTemplate(c, mp.Email, emailContent)
+
+	// Assuming mp is a slice of Representatives, we'll use the first one
+	if len(mp) == 0 {
+		return h.HandleError(c, errors.New("no representatives found"), http.StatusNotFound, "No representatives found")
+	}
+	representative := mp[0]
+
+	emailContent := h.service.ComposeEmail(representative, campaign, userData)
+	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }
 
 func (h *Handler) HandleMPLookup(c echo.Context) error {

@@ -2,28 +2,31 @@ package campaign
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/labstack/echo/v4"
 )
+
+// ServiceInterface defines the interface for the campaign service
+type ServiceInterface interface {
+	GetCampaignByID(id int) (*Campaign, error)
+	GetAllCampaigns() ([]Campaign, error)
+	CreateCampaign(campaign *Campaign) error
+	DeleteCampaign(id int) error
+	UpdateCampaign(campaign *Campaign) error
+	ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string
+	FetchCampaign(id int) (*Campaign, error)
+}
 
 type Service struct {
 	repo *Repository
 }
 
-func NewService(repo *Repository) *Service {
+func NewService(repo *Repository) ServiceInterface {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetCampaignByID(id string) (*Campaign, error) {
-	campaignID, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid campaign ID: %w", err)
-	}
-	return s.repo.GetByID(campaignID)
+func (s *Service) GetCampaignByID(id int) (*Campaign, error) {
+	return s.repo.GetByID(id)
 }
 
 func (s *Service) GetAllCampaigns() ([]Campaign, error) {
@@ -87,6 +90,15 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 	return nil
 }
 
+func (s *Service) FetchCampaign(id int) (*Campaign, error) {
+	campaign, err := s.GetCampaignByID(id)
+	if err != nil {
+		// s.logger.Error("Error fetching campaign", err)
+		return nil, err
+	}
+	return campaign, nil
+}
+
 func (s *Service) ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
 	emailTemplate := campaign.Template
 	for key, value := range userData {
@@ -97,40 +109,4 @@ func (s *Service) ComposeEmail(mp Representative, campaign *Campaign, userData m
 	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", mp.Email)
 	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
 	return emailTemplate
-}
-
-func (s *Service) ValidatePostalCode(postalCode string) (string, error) {
-	if postalCode == "" {
-		return "", fmt.Errorf("postal code is required")
-	}
-
-	postalCode = strings.ToUpper(strings.ReplaceAll(postalCode, " ", ""))
-	postalCodeRegex := regexp.MustCompile(`^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$`)
-	if !postalCodeRegex.MatchString(postalCode) {
-		return "", fmt.Errorf("invalid postal code format")
-	}
-
-	return postalCode, nil
-}
-
-// ExtractAndValidatePostalCode extracts the postal code from the request and validates it
-func (s *Service) ExtractAndValidatePostalCode(c echo.Context) (string, error) {
-	postalCode := c.FormValue("postal_code")
-	validatedPostalCode, err := s.ValidatePostalCode(postalCode)
-	if err != nil {
-		return "", fmt.Errorf("invalid postal code: %w", err)
-	}
-	return validatedPostalCode, nil
-}
-
-func (s *Service) ExtractUserData(c echo.Context) map[string]string {
-	return map[string]string{
-		"First Name":    c.FormValue("first_name"),
-		"Last Name":     c.FormValue("last_name"),
-		"Address 1":     c.FormValue("address_1"),
-		"City":          c.FormValue("city"),
-		"Province":      c.FormValue("province"),
-		"Postal Code":   c.FormValue("postal_code"),
-		"Email Address": c.FormValue("email"),
-	}
 }

@@ -10,12 +10,19 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
+// RepresentativeLookupServiceInterface defines the interface for representative lookup
+type RepresentativeLookupServiceInterface interface {
+	FetchRepresentatives(postalCode string) ([]Representative, error)
+	FilterRepresentatives(representatives []Representative, filters map[string]string) []Representative
+}
+
+// RepresentativeLookupService implements RepresentativeLookupServiceInterface
 type RepresentativeLookupService struct {
 	logger  loggo.LoggerInterface
 	baseURL string
 }
 
-func NewRepresentativeLookupService(logger loggo.LoggerInterface) *RepresentativeLookupService {
+func NewRepresentativeLookupService(logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
 	return &RepresentativeLookupService{
 		logger:  logger,
 		baseURL: "https://represent.opennorth.ca",

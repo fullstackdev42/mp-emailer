@@ -11,7 +11,7 @@ type ClientInterface interface {
 
 // DefaultClient implements ClientInterface
 type DefaultClient struct {
-	lookupService *RepresentativeLookupService
+	lookupService RepresentativeLookupServiceInterface
 	logger        loggo.LoggerInterface
 }
 
