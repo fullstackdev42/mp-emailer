@@ -9,26 +9,13 @@ import (
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	mocks "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockService struct {
-	mock.Mock
-}
-
-func (m *MockService) VerifyUser(username, password string) (string, error) {
-	args := m.Called(username, password)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockService) RegisterUser(username, password, email string) error {
-	args := m.Called(username, password, email)
-	return args.Error(0)
-}
 
 type mockSessionStore struct {
 	sessions  map[string]*sessions.Session
@@ -72,7 +59,7 @@ const testSessionName = "test_session"
 
 func TestNewHandler(t *testing.T) {
 	// Create mock dependencies
-	mockService := new(MockService)
+	mockService := mocks.NewMockServiceInterface(t)
 	mockLogger := new(loggo.MockLogger)
 	mockConfig := &config.Config{}
 
@@ -94,15 +81,15 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_HandleRegister(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*MockService, *loggo.MockLogger)
+		setupMock      func(*mocks.MockServiceInterface, *loggo.MockLogger)
 		inputBody      string
 		wantStatusCode int
 		wantBody       string
 	}{
 		{
 			name: "Successful registration",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("RegisterUser", "newuser", "password123", "newuser@example.com").Return(nil)
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().RegisterUser("newuser", "newuser@example.com", "password123").Return(nil)
 				ml.On("Debug", "User registered successfully", mock.AnythingOfType("[]interface {}")).Return()
 			},
 			inputBody:      `{"username":"newuser","password":"password123","email":"newuser@example.com"}`,
@@ -111,7 +98,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 		},
 		{
 			name: "Invalid JSON",
-			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *mocks.MockServiceInterface, ml *loggo.MockLogger) {
 				ml.On("Warn", "Invalid request body", mock.Anything).Return()
 			},
 			inputBody:      `{"username":"newuser","password":"password123","email":}`,
@@ -120,7 +107,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 		},
 		{
 			name: "Missing required fields",
-			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *mocks.MockServiceInterface, ml *loggo.MockLogger) {
 				ml.On("Warn", "Missing required fields", mock.AnythingOfType("[]interface {}")).Return()
 			},
 			inputBody:      `{"username":"newuser","password":""}`,
@@ -129,8 +116,8 @@ func TestHandler_HandleRegister(t *testing.T) {
 		},
 		{
 			name: "User already exists",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("RegisterUser", "existinguser", "password123", "existing@example.com").Return(fmt.Errorf("user already exists"))
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().RegisterUser("existinguser", "existing@example.com", "password123").Return(fmt.Errorf("user already exists"))
 				ml.On("Error", "Failed to register user", mock.AnythingOfType("*errors.errorString"), mock.AnythingOfType("[]interface {}")).Return()
 			},
 			inputBody:      `{"username":"existinguser","password":"password123","email":"existing@example.com"}`,
@@ -139,8 +126,8 @@ func TestHandler_HandleRegister(t *testing.T) {
 		},
 		{
 			name: "Internal server error",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("RegisterUser", "newuser", "password123", "newuser@example.com").Return(fmt.Errorf("database error"))
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().RegisterUser("newuser", "newuser@example.com", "password123").Return(fmt.Errorf("database error"))
 				ml.On("Error", "Failed to register user", mock.AnythingOfType("*errors.errorString"), mock.AnythingOfType("[]interface {}")).Return()
 			},
 			inputBody:      `{"username":"newuser","password":"password123","email":"newuser@example.com"}`,
@@ -151,7 +138,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockServiceInterface(t)
 			mockLogger := new(loggo.MockLogger)
 
 			if tt.setupMock != nil {
@@ -181,7 +168,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 func TestHandler_HandleLogin(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*MockService, *loggo.MockLogger)
+		setupMock      func(*mocks.MockServiceInterface, *loggo.MockLogger)
 		method         string
 		username       string
 		password       string
@@ -192,8 +179,8 @@ func TestHandler_HandleLogin(t *testing.T) {
 	}{
 		{
 			name: "Successful login",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("VerifyUser", "validuser", "validpass").Return("123", nil)
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().VerifyUser("validuser", "validpass").Return("123", nil)
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 			},
 			method:         http.MethodPost,
@@ -210,8 +197,8 @@ func TestHandler_HandleLogin(t *testing.T) {
 		},
 		{
 			name: "Invalid credentials",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("VerifyUser", "testuser", "wrongpassword").Return("", fmt.Errorf("invalid username or password"))
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().VerifyUser("testuser", "wrongpassword").Return("", fmt.Errorf("invalid username or password"))
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 				ml.On("Warn", mock.Anything, mock.Anything).Return()
 			},
@@ -223,7 +210,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		},
 		{
 			name: "Empty username",
-			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *mocks.MockServiceInterface, ml *loggo.MockLogger) {
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 				ml.On("Warn", mock.Anything, mock.Anything).Return()
 			},
@@ -235,7 +222,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		},
 		{
 			name: "Empty password",
-			setupMock: func(_ *MockService, ml *loggo.MockLogger) {
+			setupMock: func(_ *mocks.MockServiceInterface, ml *loggo.MockLogger) {
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 				ml.On("Warn", mock.Anything, mock.Anything).Return()
 			},
@@ -248,8 +235,8 @@ func TestHandler_HandleLogin(t *testing.T) {
 		// Session expiration
 		{
 			name: "Session Expired",
-			setupMock: func(ms *MockService, ml *loggo.MockLogger) {
-				ms.On("VerifyUser", "validuser", "validpass").Return("123", nil)
+			setupMock: func(ms *mocks.MockServiceInterface, ml *loggo.MockLogger) {
+				ms.EXPECT().VerifyUser("validuser", "validpass").Return("123", nil)
 				ml.On("Debug", mock.Anything, mock.Anything).Return().Twice()
 			},
 			method:         http.MethodPost,
@@ -270,7 +257,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockServiceInterface(t)
 			mockLogger := new(loggo.MockLogger)
 			mockSessionStore := newMockSessionStore()
 
@@ -295,7 +282,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 			// Set up the session store
 			c.Set("_session_store", mockSessionStore)
 
-			err := handler.HandleLogin(c)
+			err := handler.LoginPOST(c)
 
 			t.Logf("Response status: %d", rec.Code)
 			t.Logf("Response headers: %+v", rec.Header())
@@ -382,7 +369,7 @@ func TestHandler_HandleLogout(t *testing.T) {
 			config := &config.Config{
 				SessionName: testSessionName,
 			}
-			handler := NewHandler(&MockService{}, mockLogger, config)
+			handler := NewHandler(&mocks.MockServiceInterface{}, mockLogger, config)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/logout", nil)

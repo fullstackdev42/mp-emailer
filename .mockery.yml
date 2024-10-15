@@ -1,4 +1,5 @@
 with-expecter: true
+dir: "mocks/{{.PackageName}}"
 packages:
   github.com/fullstackdev42/mp-emailer/user:
     interfaces:
