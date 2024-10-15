@@ -31,7 +31,9 @@ func (m *MockService) RegisterUser(username, password, email string) error {
 }
 
 type mockSessionStore struct {
-	sessions map[string]*sessions.Session
+	sessions  map[string]*sessions.Session
+	saveError error
+	getError  error
 }
 
 func newMockSessionStore() *mockSessionStore {
@@ -41,6 +43,9 @@ func newMockSessionStore() *mockSessionStore {
 }
 
 func (m *mockSessionStore) Get(_ *http.Request, name string) (*sessions.Session, error) {
+	if m.getError != nil {
+		return nil, m.getError
+	}
 	session, ok := m.sessions[name]
 	if !ok {
 		session = sessions.NewSession(m, name)
@@ -56,6 +61,9 @@ func (m *mockSessionStore) New(_ *http.Request, name string) (*sessions.Session,
 }
 
 func (m *mockSessionStore) Save(_ *http.Request, _ http.ResponseWriter, s *sessions.Session) error {
+	if m.saveError != nil {
+		return m.saveError
+	}
 	m.sessions[s.Name()] = s
 	return nil
 }
@@ -203,6 +211,98 @@ func TestHandler_HandleLogin(t *testing.T) {
 			}
 
 			mockService.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
+}
+
+func TestHandler_HandleLogout(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupMock      func(*mockSessionStore, *loggo.MockLogger)
+		wantStatusCode int
+		wantRedirect   string
+		wantErr        bool
+	}{
+		{
+			name: "Successful logout",
+			setupMock: func(mss *mockSessionStore, ml *loggo.MockLogger) {
+				sess := sessions.NewSession(mss, testSessionName)
+				sess.Values["userID"] = "123"
+				sess.Values["username"] = "testuser"
+				mss.sessions[testSessionName] = sess
+				ml.On("Debug", "Handling logout request", mock.Anything).Return()
+			},
+			wantStatusCode: http.StatusSeeOther,
+			wantRedirect:   "/",
+			wantErr:        false,
+		},
+		{
+			name: "Error getting session",
+			setupMock: func(mss *mockSessionStore, ml *loggo.MockLogger) {
+				mss.sessions = make(map[string]*sessions.Session)
+				mss.getError = fmt.Errorf("failed to get session")
+				ml.On("Debug", "Handling logout request", mock.Anything).Return()
+				ml.On("Error", "Failed to get session", mock.AnythingOfType("*errors.errorString"), mock.Anything).Return()
+			},
+			wantStatusCode: http.StatusInternalServerError,
+			wantErr:        true,
+		},
+		{
+			name: "Error saving session",
+			setupMock: func(mss *mockSessionStore, ml *loggo.MockLogger) {
+				sess := sessions.NewSession(mss, testSessionName)
+				mss.sessions[testSessionName] = sess
+				mss.saveError = fmt.Errorf("failed to save session")
+				ml.On("Debug", "Handling logout request", mock.Anything).Return()
+				ml.On("Error", "Failed to save session", mock.AnythingOfType("*errors.errorString"), mock.Anything).Return()
+			},
+			wantStatusCode: http.StatusInternalServerError,
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSessionStore := newMockSessionStore()
+			mockLogger := new(loggo.MockLogger)
+
+			if tt.setupMock != nil {
+				tt.setupMock(mockSessionStore, mockLogger)
+			}
+
+			config := &config.Config{
+				SessionName: testSessionName,
+			}
+			handler := NewHandler(&MockService{}, mockLogger, config)
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/logout", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			// Set up the session store
+			c.Set("_session_store", mockSessionStore)
+
+			err := handler.HandleLogout(c)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if httpErr, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantStatusCode, httpErr.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantStatusCode, rec.Code)
+				assert.Equal(t, tt.wantRedirect, rec.Header().Get("Location"))
+
+				// Check if session values are cleared
+				sess, _ := mockSessionStore.Get(req, testSessionName)
+				assert.Nil(t, sess.Values["userID"])
+				assert.Nil(t, sess.Values["username"])
+				assert.Equal(t, -1, sess.Options.MaxAge)
+			}
+
 			mockLogger.AssertExpectations(t)
 		})
 	}

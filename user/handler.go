@@ -67,7 +67,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	sess, err := session.Get(h.config.SessionName, c)
 	if err != nil {
 		h.logger.Error("Failed to get session", err)
-		return c.String(http.StatusInternalServerError, "Failed to get session")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
 	sess.Values["userID"] = userID
@@ -81,20 +81,19 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
+	h.logger.Debug("Handling logout request")
 	sess, err := session.Get(h.config.SessionName, c)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to get session")
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
-
+	// Clear session
 	sess.Values["userID"] = nil
 	sess.Values["username"] = nil
-	sess.Options.MaxAge = -1 // This will delete the cookie
+	sess.Options.MaxAge = -1
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to save session")
+		h.logger.Error("Failed to save session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
-
-	// Clear the isAuthenticated status
-	c.Set("isAuthenticated", false)
-
 	return c.Redirect(http.StatusSeeOther, "/")
 }
