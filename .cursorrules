@@ -1,43 +1,40 @@
 General Guidelines
-* Use dependency injection.
-* Follow the user's requirements carefully and to the letter.
-* Think step-by-step: Describe your plan for structure and data flow in detailed pseudocode.
-* Confirm the plan, then write code.
-* Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go code.
+- Use Uber's fx dependency injection.
+- Confirm the plan, then write code.
+- Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go 1.23 code.
+- Use taskfile.dev over makefiles and build scripts.
 
 Web Application Development
-* Use the standard library's net/http package for web application development.
-* Utilize the new ServeMux introduced in Go 1.22 for routing.
-* Implement proper handling of different HTTP methods (GET, POST, PUT, DELETE, etc.).
-* Use method handlers with appropriate signatures (e.g., func(w http.ResponseWriter, r *http.Request)).
-* Leverage new features like wildcard matching and regex support in routes.
-* Implement proper error handling, including custom error types when beneficial.
-* Implement input validation for form submissions and user interactions.
-* Utilize Go's built-in concurrency features when beneficial for performance.
-* Include necessary imports, package declarations, and any required setup code.
-* Implement proper logging using loggo.
-* Consider implementing middleware for cross-cutting concerns (e.g., logging, authentication).
-* Implement rate limiting and authentication/authorization when appropriate, using standard library features or simple custom implementations.
-* Leave NO todos, placeholders, or missing pieces in the implementation.
-* Be concise in explanations, but provide brief comments for complex logic or Go-specific idioms.
-* If unsure about a best practice or implementation detail, say so instead of guessing.
+- Use Echo for web application development.
+- Utilize the new ServeMux introduced in Go 1.22 for routing.
+- Return HTML for HTTP methods (GET, POST, PUT, DELETE, etc.).
+- Use method handlers with appropriate signatures (e.g., func(w http.ResponseWriter, r *http.Request)).
+- Leverage new features like wildcard matching and regex support in routes.
+- Implement proper error handling, including custom error types when beneficial.
+- Implement input validation for form submissions and user interactions.
+- Utilize Go's built-in concurrency features when beneficial for performance.
+- Include necessary imports, package declarations, and any required setup code.
+- Implement proper logging using github.com/jonesrussell/loggo v0.3.0.
+- Consider implementing middleware for cross-cutting concerns (e.g., logging, authentication).
+- Implement rate limiting and authentication/authorization when appropriate
+- Leave NO todos, placeholders, or missing pieces in the implementation.
+- Be concise in explanations, but provide brief comments for complex logic or Go-specific idioms.
+- If unsure about a best practice or implementation detail, provide options and explain the pros and cons.
 
 Code Style and Structure
-* Write concise, idiomatic Go code with accurate examples.
-* Use functional and declarative programming patterns; avoid global variables.
-* Prefer iteration and modularization over code duplication.
-* Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-* Structure files: exported functions, subfunctions, helpers, static content, types.
+- Write concise, idiomatic Go code with accurate examples.
+- Use functional and declarative programming patterns; avoid global variables.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Structure files: exported functions, subfunctions, helpers, static content, types.
+- Use Go for all code; prefer interfaces over concrete types.
+- Use echo.Context for all web requests.
 
 Naming Conventions
-* Use lowercase with underscores for directories.
-* Favor named exports for functions.
+- Use lowercase with underscores for directories.
+- Favor named exports for functions.
 
-Go Usage
-* Use Go for all code; prefer interfaces over concrete types.
-* Do not use github.com/golang/mock/gomock; use testify's mock package instead.
+Testing
+- Do not use github.com/golang/mock/gomock; use testify's mock package instead.
+- Use testify's assert package for assertions.
 
-Priorities
-* Always prioritize security, scalability, and maintainability in your designs and implementations.
-* Leverage the power and simplicity of Go's standard library to create efficient and idiomatic code.
-* Use taskfile.dev over makefiles and build scripts.
