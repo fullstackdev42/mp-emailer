@@ -227,36 +227,32 @@ func TestHandler_GetCampaign(t *testing.T) {
 		},
 		{
 			name:         "Campaign not found",
-			campaignID:   999,
+			campaignID:   2,
+			mockReturn:   nil,
 			mockError:    echo.ErrNotFound,
 			expectedCode: http.StatusNotFound,
-			expectedBody: "Error page",
+			expectedBody: `{"message":"campaign not found"}`,
 		},
 		{
 			name:         "Internal server error",
-			campaignID:   1,
-			mockError:    errors.New("database error"),
+			campaignID:   3,
+			mockReturn:   nil,
+			mockError:    errors.New("internal server error"),
 			expectedCode: http.StatusInternalServerError,
-			expectedBody: "Error page",
+			expectedBody: `{"message":"internal server error"}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
-			mockLogger := new(mocks.MockLoggerInterface)
+			mockService := NewMockServiceInterface(t)
+			mockLogger := mocks.NewMockLoggerInterface(t)
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
-			mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-			mockLogger.On("Error", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockService.EXPECT().FetchCampaign(tt.campaignID).Return(tt.mockReturn, tt.mockError)
 
-			mockService.On("FetchCampaign", tt.campaignID).Return(tt.mockReturn, tt.mockError)
-
-			h := &Handler{
-				service: mockService,
-				logger:  mockLogger,
-			}
+			h := NewHandler(mockService, mockLogger, nil, nil, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+strconv.Itoa(tt.campaignID), nil)
 			rec := httptest.NewRecorder()
@@ -267,21 +263,13 @@ func TestHandler_GetCampaign(t *testing.T) {
 			err := h.GetCampaign(c)
 
 			if tt.mockError != nil {
-				if tt.mockError == echo.ErrNotFound {
-					assert.Equal(t, tt.expectedCode, rec.Code)
-					assert.Contains(t, rec.Body.String(), tt.expectedBody)
-				} else {
-					assert.Error(t, err)
-					assert.Equal(t, tt.mockError.Error(), err.Error())
-				}
+				assert.Error(t, err)
+				assert.Equal(t, tt.mockError.Error(), err.Error())
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedCode, rec.Code)
 				assert.JSONEq(t, tt.expectedBody, rec.Body.String())
 			}
-
-			mockService.AssertExpectations(t)
-			mockLogger.AssertExpectations(t)
 		})
 	}
 }

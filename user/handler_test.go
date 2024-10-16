@@ -20,9 +20,10 @@ const testSessionName = "test_session"
 
 func TestNewHandler(t *testing.T) {
 	mockService := NewMockServiceInterface(t)
+	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockConfig := &config.Config{}
 
-	handler := NewHandler(mockService, nil, mockConfig)
+	handler := NewHandler(mockService, mockLogger, mockConfig)
 
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
@@ -33,14 +34,14 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_RegisterPOST(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*MockServiceInterface, mocks.MockLoggerInterface)
+		setupMock      func(*MockServiceInterface, *mocks.MockLoggerInterface)
 		inputBody      string
 		wantStatusCode int
 		wantRedirect   string
 	}{
 		{
 			name: "Successful registration",
-			setupMock: func(ms *MockServiceInterface, ml mocks.MockLoggerInterface) {
+			setupMock: func(ms *MockServiceInterface, ml *mocks.MockLoggerInterface) {
 				ms.EXPECT().RegisterUser("newuser", "password123", "newuser@example.com").Return(nil)
 				ml.EXPECT().Info("User registered successfully").Return()
 			},
@@ -50,7 +51,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 		},
 		{
 			name: "Missing required fields",
-			setupMock: func(_ *MockServiceInterface, ml mocks.MockLoggerInterface) {
+			setupMock: func(_ *MockServiceInterface, ml *mocks.MockLoggerInterface) {
 				ml.EXPECT().Warn("Missing required fields in registration form").Return()
 			},
 			inputBody:      `username=newuser&password=`,
@@ -169,13 +170,13 @@ func TestHandler_LoginPOST(t *testing.T) {
 func TestHandler_RegisterGET(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*MockServiceInterface, mocks.MockLoggerInterface)
+		setupMock      func(*mocks.MockLoggerInterface)
 		wantStatusCode int
 		wantErr        bool
 	}{
 		{
 			name: "Successful GET request",
-			setupMock: func(_ *MockServiceInterface, ml mocks.MockLoggerInterface) {
+			setupMock: func(ml *mocks.MockLoggerInterface) {
 				ml.EXPECT().Debug("RegisterGET: Starting").Return()
 			},
 			wantStatusCode: http.StatusOK,
@@ -186,11 +187,11 @@ func TestHandler_RegisterGET(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := NewMockServiceInterface(t)
-			mockLogger := mocks.MockLoggerInterface(t)
+			mockLogger := *mocks.NewMockLoggerInterface(t)
 
-			tt.setupMock(mockService, mockLogger)
+			tt.setupMock(&mockLogger)
 
-			handler := NewHandler(mockService, mockLogger, &config.Config{SessionName: testSessionName})
+			handler := NewHandler(mockService, &mockLogger, &config.Config{SessionName: testSessionName})
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/register", nil)
