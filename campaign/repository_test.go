@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupMockDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock, *Repository) {
+func setupMockDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock, RepositoryInterface) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
