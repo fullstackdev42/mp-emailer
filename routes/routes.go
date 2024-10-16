@@ -25,12 +25,12 @@ func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *
 
 func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 	// Public user routes
-	e.GET("/login", uh.LoginGET)
-	e.POST("/login", uh.LoginPOST)
+	e.GET("/login", uh.LoginGET)   // Handle GET request for login
+	e.POST("/login", uh.LoginPOST) // Handle POST request for login
 
-	e.GET("/logout", uh.LogoutGET)
-	e.GET("/register", uh.RegisterGET)
-	e.POST("/register", uh.RegisterPOST)
+	e.GET("/logout", uh.LogoutGET)       // Handle GET request for logout
+	e.GET("/register", uh.RegisterGET)   // Handle GET request for registration
+	e.POST("/register", uh.RegisterPOST) // Handle POST request for registration
 
 	// Add any additional user-related routes here
 	// For example:

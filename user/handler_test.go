@@ -45,7 +45,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 			name: "Successful registration",
 			setupMock: func(ms *MockServiceInterface, ml *mocks.MockLoggerInterface, mss *MockSessionStore) {
 				ms.EXPECT().RegisterUser("testuser", "test@example.com", "password123").Return(nil)
-				ml.EXPECT().Info("User registered successfully").Return()
+				ml.EXPECT().Info("User registered successfully", "username", "testuser").Times(1)
 
 				// Setup session store mock
 				session := sessions.NewSession(mss, "test_session")
@@ -192,4 +192,31 @@ func TestHandler_RegisterGET(t *testing.T) {
 			mockLogger.AssertExpectations(t)
 		})
 	}
+}
+
+func TestHandler_LoginGET(t *testing.T) {
+	// Setup
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	mockService := NewMockServiceInterface(t)
+	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockConfig := &config.Config{SessionName: "test_session"}
+
+	handler := NewHandler(mockService, mockLogger, mockConfig)
+
+	// Perform the request
+	err := handler.LoginGET(c)
+
+	// Assertions
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	// Check that the response body contains expected content
+	// This assumes that your login page contains the text "Login"
+	assert.Contains(t, rec.Body.String(), "Login")
+
+	mockLogger.AssertExpectations(t)
 }
