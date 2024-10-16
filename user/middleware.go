@@ -42,9 +42,12 @@ func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface,
 				logger.Error("SetAuthStatusMiddleware: Error getting session", err)
 				c.Set("isAuthenticated", false)
 			} else {
-				authenticated := isAuthenticated(sess) && sess.Values["username"] != ""
-				logger.Debug("SetAuthStatusMiddleware: Authentication check result", "isAuthenticated", authenticated)
-				c.Set("isAuthenticated", authenticated)
+				authenticated, ok := sess.Values["authenticated"].(bool)
+				isAuthenticated := ok && authenticated && sess.Values["username"] != ""
+				logger.Debug("SetAuthStatusMiddleware: Authentication check result", "isAuthenticated", isAuthenticated)
+				c.Set("isAuthenticated", isAuthenticated)
+				c.Set("username", sess.Values["username"])
+				c.Set("user_id", sess.Values["user_id"])
 			}
 
 			logger.Debug("SetAuthStatusMiddleware: Set isAuthenticated in context")

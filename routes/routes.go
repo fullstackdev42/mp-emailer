@@ -8,6 +8,9 @@ import (
 )
 
 func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *user.Handler) {
+	// Apply SetAuthStatusMiddleware to all routes
+	e.Use(user.SetAuthStatusMiddleware(uh.Store, uh.Logger, uh.SessionName))
+
 	// Public routes
 	e.GET("/", sh.HandleIndex)
 
@@ -16,7 +19,7 @@ func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *
 
 	// Protected routes
 	authGroup := e.Group("/campaigns")
-	authGroup.Use(user.RequireAuthMiddleware(uh.Store, "/login"))
+	authGroup.Use(user.RequireAuthMiddleware(uh.Store, uh.SessionName))
 
 	// Campaign routes
 	registerCampaignRoutes(e, authGroup, ch)

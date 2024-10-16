@@ -38,7 +38,7 @@ func TestNewHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
 	assert.Equal(t, mockRepo, handler.repo)
-	assert.Equal(t, mockLogger, handler.logger)
+	assert.Equal(t, mockLogger, handler.Logger)
 	assert.Equal(t, mockStore, handler.Store)
 }
 
