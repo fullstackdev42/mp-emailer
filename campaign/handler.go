@@ -39,15 +39,20 @@ func NewHandler(
 }
 
 func (h *Handler) GetCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id")) // Convert string to int
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
-	campaign, err := h.service.FetchCampaign(id) // Use the converted int
+	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
+		if errors.Is(err, ErrCampaignNotFound) {
+			return h.HandleError(c, err, http.StatusNotFound, "Campaign not found")
+		}
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
-	return c.JSON(http.StatusOK, campaign)
+	return c.Render(http.StatusOK, "campaign_details.html", map[string]interface{}{
+		"Campaign": campaign,
+	})
 }
 
 func (h *Handler) GetAllCampaigns(c echo.Context) error {
@@ -92,11 +97,11 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 }
 
 func (h *Handler) EditCampaignForm(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id")) // Convert string to int
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
-	campaign, err := h.service.FetchCampaign(id) // Use the converted int
+	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
@@ -153,7 +158,6 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	}
 	userData := extractUserData(c)
 
-	// Assuming mp is a slice of Representatives, we'll use the first one
 	if len(mp) == 0 {
 		return h.HandleError(c, errors.New("no representatives found"), http.StatusNotFound, "No representatives found")
 	}
@@ -164,7 +168,6 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 }
 
 func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
-	h.logger.Error(message, err)
 	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
 }
 
@@ -180,7 +183,6 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) err
 	h.logger.Debug("Data for email template", "data", data)
 	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
 	if err != nil {
-		h.logger.Error("Error rendering email template", err)
 		return h.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
 	}
 	h.logger.Info("Email template rendered successfully")

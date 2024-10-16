@@ -1,6 +1,8 @@
 package campaign
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -91,9 +93,11 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 }
 
 func (s *Service) FetchCampaign(id int) (*Campaign, error) {
-	campaign, err := s.GetCampaignByID(id)
+	campaign, err := s.repo.GetCampaign(id)
 	if err != nil {
-		// s.logger.Error("Error fetching campaign", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrCampaignNotFound
+		}
 		return nil, err
 	}
 	return campaign, nil

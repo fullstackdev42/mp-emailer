@@ -93,6 +93,10 @@ func (r *Repository) GetByID(id int) (*Campaign, error) {
 	return &c, nil
 }
 
+func (r *Repository) GetCampaign(id int) (*Campaign, error) {
+	return r.GetByID(id)
+}
+
 func parseDateTime(dateStr string) (time.Time, error) {
 	if dateStr == "0000-00-00 00:00:00" {
 		return time.Time{}, nil

@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,113 +13,24 @@ import (
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-// MockService is a mock of ServiceInterface
-type MockService struct {
-	mock.Mock
-}
-
-func (m *MockService) GetAllCampaigns() ([]Campaign, error) {
-	args := m.Called()
-	return args.Get(0).([]Campaign), args.Error(1)
-}
-
-func (m *MockService) GetCampaignByID(id int) (*Campaign, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*Campaign), args.Error(1)
-}
-
-// Update the ComposeEmail method to match the interface
-func (m *MockService) ComposeEmail(representative Representative, campaign *Campaign, data map[string]string) string {
-	args := m.Called(representative, campaign, data)
-	return args.String(0)
-}
-
-// Add the missing CreateCampaign method
-func (m *MockService) CreateCampaign(campaign *Campaign) error {
-	args := m.Called(campaign)
-	return args.Error(0)
-}
-
-func (m *MockService) DeleteCampaign(id int) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-// Add the missing UpdateCampaign method
-func (m *MockService) UpdateCampaign(campaign *Campaign) error {
-	args := m.Called(campaign)
-	return args.Error(0)
-}
-
-func (m *MockService) FetchCampaign(id int) (*Campaign, error) {
-	args := m.Called(id)
-	return args.Get(0).(*Campaign), args.Error(1)
-}
-
-// MockRepresentativeLookupService is a mock of RepresentativeLookupService
-type MockRepresentativeLookupService struct {
-	mock.Mock
-}
-
-// Add the missing FetchRepresentatives method
-func (m *MockRepresentativeLookupService) FetchRepresentatives(postalCode string) ([]Representative, error) {
-	args := m.Called(postalCode)
-	return args.Get(0).([]Representative), args.Error(1)
-}
-
-func (m *MockRepresentativeLookupService) FilterRepresentatives(representatives []Representative, filters map[string]string) []Representative {
-	args := m.Called(representatives, filters)
-	return args.Get(0).([]Representative)
-}
-
-// MockEmailService implements email.Service for testing
-type MockEmailService struct {
-	mock.Mock
-}
-
-// SendEmail implements the SendEmail method of the email.Service interface
-func (m *MockEmailService) SendEmail(to, subject, body string) error {
-	args := m.Called(to, subject, body)
-	return args.Error(0)
-}
-
-// MockClient implements ClientInterface for testing
-type MockClient struct {
-	mock.Mock
-}
-
-// FetchRepresentatives implements the FetchRepresentatives method of the ClientInterface
-func (m *MockClient) FetchRepresentatives(postalCode string) ([]Representative, error) {
-	args := m.Called(postalCode)
-	return args.Get(0).([]Representative), args.Error(1)
-}
 
 // MockRenderer is a mock of echo.Renderer
 type MockRenderer struct{}
 
 func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Context) error {
-	if name == "error.html" {
-		_, err := w.Write([]byte("Error page"))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	// For simplicity, we'll just write the template name to the response writer
+	_, err := w.Write([]byte(name))
+	return err
 }
 
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
-	mockService := new(MockService)
+	mockService := new(MockServiceInterface)
 	mockLogger := &mocks.MockLoggerInterface{}
-	mockRepLookupService := new(MockRepresentativeLookupService)
-	mockEmailService := &MockEmailService{}
-	mockClient := &MockClient{}
+	mockRepLookupService := new(MockRepresentativeLookupServiceInterface)
+	mockEmailService := new(email.Service)
+	mockClient := new(MockClientInterface)
 
 	type args struct {
 		service                     ServiceInterface
@@ -138,14 +50,14 @@ func TestNewHandler(t *testing.T) {
 				service:                     mockService,
 				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
 				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      mockClient,
 			},
 		},
@@ -155,14 +67,14 @@ func TestNewHandler(t *testing.T) {
 				service:                     mockService,
 				logger:                      nil,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
 				logger:                      nil,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      mockClient,
 			},
 		},
@@ -172,14 +84,14 @@ func TestNewHandler(t *testing.T) {
 				service:                     mockService,
 				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      nil,
 			},
 			want: &Handler{
 				service:                     mockService,
 				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                mockEmailService,
+				emailService:                *mockEmailService,
 				client:                      nil,
 			},
 		},
@@ -221,37 +133,42 @@ func TestHandler_GetCampaign(t *testing.T) {
 			name:         "Successful campaign retrieval",
 			campaignID:   1,
 			mockReturn:   &Campaign{ID: 1, Name: "Test Campaign"},
+			mockError:    nil,
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":1,"name":"Test Campaign","template":"","owner_id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","tokens":null}`,
+			expectedBody: "campaign_details.html",
 		},
-		// {
-		// 	name:         "Campaign not found",
-		// 	campaignID:   2,
-		// 	mockReturn:   nil,
-		// 	mockError:    echo.ErrNotFound,
-		// 	expectedCode: http.StatusNotFound,
-		// 	expectedBody: `{"message":"campaign not found"}`,
-		// },
-		// {
-		// 	name:         "Internal server error",
-		// 	campaignID:   3,
-		// 	mockReturn:   nil,
-		// 	mockError:    errors.New("internal server error"),
-		// 	expectedCode: http.StatusInternalServerError,
-		// 	expectedBody: `{"message":"internal server error"}`,
-		// },
+		{
+			name:         "Campaign not found",
+			campaignID:   2,
+			mockReturn:   nil,
+			mockError:    ErrCampaignNotFound,
+			expectedCode: http.StatusNotFound,
+			expectedBody: "error.html",
+		},
+		{
+			name:         "Internal server error",
+			campaignID:   3,
+			mockReturn:   nil,
+			mockError:    errors.New("internal server error"),
+			expectedCode: http.StatusInternalServerError,
+			expectedBody: "error.html",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := NewMockServiceInterface(t)
 			mockLogger := mocks.NewMockLoggerInterface(t)
+			mockRepLookupService := NewMockRepresentativeLookupServiceInterface(t)
+			mockEmailService := new(email.Service)
+			mockClient := NewMockClientInterface(t)
+
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
 			mockService.EXPECT().FetchCampaign(tt.campaignID).Return(tt.mockReturn, tt.mockError)
 
-			h := NewHandler(mockService, mockLogger, nil, nil, nil)
+			h := NewHandler(mockService, mockLogger, mockRepLookupService, *mockEmailService, mockClient)
 
 			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+strconv.Itoa(tt.campaignID), nil)
 			rec := httptest.NewRecorder()
@@ -261,14 +178,9 @@ func TestHandler_GetCampaign(t *testing.T) {
 
 			err := h.GetCampaign(c)
 
-			if tt.mockError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.mockError.Error(), err.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedCode, rec.Code)
-				assert.JSONEq(t, tt.expectedBody, rec.Body.String())
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCode, rec.Code)
+			assert.Equal(t, tt.expectedBody, rec.Body.String())
 		})
 	}
 }
