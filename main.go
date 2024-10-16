@@ -76,12 +76,11 @@ func newSessionStore(config *config.Config) sessions.Store {
 
 func provideHandler(
 	logger loggo.LoggerInterface,
-	store sessions.Store,
 	emailService email.Service,
 	tmplManager *server.TemplateManager,
 	userService user.ServiceInterface,
 ) *server.Handler {
-	return server.NewHandler(logger, store, emailService, tmplManager, userService)
+	return server.NewHandler(logger, emailService, tmplManager, userService)
 }
 
 func registerRoutes(
@@ -89,9 +88,8 @@ func registerRoutes(
 	handler *server.Handler,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
-	store sessions.Store,
 ) {
-	routes.RegisterRoutes(e, handler, campaignHandler, userHandler, store)
+	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
 }
 
 func startServer(

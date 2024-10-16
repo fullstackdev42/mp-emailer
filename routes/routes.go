@@ -4,11 +4,10 @@ import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *user.Handler, store sessions.Store) {
+func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *user.Handler) {
 	// Public routes
 	e.GET("/", sh.HandleIndex)
 
@@ -17,7 +16,7 @@ func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *
 
 	// Protected routes
 	authGroup := e.Group("/campaigns")
-	authGroup.Use(user.RequireAuthMiddleware(store))
+	authGroup.Use(user.RequireAuthMiddleware(uh.Store))
 
 	// Campaign routes
 	registerCampaignRoutes(e, authGroup, ch)

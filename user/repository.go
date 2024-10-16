@@ -8,16 +8,24 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-type Repository struct {
+// Repository defines the interface for user-related database operations
+type Repository interface {
+	CreateUser(username, email, passwordHash string) error
+	GetUserByUsername(username string) (*User, error)
+	UserExists(username, email string) (bool, error)
+}
+
+type repositoryImpl struct {
 	db     *database.DB
 	logger loggo.LoggerInterface
 }
 
-func NewRepository(db *database.DB, logger loggo.LoggerInterface) *Repository {
-	return &Repository{db: db, logger: logger}
+// NewRepository creates a new Repository instance
+func NewRepository(db *database.DB, logger loggo.LoggerInterface) Repository {
+	return &repositoryImpl{db: db, logger: logger}
 }
 
-func (r *Repository) CreateUser(username, email, passwordHash string) error {
+func (r *repositoryImpl) CreateUser(username, email, passwordHash string) error {
 	r.logger.Info(fmt.Sprintf("Creating user: %s", username))
 	query := "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
 	_, err := r.db.SQL.Exec(query, username, email, passwordHash)
@@ -28,7 +36,7 @@ func (r *Repository) CreateUser(username, email, passwordHash string) error {
 	return nil
 }
 
-func (r *Repository) GetUserByUsername(username string) (*User, error) {
+func (r *repositoryImpl) GetUserByUsername(username string) (*User, error) {
 	var user User
 	query := "SELECT id, username, password_hash FROM users WHERE username = ?"
 	err := r.db.SQL.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
@@ -43,7 +51,7 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
-func (r *Repository) UserExists(username, email string) (bool, error) {
+func (r *repositoryImpl) UserExists(username, email string) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
 	err := r.db.SQL.QueryRow(query, username, email).Scan(&count)

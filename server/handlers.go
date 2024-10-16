@@ -20,14 +20,12 @@ type Handler struct {
 
 func NewHandler(
 	logger loggo.LoggerInterface,
-	store sessions.Store,
 	emailService email.Service,
 	tmplManager *TemplateManager,
 	userService user.ServiceInterface,
 ) *Handler {
 	return &Handler{
 		Logger:          logger,
-		Store:           store,
 		emailService:    emailService,
 		templateManager: tmplManager,
 		userService:     userService,
