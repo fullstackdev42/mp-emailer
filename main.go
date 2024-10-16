@@ -89,8 +89,9 @@ func registerRoutes(
 	handler *server.Handler,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
+	store sessions.Store,
 ) {
-	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
+	routes.RegisterRoutes(e, handler, campaignHandler, userHandler, store)
 }
 
 func startServer(

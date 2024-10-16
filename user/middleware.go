@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -32,17 +33,23 @@ func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			logger, ok := c.Get("logger").(loggo.LoggerInterface)
 			if !ok {
-				// If logger is not in context, use the provided logger
 				return fmt.Errorf("logger not found in context")
 			}
 
 			logger.Debug("RequireAuthMiddleware: Starting")
-			isAuthenticated := checkAuthentication(c, store, logger)
-			logger.Debug("RequireAuthMiddleware: Authentication check result", "isAuthenticated", isAuthenticated)
-			if !isAuthenticated {
-				logger.Warn("RequireAuthMiddleware: Unauthorized access attempt")
-				return echo.ErrUnauthorized
+
+			sess, err := store.Get(c.Request(), "mpe")
+			if err != nil {
+				logger.Error("RequireAuthMiddleware: Error getting session", err)
+				return c.Redirect(http.StatusSeeOther, "/login")
 			}
+
+			authenticated, ok := sess.Values["authenticated"].(bool)
+			if !ok || !authenticated {
+				logger.Warn("RequireAuthMiddleware: Unauthorized access attempt")
+				return c.Redirect(http.StatusSeeOther, "/login")
+			}
+
 			logger.Debug("RequireAuthMiddleware: Access granted")
 			return next(c)
 		}
@@ -58,19 +65,19 @@ func checkAuthentication(c echo.Context, store sessions.Store, logger loggo.Logg
 	}
 	logger.Debug("checkAuthentication: Session retrieved", "session", fmt.Sprintf("%+v", sess))
 
-	username, ok := sess.Values["username"]
-	if !ok {
-		logger.Debug("checkAuthentication: No username found in session")
-		return false
-	}
-	logger.Debug("checkAuthentication: Username found in session", "username", username)
-
-	if username == "" {
-		logger.Debug("checkAuthentication: Username is empty")
+	authenticated, ok := sess.Values["authenticated"].(bool)
+	if !ok || !authenticated {
+		logger.Debug("checkAuthentication: User not authenticated")
 		return false
 	}
 
-	logger.Debug("checkAuthentication: Authentication successful")
+	username, ok := sess.Values["username"].(string)
+	if !ok || username == "" {
+		logger.Debug("checkAuthentication: No valid username found in session")
+		return false
+	}
+
+	logger.Debug("checkAuthentication: Authentication successful", "username", username)
 	return true
 }
 

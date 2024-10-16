@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,22 +13,26 @@ import (
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	usermocks "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+type mockRenderer struct{}
+
+func (m *mockRenderer) Render(_ io.Writer, _ string, _ interface{}, _ echo.Context) error {
+	return nil
+}
 
 const testSessionName = "test_session"
 
 func TestNewHandler(t *testing.T) {
 	// Create mock dependencies
 	mockService := usermocks.NewMockServiceInterface(t)
-	mockLogger := new(loggo.MockLogger)
 	mockConfig := &config.Config{}
 
 	// Call NewHandler
-	handler := NewHandler(mockService, mockLogger, mockConfig)
+	handler := NewHandler(mockService, nil, mockConfig)
 
 	// Assert that the handler is not nil
 	assert.NotNil(t, handler)
@@ -37,23 +42,21 @@ func TestNewHandler(t *testing.T) {
 
 	// Assert that the handler's fields are set correctly
 	assert.Equal(t, mockService, handler.service)
-	assert.Equal(t, mockLogger, handler.logger)
 	assert.Equal(t, mockConfig, handler.config)
 }
 
 func TestHandler_RegisterPOST(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*usermocks.MockServiceInterface, *loggo.MockLogger, *mocks.MockSessionStore)
+		setupMock      func(*usermocks.MockServiceInterface, *mocks.MockSessionStore)
 		inputBody      string
 		wantStatusCode int
 		wantRedirect   string
 	}{
 		{
 			name: "Successful registration",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(ms *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				ms.EXPECT().RegisterUser("newuser", "password123", "newuser@example.com").Return(nil)
-				ml.On("Debug", "User registered successfully", mock.Anything).Return()
 				session := sessions.NewSession(mss, testSessionName)
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				// We don't expect Save to be called in the successful case
@@ -64,8 +67,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 		},
 		{
 			name: "Missing required fields",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
-				ml.On("Warn", "Missing required fields", mock.Anything).Return()
+			setupMock: func(_ *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				session := sessions.NewSession(mss, testSessionName)
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				mss.On("Save", mock.Anything, mock.Anything, mock.AnythingOfType("*sessions.Session")).Return(nil)
@@ -79,14 +81,13 @@ func TestHandler_RegisterPOST(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := usermocks.NewMockServiceInterface(t)
-			mockLogger := new(loggo.MockLogger)
 			mockSessionStore := new(mocks.MockSessionStore)
 
 			if tt.setupMock != nil {
-				tt.setupMock(mockService, mockLogger, mockSessionStore)
+				tt.setupMock(mockService, mockSessionStore)
 			}
 
-			handler := NewHandler(mockService, mockLogger, &config.Config{
+			handler := NewHandler(mockService, nil, &config.Config{
 				SessionName: testSessionName,
 			})
 
@@ -105,7 +106,6 @@ func TestHandler_RegisterPOST(t *testing.T) {
 			assert.Equal(t, tt.wantRedirect, rec.Header().Get("Location"))
 
 			mockService.AssertExpectations(t)
-			mockLogger.AssertExpectations(t)
 			mockSessionStore.AssertExpectations(t)
 		})
 	}
@@ -114,7 +114,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 func TestHandler_LoginPOST(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*usermocks.MockServiceInterface, *loggo.MockLogger, *mocks.MockSessionStore)
+		setupMock      func(*usermocks.MockServiceInterface, *mocks.MockSessionStore)
 		method         string
 		username       string
 		password       string
@@ -124,9 +124,8 @@ func TestHandler_LoginPOST(t *testing.T) {
 	}{
 		{
 			name: "Successful login",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(ms *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				ms.EXPECT().VerifyUser("validuser", "validpass").Return("123", nil)
-				ml.On("Debug", mock.Anything, mock.Anything).Return()
 				session := sessions.NewSession(mss, testSessionName)
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				mss.On("Save", mock.Anything, mock.Anything, mock.MatchedBy(func(s *sessions.Session) bool {
@@ -141,10 +140,8 @@ func TestHandler_LoginPOST(t *testing.T) {
 		},
 		{
 			name: "Invalid credentials",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(ms *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				ms.EXPECT().VerifyUser("testuser", "wrongpassword").Return("", fmt.Errorf("invalid username or password"))
-				ml.On("Debug", mock.Anything, mock.Anything).Return()
-				ml.On("Warn", mock.Anything, mock.Anything).Return()
 				session := sessions.NewSession(mss, testSessionName)
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				mss.On("Save", mock.Anything, mock.Anything, mock.MatchedBy(func(s *sessions.Session) bool {
@@ -158,11 +155,8 @@ func TestHandler_LoginPOST(t *testing.T) {
 			wantRedirect:   "/login",
 		},
 		{
-			name: "Empty username",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, _ *mocks.MockSessionStore) {
-				ml.On("Debug", mock.Anything, mock.Anything).Return()
-				ml.On("Warn", mock.Anything, mock.Anything).Return()
-			},
+			name:           "Empty username",
+			setupMock:      func(_ *usermocks.MockServiceInterface, _ *mocks.MockSessionStore) {},
 			method:         http.MethodPost,
 			username:       "",
 			password:       "somepassword",
@@ -170,12 +164,8 @@ func TestHandler_LoginPOST(t *testing.T) {
 			wantBody:       "Username and password are required",
 		},
 		{
-			name: "Empty password",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, _ *mocks.MockSessionStore) {
-				ml.On("Debug", mock.Anything, mock.Anything).Return()
-				ml.On("Warn", mock.Anything, mock.Anything).Return()
-				ml.On("Debug", mock.Anything, mock.Anything).Return()
-			},
+			name:           "Empty password",
+			setupMock:      func(_ *usermocks.MockServiceInterface, _ *mocks.MockSessionStore) {},
 			method:         http.MethodPost,
 			username:       "someuser",
 			password:       "",
@@ -187,17 +177,16 @@ func TestHandler_LoginPOST(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := usermocks.NewMockServiceInterface(t)
-			mockLogger := new(loggo.MockLogger)
 			mockSessionStore := new(mocks.MockSessionStore)
 
 			if tt.setupMock != nil {
-				tt.setupMock(mockService, mockLogger, mockSessionStore)
+				tt.setupMock(mockService, mockSessionStore)
 			}
 
 			config := &config.Config{
 				SessionName: testSessionName,
 			}
-			handler := NewHandler(mockService, mockLogger, config)
+			handler := NewHandler(mockService, nil, config)
 
 			e := echo.New()
 			req := httptest.NewRequest(tt.method, "/login", strings.NewReader(url.Values{
@@ -231,7 +220,6 @@ func TestHandler_LoginPOST(t *testing.T) {
 			}
 
 			mockService.AssertExpectations(t)
-			mockLogger.AssertExpectations(t)
 			mockSessionStore.AssertExpectations(t)
 		})
 	}
@@ -240,15 +228,14 @@ func TestHandler_LoginPOST(t *testing.T) {
 func TestHandler_LogoutGET(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*usermocks.MockServiceInterface, *loggo.MockLogger, *mocks.MockSessionStore)
+		setupMock      func(*usermocks.MockServiceInterface, *mocks.MockSessionStore)
 		wantStatusCode int
 		wantRedirect   string
 		wantErr        bool
 	}{
 		{
 			name: "Successful logout",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
-				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
+			setupMock: func(_ *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				session := &sessions.Session{Values: make(map[interface{}]interface{}), Options: &sessions.Options{}}
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				mss.On("Save", mock.Anything, mock.Anything, session).Return(nil)
@@ -259,22 +246,18 @@ func TestHandler_LogoutGET(t *testing.T) {
 		},
 		{
 			name: "Error getting session",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
-				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
+			setupMock: func(_ *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				mss.On("Get", mock.Anything, testSessionName).Return(nil, fmt.Errorf("failed to get session"))
-				ml.On("Error", "Failed to get session", mock.AnythingOfType("error")).Return()
 			},
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        true,
 		},
 		{
 			name: "Error saving session",
-			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
-				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
+			setupMock: func(_ *usermocks.MockServiceInterface, mss *mocks.MockSessionStore) {
 				session := &sessions.Session{Values: make(map[interface{}]interface{}), Options: &sessions.Options{}}
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
 				mss.On("Save", mock.Anything, mock.Anything, session).Return(fmt.Errorf("failed to save session"))
-				ml.On("Error", "Failed to save session", mock.AnythingOfType("error")).Return()
 			},
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        true,
@@ -284,13 +267,12 @@ func TestHandler_LogoutGET(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := usermocks.NewMockServiceInterface(t)
-			mockLogger := new(loggo.MockLogger)
 			mockSessionStore := new(mocks.MockSessionStore)
 
-			tt.setupMock(mockService, mockLogger, mockSessionStore)
+			tt.setupMock(mockService, mockSessionStore)
 
 			config := &config.Config{SessionName: testSessionName}
-			handler := NewHandler(mockService, mockLogger, config)
+			handler := NewHandler(mockService, nil, config)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/logout", nil)
@@ -312,7 +294,80 @@ func TestHandler_LogoutGET(t *testing.T) {
 			}
 
 			mockService.AssertExpectations(t)
-			mockLogger.AssertExpectations(t)
+			mockSessionStore.AssertExpectations(t)
+		})
+	}
+}
+
+func TestHandler_LoginGET(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupMock      func(*mocks.MockSessionStore, *echo.Echo)
+		wantStatusCode int
+		wantErr        bool
+	}{
+		{
+			name: "Successful login page render",
+			setupMock: func(mss *mocks.MockSessionStore, e *echo.Echo) {
+				session := sessions.NewSession(mss, testSessionName)
+				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
+				e.Renderer = &mockRenderer{}
+			},
+			wantStatusCode: http.StatusOK,
+			wantErr:        false,
+		},
+		{
+			name: "Error getting session",
+			setupMock: func(mss *mocks.MockSessionStore, _ *echo.Echo) {
+				mss.On("Get", mock.Anything, testSessionName).Return(nil, fmt.Errorf("failed to get session"))
+			},
+			wantStatusCode: http.StatusInternalServerError,
+			wantErr:        true,
+		},
+		{
+			name: "Already authenticated user",
+			setupMock: func(mss *mocks.MockSessionStore, _ *echo.Echo) {
+				session := sessions.NewSession(mss, testSessionName)
+				session.Values["authenticated"] = true
+				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
+			},
+			wantStatusCode: http.StatusSeeOther,
+			wantErr:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSessionStore := new(mocks.MockSessionStore)
+
+			e := echo.New()
+			if tt.setupMock != nil {
+				tt.setupMock(mockSessionStore, e)
+			}
+
+			config := &config.Config{SessionName: testSessionName}
+			handler := NewHandler(nil, nil, config)
+
+			req := httptest.NewRequest(http.MethodGet, "/login", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.Set("_session_store", mockSessionStore)
+
+			err := handler.LoginGET(c)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				httpErr, ok := err.(*echo.HTTPError)
+				assert.True(t, ok)
+				assert.Equal(t, tt.wantStatusCode, httpErr.Code)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantStatusCode, rec.Code)
+				if tt.wantStatusCode == http.StatusSeeOther {
+					assert.Equal(t, "/", rec.Header().Get("Location"))
+				}
+			}
+
 			mockSessionStore.AssertExpectations(t)
 		})
 	}

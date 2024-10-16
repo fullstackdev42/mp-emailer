@@ -21,7 +21,7 @@
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'foobar','jonesrussell42@gmail.com','$2a$10$CTVo.Yd51WGUfG8FdrdKfe37NUGrPJdE0zVgG3KL1xi3FazzqdbGa','2024-10-08 16:41:42');
+(1,'foobar','jonesrussell42@gmail.com','$2a$10$7U0oMJZ0qtKcrJPI0otrXOTczXRfHdYD64JZ6oB2QTluNMSF9zmE6','2024-10-08 16:41:42');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 

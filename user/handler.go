@@ -85,19 +85,25 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 
 // Handler for GET requests
 func (h *Handler) LoginGET(c echo.Context) error {
-	sess, err := session.Get(h.config.SessionName, c)
+	h.logger.Debug("Handling login GET request", "path", c.Path())
+
+	session, err := h.getSession(c)
 	if err != nil {
 		h.logger.Error("Failed to get session", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
-	return c.Render(http.StatusOK, "login.html", map[string]interface{}{
-		"Error": sess.Flashes("error"),
-	})
+
+	if auth, _ := session.Values["authenticated"].(bool); auth {
+		h.logger.Debug("User already authenticated, redirecting to home", "path", c.Path())
+		return c.Redirect(http.StatusSeeOther, "/")
+	}
+
+	return c.Render(http.StatusOK, "login.html", nil)
 }
 
 // Handler for POST requests
 func (h *Handler) LoginPOST(c echo.Context) error {
-	h.logger.Debug("Handling login request", "path", c.Path())
+	h.logger.Debug("Handling login request", map[string]interface{}{"path": c.Path()})
 
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -111,7 +117,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	if err != nil {
 		h.logger.Warn("Invalid login attempt", "username", username, "error", err)
 		session, _ := h.getSession(c)
-		session.Values["error"] = "Invalid username or password"
+		session.AddFlash("Invalid username or password", "error")
 		if err := session.Save(c.Request(), c.Response()); err != nil {
 			h.logger.Error("Failed to save session", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
@@ -120,6 +126,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	}
 
 	session, _ := h.getSession(c)
+	session.Values["authenticated"] = true
 	session.Values["userID"] = userID
 	session.Values["username"] = username
 	if err := session.Save(c.Request(), c.Response()); err != nil {
@@ -127,7 +134,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 
-	h.logger.Debug("User logged in successfully", "username", username)
+	h.logger.Debug("User logged in successfully", map[string]interface{}{"username": username})
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 

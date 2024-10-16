@@ -4,20 +4,20 @@ import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, h *server.Handler, ch *campaign.Handler, uh *user.Handler) {
+func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *user.Handler, store sessions.Store) {
 	// Public routes
-	e.GET("/", h.HandleIndex)
+	e.GET("/", sh.HandleIndex)
 
 	// User routes
 	registerUserRoutes(e, uh)
 
 	// Protected routes
-	authGroup := e.Group("")
-	authGroup.Use(user.RequireAuthMiddleware(h.Store))
-	authGroup.POST("/echo", h.HandleEcho)
+	authGroup := e.Group("/campaigns")
+	authGroup.Use(user.RequireAuthMiddleware(store))
 
 	// Campaign routes
 	registerCampaignRoutes(e, authGroup, ch)
@@ -40,17 +40,16 @@ func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 
 func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
 	// Public campaign route
-	e.GET("/campaigns/:id", ch.GetCampaign)
-	e.POST("/campaigns/:id/send", ch.SendCampaign)
+	e.GET("/campaign/:id", ch.GetCampaign)
+	e.POST("/campaign/:id/send", ch.SendCampaign)
+
+	e.POST("/campaign/lookup-representatives", ch.HandleRepresentativeLookup)
 
 	// Protected campaign routes
-	authGroup.GET("/campaigns", ch.GetAllCampaigns)
-	authGroup.GET("/campaigns/new", ch.CreateCampaignForm)
-	authGroup.POST("/campaigns/new", ch.CreateCampaign)
-	authGroup.POST("/campaigns/:id/delete", ch.DeleteCampaign)
-	authGroup.GET("/campaigns/:id/edit", ch.EditCampaignForm)
-	authGroup.POST("/campaigns/:id/edit", ch.EditCampaign)
-
-	// Add this new route
-	e.POST("/lookup-representatives", ch.HandleRepresentativeLookup)
+	authGroup.GET("/", ch.GetAllCampaigns)
+	authGroup.GET("/new", ch.CreateCampaignForm)
+	authGroup.POST("/new", ch.CreateCampaign)
+	authGroup.POST("/:id/delete", ch.DeleteCampaign)
+	authGroup.GET("/:id/edit", ch.EditCampaignForm)
+	authGroup.POST(":id/edit", ch.EditCampaign)
 }

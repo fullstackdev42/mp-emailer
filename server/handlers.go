@@ -37,21 +37,3 @@ func NewHandler(
 func (h *Handler) HandleIndex(c echo.Context) error {
 	return c.Render(http.StatusOK, "index.html", nil)
 }
-
-func (h *Handler) handleError(err error, statusCode int, message string) error {
-	h.Logger.Error(message, err)
-	return echo.NewHTTPError(statusCode, message)
-}
-
-func (h *Handler) HandleEcho(c echo.Context) error {
-	type EchoRequest struct {
-		Message string `json:"message"`
-	}
-
-	req := new(EchoRequest)
-	if err := c.Bind(req); err != nil {
-		return h.handleError(err, http.StatusBadRequest, "Error binding request")
-	}
-
-	return c.JSON(http.StatusOK, req)
-}
