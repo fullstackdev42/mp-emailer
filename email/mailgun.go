@@ -7,9 +7,15 @@ import (
 	"github.com/mailgun/mailgun-go/v4"
 )
 
+type MailgunClient interface {
+	NewMessage(from, subject, text string, to ...string) *mailgun.Message
+	Send(ctx context.Context, message *mailgun.Message) (string, string, error)
+}
+
 type MailgunEmailService struct {
 	domain string
 	apiKey string
+	client MailgunClient
 }
 
 func NewMailgunEmailService(domain, apiKey string) *MailgunEmailService {
@@ -20,12 +26,10 @@ func NewMailgunEmailService(domain, apiKey string) *MailgunEmailService {
 }
 
 func (s *MailgunEmailService) SendEmail(to, subject, body string) error {
-	mg := mailgun.NewMailgun(s.domain, s.apiKey)
-	message := mg.NewMessage("no-reply@"+s.domain, subject, body, to)
-
+	message := s.client.NewMessage("no-reply@"+s.domain, subject, body, to)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	_, _, err := mg.Send(ctx, message)
+	_, _, err := s.client.Send(ctx, message)
 	return err
 }
