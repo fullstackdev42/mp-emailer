@@ -8,6 +8,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 # Switch to vscode user to install golang-migrate
 USER vscode
 RUN go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest && \
+    go install github.com/vektra/mockery/v2@v2.46.3 && \
     go install github.com/air-verse/air@latest
 
 # Ensure the migrate binary is in the PATH for vscode user
