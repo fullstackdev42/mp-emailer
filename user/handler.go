@@ -60,7 +60,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	email := c.FormValue("email")
 
 	if username == "" || password == "" || email == "" {
-		h.logger.Warn("Missing required fields", "username", username, "email", email, "password", "***")
+		h.logger.Warn("Missing required fields", "username", username, "email", email)
 		sess.AddFlash("Username, password, and email are required")
 		if err := sess.Save(c.Request(), c.Response()); err != nil {
 			h.logger.Error("Failed to save session", err)
@@ -79,7 +79,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/register")
 	}
 
-	h.logger.Debug("User registered successfully")
+	h.logger.Info("User registered successfully", "username", username)
 	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
