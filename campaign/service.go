@@ -8,13 +8,13 @@ import (
 
 // ServiceInterface defines the interface for the campaign service
 type ServiceInterface interface {
-	GetCampaignByID(id int) (*Campaign, error)
-	GetAllCampaigns() ([]Campaign, error)
+	ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string
 	CreateCampaign(campaign *Campaign) error
 	DeleteCampaign(id int) error
-	UpdateCampaign(campaign *Campaign) error
-	ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string
 	FetchCampaign(id int) (*Campaign, error)
+	GetAllCampaigns() ([]Campaign, error)
+	GetCampaignByID(id int) (*Campaign, error)
+	UpdateCampaign(campaign *Campaign) error
 }
 
 type Service struct {

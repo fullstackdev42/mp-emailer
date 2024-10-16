@@ -42,7 +42,7 @@ func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 
 func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
 	// Public campaign route
-	e.GET("/campaign/:id", ch.GetCampaign)
+	e.GET("/campaign/:id", ch.CampaignGET)
 	e.POST("/campaign/:id/send", ch.SendCampaign)
 
 	e.POST("/campaign/lookup-representatives", ch.HandleRepresentativeLookup)

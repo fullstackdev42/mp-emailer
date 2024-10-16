@@ -38,7 +38,7 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) GetCampaign(c echo.Context) error {
+func (h *Handler) CampaignGET(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")

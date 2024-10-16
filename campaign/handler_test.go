@@ -120,7 +120,7 @@ func TestNewHandler(t *testing.T) {
 	}
 }
 
-func TestHandler_GetCampaign(t *testing.T) {
+func TestHandler_CampaignGET(t *testing.T) {
 	tests := []struct {
 		name         string
 		campaignID   int
@@ -176,7 +176,7 @@ func TestHandler_GetCampaign(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(strconv.Itoa(tt.campaignID))
 
-			err := h.GetCampaign(c)
+			err := h.CampaignGET(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCode, rec.Code)

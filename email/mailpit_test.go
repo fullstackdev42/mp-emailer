@@ -2,22 +2,10 @@ package email
 
 import (
 	"fmt"
-	"net/smtp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-// MockSMTPClient is a mock implementation of the SMTP client
-type MockSMTPClient struct {
-	mock.Mock
-}
-
-func (m *MockSMTPClient) SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-	args := m.Called(addr, a, from, to, msg)
-	return args.Error(0)
-}
 
 func TestMailpitEmailService_SendEmail(t *testing.T) {
 	mockSMTP := new(MockSMTPClient)

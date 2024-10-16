@@ -1,28 +1,13 @@
 package email
 
 import (
-	"context"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-// MockMailgunClient is a mock implementation of the Mailgun client
-type MockMailgunClient struct {
-	mock.Mock
-}
-
-func (m *MockMailgunClient) NewMessage(from, subject, body string, to ...string) *mailgun.Message {
-	args := m.Called(from, subject, body, to)
-	return args.Get(0).(*mailgun.Message)
-}
-
-func (m *MockMailgunClient) Send(ctx context.Context, message *mailgun.Message) (string, string, error) {
-	args := m.Called(ctx, message)
-	return args.String(0), args.String(1), args.Error(2)
-}
 
 func TestMailgunEmailService_SendEmail(t *testing.T) {
 	mockClient := new(MockMailgunClient)
@@ -30,11 +15,13 @@ func TestMailgunEmailService_SendEmail(t *testing.T) {
 		domain: "example.com",
 		apiKey: "key",
 		client: mockClient,
+		logger: mocks.NewMockLoggerInterface(t),
 	}
 
-	message := &mailgun.Message{} // Create an empty message object
+	message := &mailgun.Message{}
 
-	mockClient.On("NewMessage", "no-reply@example.com", "Subject", "Body", []string{"test@example.com"}).Return(message)
+	// Update this line to pass the 'to' string directly
+	mockClient.On("NewMessage", "no-reply@example.com", "Subject", "Body", "test@example.com").Return(message)
 	mockClient.On("Send", mock.Anything, message).Return("", "", nil)
 
 	err := service.SendEmail("test@example.com", "Subject", "Body")

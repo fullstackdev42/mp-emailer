@@ -116,7 +116,7 @@ func TestRepository_GetByID(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestRepository_GetCampaign(t *testing.T) {
+func TestRepository_CampaignGET(t *testing.T) {
 	db, mock, repo := setupMockDB(t)
 	defer db.Close()
 

@@ -2,8 +2,10 @@ package email
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/jonesrussell/loggo"
 	"github.com/mailgun/mailgun-go/v4"
 )
 
@@ -16,6 +18,7 @@ type MailgunEmailService struct {
 	domain string
 	apiKey string
 	client MailgunClient
+	logger loggo.LoggerInterface
 }
 
 func NewMailgunEmailService(domain, apiKey string) *MailgunEmailService {
@@ -26,10 +29,20 @@ func NewMailgunEmailService(domain, apiKey string) *MailgunEmailService {
 }
 
 func (s *MailgunEmailService) SendEmail(to, subject, body string) error {
-	message := s.client.NewMessage("no-reply@"+s.domain, subject, body, to)
+	message := s.client.NewMessage(
+		fmt.Sprintf("no-reply@%s", s.domain),
+		subject,
+		body,
+		to,
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	_, _, err := s.client.Send(ctx, message)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	return nil
 }
