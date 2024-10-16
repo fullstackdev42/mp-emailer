@@ -8,11 +8,24 @@ import (
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 )
 
+// RepositoryInterface defines the methods that a campaign repository must implement
+type RepositoryInterface interface {
+	Create(campaign *Campaign) error
+	GetAll() ([]Campaign, error)
+	Update(campaign *Campaign) error
+	Delete(id int) error
+	GetByID(id int) (*Campaign, error)
+	GetCampaign(id int) (*Campaign, error)
+}
+
+// Ensure that Repository implements RepositoryInterface
+var _ RepositoryInterface = (*Repository)(nil)
+
 type Repository struct {
 	db *database.DB
 }
 
-func NewRepository(db *database.DB) *Repository {
+func NewRepository(db *database.DB) RepositoryInterface {
 	return &Repository{db: db}
 }
 

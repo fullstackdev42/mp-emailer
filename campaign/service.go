@@ -1,8 +1,6 @@
 package campaign
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -20,10 +18,10 @@ type ServiceInterface interface {
 }
 
 type Service struct {
-	repo *Repository
+	repo RepositoryInterface
 }
 
-func NewService(repo *Repository) ServiceInterface {
+func NewService(repo RepositoryInterface) ServiceInterface {
 	return &Service{repo: repo}
 }
 
@@ -95,7 +93,7 @@ func (s *Service) UpdateCampaign(campaign *Campaign) error {
 func (s *Service) FetchCampaign(id int) (*Campaign, error) {
 	campaign, err := s.repo.GetCampaign(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if err.Error() == "sql: no rows in result set" {
 			return nil, ErrCampaignNotFound
 		}
 		return nil, err
