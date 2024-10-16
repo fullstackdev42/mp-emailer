@@ -247,7 +247,7 @@ func TestHandler_LogoutGET(t *testing.T) {
 	}{
 		{
 			name: "Successful logout",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
 				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
 				session := &sessions.Session{Values: make(map[interface{}]interface{}), Options: &sessions.Options{}}
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
@@ -259,7 +259,7 @@ func TestHandler_LogoutGET(t *testing.T) {
 		},
 		{
 			name: "Error getting session",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
 				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
 				mss.On("Get", mock.Anything, testSessionName).Return(nil, fmt.Errorf("failed to get session"))
 				ml.On("Error", "Failed to get session", mock.AnythingOfType("error")).Return()
@@ -269,7 +269,7 @@ func TestHandler_LogoutGET(t *testing.T) {
 		},
 		{
 			name: "Error saving session",
-			setupMock: func(ms *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
+			setupMock: func(_ *usermocks.MockServiceInterface, ml *loggo.MockLogger, mss *mocks.MockSessionStore) {
 				ml.On("Debug", "Handling logout request", map[string]interface{}{"path": "/logout"}).Return()
 				session := &sessions.Session{Values: make(map[interface{}]interface{}), Options: &sessions.Options{}}
 				mss.On("Get", mock.Anything, testSessionName).Return(session, nil)
