@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -115,7 +116,7 @@ func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Co
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
 	mockService := new(MockService)
-	mockLogger := &loggo.MockLogger{}
+	mockLogger := &mocks.MockLoggerInterface{}
 	mockRepLookupService := new(MockRepresentativeLookupService)
 	mockEmailService := &MockEmailService{}
 	mockClient := &MockClient{}
@@ -243,7 +244,7 @@ func TestHandler_GetCampaign(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockService)
-			mockLogger := new(loggo.MockLogger)
+			mockLogger := new(mocks.MockLoggerInterface)
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 

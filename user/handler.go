@@ -28,21 +28,21 @@ func NewHandler(
 	}
 }
 
+const internalServerError = "Internal server error"
+
 func (h *Handler) RegisterGET(c echo.Context) error {
-	sess, err := session.Get(h.config.SessionName, c)
+	sess, err := h.getSession(c)
 	if err != nil {
-		h.logger.Error("Failed to get session", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		return echo.NewHTTPError(http.StatusInternalServerError, internalServerError)
 	}
 
 	data := map[string]interface{}{}
-	flashes := sess.Flashes()
-	if len(flashes) > 0 {
-		data["Error"] = flashes[0]
-	}
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		h.logger.Error("Failed to save session", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+	if flash := sess.Flashes(); len(flash) > 0 {
+		data["Error"] = flash[0]
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			h.logger.Error("Failed to save session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, internalServerError)
+		}
 	}
 
 	return c.Render(http.StatusOK, "register.html", data)
@@ -160,6 +160,7 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+// Helper method to get session
 func (h *Handler) getSession(c echo.Context) (*sessions.Session, error) {
 	sess, err := session.Get(h.config.SessionName, c)
 	if err != nil {
