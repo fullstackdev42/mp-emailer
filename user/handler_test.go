@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestNewHandler(t *testing.T) {
 	mockRepo := new(MockRepository)
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := new(MockSessionStore)
-	handler := NewHandler(mockRepo, mockLogger, mockStore)
+	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
 	assert.Equal(t, mockRepo, handler.repo)

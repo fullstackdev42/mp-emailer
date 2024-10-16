@@ -27,6 +27,12 @@ type Config struct {
 	LogLevel       string
 }
 
+func NewConfig() *Config {
+	return &Config{
+		SessionName: "mpe",
+	}
+}
+
 func Load() (*Config, error) {
 	// Load .env file if it exists
 	_ = godotenv.Load()
@@ -45,7 +51,7 @@ func Load() (*Config, error) {
 		MailpitHost:    getEnv("MAILPIT_HOST", "localhost"),
 		MailpitPort:    getEnv("MAILPIT_PORT", "1025"),
 		MigrationsPath: getEnv("MIGRATIONS_PATH", "migrations"),
-		SessionName:    getEnv("SESSION_NAME", "session"),
+		SessionName:    getEnv("SESSION_NAME", "mpe"),
 		SessionSecret:  os.Getenv("SESSION_SECRET"),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 	}

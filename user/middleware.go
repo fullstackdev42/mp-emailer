@@ -19,8 +19,8 @@ func getLogger(c echo.Context) (loggo.LoggerInterface, error) {
 }
 
 // getSession retrieves the session from the request
-func getSession(c echo.Context, store sessions.Store) (*sessions.Session, error) {
-	return store.Get(c.Request(), "mpe")
+func getSession(c echo.Context, store sessions.Store, sessionName string) (*sessions.Session, error) {
+	return store.Get(c.Request(), sessionName)
 }
 
 // isAuthenticated checks if the user is authenticated
@@ -30,14 +30,14 @@ func isAuthenticated(sess *sessions.Session) bool {
 }
 
 // SetAuthStatusMiddleware sets the isAuthenticated status for all routes
-func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface) echo.MiddlewareFunc {
+func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface, sessionName string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			logger.Debug("SetAuthStatusMiddleware: Starting")
 
 			c.Set("logger", logger)
 
-			sess, err := getSession(c, store)
+			sess, err := getSession(c, store, sessionName)
 			if err != nil {
 				logger.Error("SetAuthStatusMiddleware: Error getting session", err)
 				c.Set("isAuthenticated", false)
@@ -54,7 +54,7 @@ func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface)
 }
 
 // RequireAuthMiddleware allows or denies access to protected routes
-func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
+func RequireAuthMiddleware(store sessions.Store, sessionName string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			logger, err := getLogger(c)
@@ -64,7 +64,7 @@ func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
 
 			logger.Debug("RequireAuthMiddleware: Starting")
 
-			sess, err := getSession(c, store)
+			sess, err := getSession(c, store, sessionName)
 			if err != nil {
 				logger.Error("RequireAuthMiddleware: Error getting session", err)
 				return c.Redirect(http.StatusSeeOther, "/login")

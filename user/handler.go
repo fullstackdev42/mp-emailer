@@ -3,6 +3,7 @@ package user
 import (
 	"net/http"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -10,16 +11,23 @@ import (
 )
 
 type Handler struct {
-	repo   Repository
-	logger loggo.LoggerInterface
-	Store  sessions.Store
+	repo        Repository
+	logger      loggo.LoggerInterface
+	Store       sessions.Store
+	sessionName string
 }
 
-func NewHandler(repo Repository, logger loggo.LoggerInterface, store sessions.Store) *Handler {
+func NewHandler(
+	repo Repository,
+	logger loggo.LoggerInterface,
+	store sessions.Store,
+	config *config.Config,
+) *Handler {
 	return &Handler{
-		repo:   repo,
-		logger: logger,
-		Store:  store,
+		repo:        repo,
+		logger:      logger,
+		Store:       store,
+		sessionName: config.SessionName,
 	}
 }
 
@@ -54,17 +62,44 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		})
 	}
 
-	err = h.repo.CreateUser(username, email, string(hashedPassword))
-	if err != nil {
+	if err := h.repo.CreateUser(username, email, string(hashedPassword)); err != nil {
 		h.logger.Error("Error creating user", err)
 		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
 			"Message": "An error occurred while creating your account",
 		})
 	}
 
-	return c.Render(http.StatusCreated, "registration_success.html", map[string]interface{}{
-		"Username": username,
-	})
+	// Create a new session
+	sess, err := h.Store.Get(c.Request(), h.sessionName)
+	if err != nil {
+		h.logger.Error("Error getting session", err)
+		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+			"Message": "An error occurred while processing your request",
+		})
+	}
+	// Get the newly created user
+	user, err := h.repo.GetUserByUsername(username)
+	if err != nil {
+		h.logger.Error("Error fetching user after creation", err)
+		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+			"Message": "An error occurred while processing your request",
+		})
+	}
+
+	// Set user information in the session
+	sess.Values["user_id"] = user.ID
+	sess.Values["username"] = user.Username
+
+	// Save the session
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.logger.Error("Error saving session", err)
+		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+			"Message": "An error occurred while processing your request",
+		})
+	}
+
+	// Redirect to the home page
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 // Handler for GET requests
