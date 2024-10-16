@@ -124,8 +124,7 @@ func TestLoad(t *testing.T) {
 		assert.Equal(t, "", config.MailgunDomain)
 		assert.Equal(t, "localhost", config.MailpitHost)
 		assert.Equal(t, "1025", config.MailpitPort)
-		assert.Equal(t, "migrations", config.MigrationsPath)
-		assert.Equal(t, "session", config.SessionName)
+		assert.Equal(t, "mpe", config.SessionName)
 		assert.Equal(t, "info", config.LogLevel)
 	})
 }

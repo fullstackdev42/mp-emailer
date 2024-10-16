@@ -8,6 +8,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -67,11 +68,31 @@ func TestHandler_LoginGET(t *testing.T) {
 }
 
 func TestHandler_LogoutGET(t *testing.T) {
+	// Create a mock session store
+	mockStore := sessions.NewCookieStore([]byte("test-secret"))
+
+	// Initialize the handler with the mock store
+	h := &Handler{
+		Store:       mockStore,
+		SessionName: "test-session",
+		Logger:      mocks.NewMockLoggerInterface(t),
+	}
+
+	// Create a new echo context for testing
 	e := echo.New()
-	c, rec := SetupTestContext(e, "/logout")
-	handler := &Handler{}
-	err := handler.LogoutGET(c)
+	req := httptest.NewRequest(http.MethodGet, "/logout", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	// Call the LogoutGET function
+	err := h.LogoutGET(c)
+
+	// Assert that there's no error
 	assert.NoError(t, err)
+
+	// Assert that the response is a redirect (303 See Other)
 	assert.Equal(t, http.StatusSeeOther, rec.Code)
+
+	// Assert that the Location header is set to "/"
 	assert.Equal(t, "/", rec.Header().Get("Location"))
 }

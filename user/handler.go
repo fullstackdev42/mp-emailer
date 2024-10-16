@@ -158,6 +158,24 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 }
 
 func (h *Handler) LogoutGET(c echo.Context) error {
+	sess, err := h.Store.Get(c.Request(), h.SessionName)
+	if err != nil {
+		h.Logger.Error("Error getting session", err)
+		return c.Redirect(http.StatusSeeOther, "/")
+	}
+
+	// Clear session values
+	sess.Values = make(map[interface{}]interface{})
+
+	// Set MaxAge to -1 to delete the cookie
+	sess.Options.MaxAge = -1
+
+	// Save the session (this will delete it)
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.Logger.Error("Error saving session", err)
+		return c.Redirect(http.StatusSeeOther, "/")
+	}
+
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
