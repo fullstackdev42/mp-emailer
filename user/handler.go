@@ -69,7 +69,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/register")
 	}
 
-	if err := h.service.RegisterUser(username, password, email); err != nil {
+	if err := h.service.RegisterUser(username, email, password); err != nil {
 		h.logger.Error("Failed to register user", err)
 		sess.AddFlash("Failed to register user. Please try again.")
 		if err := sess.Save(c.Request(), c.Response()); err != nil {
@@ -116,7 +116,11 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	userID, err := h.service.VerifyUser(username, password)
 	if err != nil {
 		h.logger.Warn("Invalid login attempt", "username", username, "error", err)
-		session, _ := h.getSession(c)
+		session, err := h.getSession(c)
+		if err != nil {
+			h.logger.Error("Failed to get session", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+		}
 		session.AddFlash("Invalid username or password", "error")
 		if err := session.Save(c.Request(), c.Response()); err != nil {
 			h.logger.Error("Failed to save session", err)
@@ -125,7 +129,11 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
-	session, _ := h.getSession(c)
+	session, err := h.getSession(c)
+	if err != nil {
+		h.logger.Error("Failed to get session", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+	}
 	session.Values["authenticated"] = true
 	session.Values["userID"] = userID
 	session.Values["username"] = username
