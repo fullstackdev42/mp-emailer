@@ -9,18 +9,44 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// getLogger retrieves the logger from the context
+func getLogger(c echo.Context) (loggo.LoggerInterface, error) {
+	logger, ok := c.Get("logger").(loggo.LoggerInterface)
+	if !ok {
+		return nil, fmt.Errorf("logger not found in context")
+	}
+	return logger, nil
+}
+
+// getSession retrieves the session from the request
+func getSession(c echo.Context, store sessions.Store) (*sessions.Session, error) {
+	return store.Get(c.Request(), "mpe")
+}
+
+// isAuthenticated checks if the user is authenticated
+func isAuthenticated(sess *sessions.Session) bool {
+	authenticated, ok := sess.Values["authenticated"].(bool)
+	return ok && authenticated
+}
+
 // SetAuthStatusMiddleware sets the isAuthenticated status for all routes
 func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			logger.Debug("SetAuthStatusMiddleware: Starting")
 
-			// Set the logger in the context
 			c.Set("logger", logger)
 
-			isAuthenticated := checkAuthentication(c, store, logger)
-			logger.Debug("SetAuthStatusMiddleware: Authentication check result", "isAuthenticated", isAuthenticated)
-			c.Set("isAuthenticated", isAuthenticated)
+			sess, err := getSession(c, store)
+			if err != nil {
+				logger.Error("SetAuthStatusMiddleware: Error getting session", err)
+				c.Set("isAuthenticated", false)
+			} else {
+				authenticated := isAuthenticated(sess) && sess.Values["username"] != ""
+				logger.Debug("SetAuthStatusMiddleware: Authentication check result", "isAuthenticated", authenticated)
+				c.Set("isAuthenticated", authenticated)
+			}
+
 			logger.Debug("SetAuthStatusMiddleware: Set isAuthenticated in context")
 			return next(c)
 		}
@@ -31,21 +57,20 @@ func SetAuthStatusMiddleware(store sessions.Store, logger loggo.LoggerInterface)
 func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			logger, ok := c.Get("logger").(loggo.LoggerInterface)
-			if !ok {
-				return fmt.Errorf("logger not found in context")
+			logger, err := getLogger(c)
+			if err != nil {
+				return err
 			}
 
 			logger.Debug("RequireAuthMiddleware: Starting")
 
-			sess, err := store.Get(c.Request(), "mpe")
+			sess, err := getSession(c, store)
 			if err != nil {
 				logger.Error("RequireAuthMiddleware: Error getting session", err)
 				return c.Redirect(http.StatusSeeOther, "/login")
 			}
 
-			authenticated, ok := sess.Values["authenticated"].(bool)
-			if !ok || !authenticated {
+			if !isAuthenticated(sess) {
 				logger.Warn("RequireAuthMiddleware: Unauthorized access attempt")
 				return c.Redirect(http.StatusSeeOther, "/login")
 			}
@@ -56,37 +81,11 @@ func RequireAuthMiddleware(store sessions.Store) echo.MiddlewareFunc {
 	}
 }
 
-func checkAuthentication(c echo.Context, store sessions.Store, logger loggo.LoggerInterface) bool {
-	logger.Debug("checkAuthentication: Starting")
-	sess, err := store.Get(c.Request(), "mpe")
-	if err != nil {
-		logger.Error("checkAuthentication: Error getting session", err)
-		return false
-	}
-	logger.Debug("checkAuthentication: Session retrieved", "session", fmt.Sprintf("%+v", sess))
-
-	authenticated, ok := sess.Values["authenticated"].(bool)
-	if !ok || !authenticated {
-		logger.Debug("checkAuthentication: User not authenticated")
-		return false
-	}
-
-	username, ok := sess.Values["username"].(string)
-	if !ok || username == "" {
-		logger.Debug("checkAuthentication: No valid username found in session")
-		return false
-	}
-
-	logger.Debug("checkAuthentication: Authentication successful", "username", username)
-	return true
-}
-
 // GetOwnerIDFromSession retrieves the owner ID from the session
 func GetOwnerIDFromSession(c echo.Context) (int, error) {
-	logger, ok := c.Get("logger").(loggo.LoggerInterface)
-	if !ok {
-		// If logger is not set return an error
-		return 0, fmt.Errorf("logger not found in context")
+	logger, err := getLogger(c)
+	if err != nil {
+		return 0, err
 	}
 	logger.Debug("GetOwnerIDFromSession: Starting")
 
