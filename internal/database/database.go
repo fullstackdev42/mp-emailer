@@ -24,6 +24,7 @@ func NewDB(dsn string, logger loggo.LoggerInterface) (*DB, error) {
 	}
 
 	if err := db.Ping(); err != nil {
+		logger.Error("error connecting to database", err)
 		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
 
@@ -52,8 +53,7 @@ func (db *DB) CreateUser(username, email, passwordHash string) error {
 }
 
 func (db *DB) VerifyUser(username, password string) (string, error) {
-	var storedHash string
-	var userID string
+	var storedHash, userID string
 	query := "SELECT id, password_hash FROM users WHERE username = ?"
 	err := db.SQL.QueryRow(query, username).Scan(&userID, &storedHash)
 	if err != nil {
@@ -62,14 +62,8 @@ func (db *DB) VerifyUser(username, password string) (string, error) {
 		}
 		return "", fmt.Errorf("error querying user: %w", err)
 	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
-	if err != nil {
-		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return "", fmt.Errorf("invalid username or password")
-		}
-		return "", fmt.Errorf("error comparing passwords: %w", err)
+	if err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password)); err != nil {
+		return "", fmt.Errorf("invalid username or password")
 	}
-
 	return userID, nil
 }
