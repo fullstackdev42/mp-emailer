@@ -5,35 +5,94 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
-	// Import the MySQL driver for database/sql
+	// Import MySQL driver for database migrations
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
-	// Import the file source for migrations
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jonesrussell/loggo"
 )
 
-func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
+// Migrator interface for running and closing migrations
+type Migrator interface {
+	Up() error
+	Close() error
+}
+
+// MigrationService struct to encapsulate migration logic
+type MigrationService struct {
+	dsn            string
+	migrationsPath string
+	logger         loggo.LoggerInterface
+}
+
+// NewMigrationService creates a new instance of MigrationService
+func NewMigrationService(dsn, migrationsPath string, logger loggo.LoggerInterface) *MigrationService {
+	return &MigrationService{
+		dsn:            dsn,
+		migrationsPath: migrationsPath,
+		logger:         logger,
+	}
+}
+
+// Run executes the migrations
+func (ms *MigrationService) Run(migrator Migrator) error {
+	// Validate DSN
+	if ms.dsn == "" {
+		ms.logger.Error("DSN is empty", nil)
+		return fmt.Errorf("DSN is required")
+	}
+
 	// Log the migrations path for debugging
-	logger.Info("Migrations path: " + migrationsPath)
+	ms.logger.Debug("Migrations path: " + ms.migrationsPath)
 
 	// Ensure the migrations directory exists
-	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
-		return fmt.Errorf("migrations directory does not exist: %s", migrationsPath)
+	if _, err := os.Stat(ms.migrationsPath); os.IsNotExist(err) {
+		ms.logger.Error("Migrations directory does not exist", err, "path", ms.migrationsPath)
+		return fmt.Errorf("migrations directory does not exist: %w", err)
 	}
 
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", migrationsPath),
-		fmt.Sprintf("mysql://%s", dsn),
-	)
-	if err != nil {
-		return fmt.Errorf("error creating migration instance: %w", err)
-	}
-	defer m.Close()
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	// Run migrations
+	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+		ms.logger.Error("Error running migrations", err)
 		return fmt.Errorf("error running migrations: %w", err)
 	}
 
-	logger.Info("Migrations completed successfully")
+	// Always close the migrator
+	if err := migrator.Close(); err != nil {
+		ms.logger.Error("Error closing migration instance", err)
+		return fmt.Errorf("error closing migrations: %w", err)
+	}
+
+	ms.logger.Info("Migrations completed successfully")
 	return nil
+}
+
+// DefaultMigrator wraps the migrate.Migrate struct
+type DefaultMigrator struct {
+	*migrate.Migrate
+}
+
+// Up runs the migrations
+func (dm *DefaultMigrator) Up() error {
+	return dm.Migrate.Up()
+}
+
+// Close closes the migrations
+func (dm *DefaultMigrator) Close() error {
+	_, err := dm.Migrate.Close()
+	return err
+}
+
+// RunMigrations runs the database migrations
+func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
+	ms := NewMigrationService(dsn, migrationsPath, logger)
+	m, err := migrate.New(
+		fmt.Sprintf("file://%s", ms.migrationsPath),
+		fmt.Sprintf("mysql://%s", ms.dsn),
+	)
+	if err != nil {
+		logger.Error("Error creating migration instance", err)
+		return fmt.Errorf("error creating migration instance: %w", err)
+	}
+	dm := &DefaultMigrator{m}
+	return ms.Run(dm)
 }
