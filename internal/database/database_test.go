@@ -11,15 +11,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// TestNewDB checks the functionality of the NewDB function when connecting to the database.
 func TestNewDB(t *testing.T) {
+	// Create a mock logger
 	mockLogger := mocks.NewMockLoggerInterface(t)
+
+	// Set up expectations for the mock logger
 	mockLogger.EXPECT().Debug(mock.Anything).Return()
 	mockLogger.EXPECT().Error("error connecting to database", mock.AnythingOfType("*mysql.MySQLError")).Return()
 
+	// Define the Data Source Name (DSN) for testing
 	testDSN := "user:password@tcp(localhost:3306)/testdb"
+
+	// Call the NewDB function with the test DSN and mock logger
 	testDB, err := NewDB(testDSN, mockLogger)
+
+	// Assert that an error is returned
 	assert.Error(t, err)
+
+	// Assert that the testDB is nil when there is an error
 	assert.Nil(t, testDB)
+
+	// Assert that the error message contains the expected text
 	assert.Contains(t, err.Error(), "error connecting to database")
 }
 
@@ -29,10 +42,13 @@ func TestUserExists(t *testing.T) {
 	defer db.Close()
 
 	testDB := &DB{SQL: db}
+
+	// Set up expectations for the mock query and its result
 	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM users WHERE username = \\? OR email = \\?").
 		WithArgs("testuser", "test@example.com").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
+	// Call the UserExists function and assert the result
 	exists, err := testDB.UserExists("testuser", "test@example.com")
 	assert.NoError(t, err)
 	assert.True(t, exists)
@@ -45,10 +61,13 @@ func TestCreateUser(t *testing.T) {
 	defer db.Close()
 
 	testDB := &DB{SQL: db}
+
+	// Set up expectations for the mock exec and its result
 	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash\\) VALUES \\(\\?, \\?, \\?\\)").
 		WithArgs("testuser", "test@example.com", "hashedpassword").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
+	// Call the CreateUser function and assert the result
 	err = testDB.CreateUser("testuser", "test@example.com", "hashedpassword")
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
