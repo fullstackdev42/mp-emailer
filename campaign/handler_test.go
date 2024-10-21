@@ -9,10 +9,10 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"github.com/mailgun/mailgun-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,19 +28,20 @@ func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Co
 
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
-	mockService := mocksCampaign.NewMockServiceInterface(t)
+	mockService := new(MockServiceInterface)
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockRepLookupService := mocksCampaign.NewMockRepresentativeLookupServiceInterface(t)
+	mockRepLookupService := new(MockRepresentativeLookupServiceInterface)
 	mockEmailService := mocksEmail.NewMockService(t)
-	mockClient := mocksCampaign.NewMockClientInterface(t)
+	mockClient := new(MockClientInterface)
 
 	type args struct {
 		service                     ServiceInterface
 		logger                      loggo.LoggerInterface
 		representativeLookupService RepresentativeLookupServiceInterface
-		emailService                mocksEmail.MockService
-		client                      mocksCampaign.MockClientInterface
+		emailService                *mocksEmail.MockService
+		client                      ClientInterface
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -59,7 +60,7 @@ func TestNewHandler(t *testing.T) {
 				service:                     mockService,
 				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
+				emailService:                mockEmailService,
 				client:                      mockClient,
 			},
 		},
@@ -69,8 +70,8 @@ func TestNewHandler(t *testing.T) {
 				service:                     mockService,
 				logger:                      nil,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
-				client:                      *mockClient,
+				emailService:                mockEmailService,
+				client:                      mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
@@ -98,11 +99,10 @@ func TestNewHandler(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewHandler(tt.args.service, tt.args.logger, tt.args.representativeLookupService, tt.args.emailService, tt.args.client)
-
-			// Compare individual fields
 			if got.service != tt.want.service {
 				t.Errorf("NewHandler().service = %v, want %v", got.service, tt.want.service)
 			}
@@ -175,12 +175,14 @@ func TestHandler_CampaignGET(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := NewMockServiceInterface(t)
+			mockService := mocks.NewMockServiceInterface(t)
 			mockLogger := mocks.NewMockLoggerInterface(t)
-			mockRepLookupService := NewMockRepresentativeLookupServiceInterface(t)
-			mockEmailService := new(email.Service)
-			mockClient := NewMockClientInterface(t)
+			mockRepLookupService := mocks.NewMockRepresentativeLookupServiceInterface(t)
+			mockMailgunClient := mocksEmail.NewMockMailgunClient(t)
+			mockClient := mocks.NewMockClientInterface(t)
 
+			// Create a new email.Service with the mock MailgunClient
+			emailService := &email.Service{MailgunClient: mockMailgunClient}
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
@@ -188,16 +190,18 @@ func TestHandler_CampaignGET(t *testing.T) {
 				mockService.EXPECT().FetchCampaign(mock.AnythingOfType("int")).Return(tt.mockReturn, tt.mockError)
 			}
 
-			h := NewHandler(mockService, mockLogger, mockRepLookupService, *mockEmailService, mockClient)
-
+			h := NewHandler(mockService, mockLogger, mockRepLookupService, *emailService, mockClient)
 			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+tt.campaignID, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 			c.SetParamNames("id")
 			c.SetParamValues(tt.campaignID)
 
-			err := h.CampaignGET(c)
+			// Example: Setting expectations on MockMailgunClient
+			mockMailgunClient.EXPECT().NewMessage(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&mailgun.Message{})
+			mockMailgunClient.EXPECT().Send(mock.Anything, mock.Anything).Return("message-id", "response", nil)
 
+			err := h.CampaignGET(c)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCode, rec.Code)
 			assert.Equal(t, tt.expectedBody, rec.Body.String())
