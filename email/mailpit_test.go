@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
+	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMailpitEmailService_SendEmail(t *testing.T) {
-	mockSMTP := new(MockSMTPClient)
+	mockSMTP := new(mocksEmail.MockSMTPClient)
 	service := &MailpitEmailService{
 		host:       "localhost",
 		port:       "1025",

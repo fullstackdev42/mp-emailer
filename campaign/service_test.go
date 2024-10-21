@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestService_GetCampaignByID(t *testing.T) {
-	mockRepo := NewMockRepositoryInterface(t)
+	mockRepo := mocksCampaign.NewMockRepositoryInterface(t)
 	service := NewService(mockRepo)
 
 	campaign := &Campaign{ID: 1, Name: "Test Campaign"}
@@ -23,7 +24,7 @@ func TestService_GetCampaignByID(t *testing.T) {
 }
 
 func TestService_GetAllCampaigns(t *testing.T) {
-	mockRepo := NewMockRepositoryInterface(t)
+	mockRepo := mocksCampaign.NewMockRepositoryInterface(t)
 	service := NewService(mockRepo)
 
 	campaigns := []Campaign{{ID: 1, Name: "Campaign 1"}, {ID: 2, Name: "Campaign 2"}}

@@ -33,13 +33,13 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 }
 
 func TestNewHandler(t *testing.T) {
-	mockRepo := new(mocksUser.MockRepository)
+	mockUserRepo := new(mocksUser.MockRepository)
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := new(sessions.CookieStore)
-	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
+	handler := NewHandler(mockUserRepo, mockLogger, mockStore, config.NewConfig())
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
-	assert.Equal(t, mockRepo, handler.repo)
+	assert.Equal(t, mockUserRepo, handler.repo)
 	assert.Equal(t, mockLogger, handler.Logger)
 	assert.Equal(t, mockStore, handler.Store)
 }

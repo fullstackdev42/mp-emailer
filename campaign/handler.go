@@ -56,12 +56,10 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 
-	pageData := shared.PageData{
+	return c.Render(http.StatusOK, "campaign_details.html", shared.PageData{
 		Title:   "Campaign Details",
 		Content: campaign,
-	}
-
-	return c.Render(http.StatusOK, "campaign_details.html", pageData)
+	})
 }
 
 // GetAllCampaigns handles GET requests for all campaigns
@@ -80,15 +78,13 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
-	name := c.FormValue("name")
-	template := c.FormValue("template")
 	ownerID, err := user.GetOwnerIDFromSession(c)
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusUnauthorized, "Unauthorized")
 	}
 	campaign := &Campaign{
-		Name:     name,
-		Template: template,
+		Name:     c.FormValue("name"),
+		Template: c.FormValue("template"),
 		OwnerID:  ownerID,
 	}
 	if err := h.service.CreateCampaign(campaign); err != nil {
@@ -101,7 +97,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
+		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
 	if err := h.service.DeleteCampaign(id); err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error deleting campaign")
@@ -119,16 +115,9 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
-	campaignData := struct {
-		ID       int
-		Name     string
-		Template template.HTML
-	}{
-		ID:       campaign.ID,
-		Name:     campaign.Name,
-		Template: template.HTML(campaign.Template),
-	}
-	return c.Render(http.StatusOK, "campaign_edit.html", map[string]interface{}{"Campaign": campaignData})
+	return c.Render(http.StatusOK, "campaign_edit.html", map[string]interface{}{
+		"Campaign": campaign,
+	})
 }
 
 // EditCampaign handles POST requests for updating a campaign

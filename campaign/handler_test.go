@@ -5,14 +5,16 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
+	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockRenderer is a mock of echo.Renderer
@@ -26,18 +28,18 @@ func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Co
 
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
-	mockService := new(MockServiceInterface)
-	mockLogger := new(loggo.LoggerInterface)
-	mockRepLookupService := new(MockRepresentativeLookupServiceInterface)
-	mockEmailService := new(email.Service)
-	mockClient := new(MockClientInterface)
+	mockService := mocksCampaign.NewMockServiceInterface(t)
+	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockRepLookupService := mocksCampaign.NewMockRepresentativeLookupServiceInterface(t)
+	mockEmailService := mocksEmail.NewMockService(t)
+	mockClient := mocksCampaign.NewMockClientInterface(t)
 
 	type args struct {
 		service                     ServiceInterface
 		logger                      loggo.LoggerInterface
 		representativeLookupService RepresentativeLookupServiceInterface
-		emailService                email.Service
-		client                      ClientInterface
+		emailService                mocksEmail.MockService
+		client                      mocksCampaign.MockClientInterface
 	}
 	tests := []struct {
 		name string
@@ -48,14 +50,14 @@ func TestNewHandler(t *testing.T) {
 			name: "Create handler with all dependencies",
 			args: args{
 				service:                     mockService,
-				logger:                      *mockLogger,
+				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
+				emailService:                mockEmailService,
 				client:                      mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
-				logger:                      *mockLogger,
+				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
 				client:                      mockClient,
@@ -68,13 +70,13 @@ func TestNewHandler(t *testing.T) {
 				logger:                      nil,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
-				client:                      mockClient,
+				client:                      *mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
 				logger:                      nil,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
+				emailService:                mockEmailService,
 				client:                      mockClient,
 			},
 		},
@@ -82,16 +84,16 @@ func TestNewHandler(t *testing.T) {
 			name: "Create handler with nil client",
 			args: args{
 				service:                     mockService,
-				logger:                      *mockLogger,
+				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
+				emailService:                mockEmailService,
 				client:                      nil,
 			},
 			want: &Handler{
 				service:                     mockService,
-				logger:                      *mockLogger,
+				logger:                      mockLogger,
 				representativeLookupService: mockRepLookupService,
-				emailService:                *mockEmailService,
+				emailService:                mockEmailService,
 				client:                      nil,
 			},
 		},
@@ -123,7 +125,7 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_CampaignGET(t *testing.T) {
 	tests := []struct {
 		name         string
-		campaignID   int
+		campaignID   string
 		mockReturn   *Campaign
 		mockError    error
 		expectedCode int
@@ -131,7 +133,7 @@ func TestHandler_CampaignGET(t *testing.T) {
 	}{
 		{
 			name:         "Successful campaign retrieval",
-			campaignID:   1,
+			campaignID:   "1",
 			mockReturn:   &Campaign{ID: 1, Name: "Test Campaign"},
 			mockError:    nil,
 			expectedCode: http.StatusOK,
@@ -139,7 +141,7 @@ func TestHandler_CampaignGET(t *testing.T) {
 		},
 		{
 			name:         "Campaign not found",
-			campaignID:   2,
+			campaignID:   "2",
 			mockReturn:   nil,
 			mockError:    ErrCampaignNotFound,
 			expectedCode: http.StatusNotFound,
@@ -147,10 +149,26 @@ func TestHandler_CampaignGET(t *testing.T) {
 		},
 		{
 			name:         "Internal server error",
-			campaignID:   3,
+			campaignID:   "3",
 			mockReturn:   nil,
 			mockError:    errors.New("internal server error"),
 			expectedCode: http.StatusInternalServerError,
+			expectedBody: "error.html",
+		},
+		{
+			name:         "Invalid campaign ID",
+			campaignID:   "invalid",
+			mockReturn:   nil,
+			mockError:    nil,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "error.html",
+		},
+		{
+			name:         "Zero campaign ID",
+			campaignID:   "0",
+			mockReturn:   nil,
+			mockError:    nil,
+			expectedCode: http.StatusBadRequest,
 			expectedBody: "error.html",
 		},
 	}
@@ -166,21 +184,27 @@ func TestHandler_CampaignGET(t *testing.T) {
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
-			mockService.EXPECT().FetchCampaign(tt.campaignID).Return(tt.mockReturn, tt.mockError)
+			if tt.mockReturn != nil || tt.mockError != nil {
+				mockService.EXPECT().FetchCampaign(mock.AnythingOfType("int")).Return(tt.mockReturn, tt.mockError)
+			}
 
 			h := NewHandler(mockService, mockLogger, mockRepLookupService, *mockEmailService, mockClient)
 
-			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+strconv.Itoa(tt.campaignID), nil)
+			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+tt.campaignID, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 			c.SetParamNames("id")
-			c.SetParamValues(strconv.Itoa(tt.campaignID))
+			c.SetParamValues(tt.campaignID)
 
 			err := h.CampaignGET(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCode, rec.Code)
 			assert.Equal(t, tt.expectedBody, rec.Body.String())
+
+			if tt.expectedCode >= 400 {
+				assert.Contains(t, rec.Body.String(), "error")
+			}
 		})
 	}
 }
