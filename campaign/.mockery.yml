@@ -1,0 +1,14 @@
+with-expecter: true
+inpackage: true
+filename: "mock_{{.InterfaceName}}.go"
+dir: "."
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+
+packages:
+  github.com/fullstackdev42/mp-emailer/campaign:
+    interfaces:
+      ServiceInterface:
+      RepresentativeLookupServiceInterface:
+      ClientInterface:
+      RepositoryInterface:

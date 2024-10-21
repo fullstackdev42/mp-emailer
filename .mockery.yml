@@ -1,6 +1,6 @@
 with-expecter: true
 
-inpackage: true
+inpackage: false
 
 dir: "mocks/{{.PackageName}}"
 
@@ -14,13 +14,6 @@ packages:
     interfaces:
       ServiceInterface:
       Repository:
-
-  github.com/fullstackdev42/mp-emailer/campaign:
-    interfaces:
-      ServiceInterface:
-      RepresentativeLookupServiceInterface:
-      ClientInterface:
-      RepositoryInterface:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
