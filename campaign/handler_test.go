@@ -27,7 +27,7 @@ func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Co
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
 	mockService := new(MockServiceInterface)
-	mockLogger := &mocks.MockLoggerInterface{}
+	mockLogger := new(loggo.LoggerInterface)
 	mockRepLookupService := new(MockRepresentativeLookupServiceInterface)
 	mockEmailService := new(email.Service)
 	mockClient := new(MockClientInterface)
@@ -48,14 +48,14 @@ func TestNewHandler(t *testing.T) {
 			name: "Create handler with all dependencies",
 			args: args{
 				service:                     mockService,
-				logger:                      mockLogger,
+				logger:                      *mockLogger,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
 				client:                      mockClient,
 			},
 			want: &Handler{
 				service:                     mockService,
-				logger:                      mockLogger,
+				logger:                      *mockLogger,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
 				client:                      mockClient,
@@ -82,14 +82,14 @@ func TestNewHandler(t *testing.T) {
 			name: "Create handler with nil client",
 			args: args{
 				service:                     mockService,
-				logger:                      mockLogger,
+				logger:                      *mockLogger,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
 				client:                      nil,
 			},
 			want: &Handler{
 				service:                     mockService,
-				logger:                      mockLogger,
+				logger:                      *mockLogger,
 				representativeLookupService: mockRepLookupService,
 				emailService:                *mockEmailService,
 				client:                      nil,

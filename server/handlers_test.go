@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/fullstackdev42/mp-emailer/user"
@@ -38,8 +39,15 @@ func TestNewHandler(t *testing.T) {
 	mockEmailService := *new(email.Service)
 	mockTemplateManager := &TemplateManager{}
 	mockUserService := new(user.Service)
+	mockCampaignService := new(campaign.Service)
 
-	handler := NewHandler(mockLogger, mockEmailService, mockTemplateManager, mockUserService)
+	handler := NewHandler(
+		mockLogger,
+		mockEmailService,
+		mockTemplateManager,
+		mockUserService,
+		mockCampaignService,
+	)
 
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)

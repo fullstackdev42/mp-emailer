@@ -1,0 +1,17 @@
+{{define "campaign_list"}}
+<ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {{range .}}
+    <li class="bg-white shadow-md rounded-lg overflow-hidden">
+        <h2 class="p-4">
+            <a href="/campaigns/{{.ID}}"
+                class="text-xl font-semibold text-blue-600 hover:text-blue-800 transition duration-300">{{.Name}}</a>
+        </h2>
+        <p class="px-4 pb-4 text-gray-600">{{.Description}}</p>
+        <div class="px-4 pb-4">
+            <a href="/campaigns/{{.ID}}"
+                class="inline-block bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">View Campaign</a>
+        </div>
+    </li>
+    {{end}}
+</ul>
+{{end}}

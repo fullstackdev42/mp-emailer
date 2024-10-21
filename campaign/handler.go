@@ -7,9 +7,11 @@ import (
 	"strconv"
 
 	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 // Handler handles the HTTP requests for the campaign service
@@ -19,6 +21,7 @@ type Handler struct {
 	representativeLookupService RepresentativeLookupServiceInterface
 	emailService                email.Service
 	client                      ClientInterface
+	errorHandler                *shared.ErrorHandler
 }
 
 // NewHandler initializes a new Handler
@@ -35,20 +38,21 @@ func NewHandler(
 		representativeLookupService: representativeLookupService,
 		emailService:                emailService,
 		client:                      client,
+		errorHandler:                shared.NewErrorHandler(logger),
 	}
 }
 
 func (h *Handler) CampaignGET(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
-			return h.HandleError(c, err, http.StatusNotFound, "Campaign not found")
+			return h.errorHandler.HandleError(c, err, http.StatusNotFound, "Campaign not found")
 		}
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 	return c.Render(http.StatusOK, "campaign_details.html", map[string]interface{}{
 		"Campaign": campaign,
@@ -58,7 +62,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 func (h *Handler) GetAllCampaigns(c echo.Context) error {
 	campaigns, err := h.service.GetAllCampaigns()
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
 	return c.Render(http.StatusOK, "campaigns.html", map[string]interface{}{"Campaigns": campaigns})
 }
@@ -72,7 +76,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	template := c.FormValue("template")
 	ownerID, err := user.GetOwnerIDFromSession(c)
 	if err != nil {
-		return h.HandleError(c, err, http.StatusUnauthorized, "Unauthorized")
+		return h.errorHandler.HandleError(c, err, http.StatusUnauthorized, "Unauthorized")
 	}
 	campaign := &Campaign{
 		Name:     name,
@@ -80,7 +84,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		OwnerID:  ownerID,
 	}
 	if err := h.service.CreateCampaign(campaign); err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error creating campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error creating campaign")
 	}
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
@@ -91,7 +95,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
 	}
 	if err := h.service.DeleteCampaign(id); err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error deleting campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error deleting campaign")
 	}
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
@@ -99,11 +103,11 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 func (h *Handler) EditCampaignForm(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 	campaignData := struct {
 		ID       int
@@ -130,7 +134,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		Template: templateContent,
 	}
 	if err := h.service.UpdateCampaign(campaign); err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error updating campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error updating campaign")
 	}
 	return c.Redirect(http.StatusSeeOther, "/campaigns/"+strconv.Itoa(id))
 }
@@ -146,20 +150,20 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	}
 	mp, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error finding MP")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error finding MP")
 	}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
 	userData := extractUserData(c)
 
 	if len(mp) == 0 {
-		return h.HandleError(c, errors.New("no representatives found"), http.StatusNotFound, "No representatives found")
+		return h.errorHandler.HandleError(c, errors.New("no representatives found"), http.StatusNotFound, "No representatives found")
 	}
 	representative := mp[0]
 
@@ -183,7 +187,7 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) err
 	h.logger.Debug("Data for email template", "data", data)
 	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error rendering email template")
 	}
 	h.logger.Info("Email template rendered successfully")
 	return nil
@@ -195,7 +199,7 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 
 	representatives, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil {
-		return h.HandleError(c, err, http.StatusInternalServerError, "Error fetching representatives")
+		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching representatives")
 	}
 
 	filters := map[string]string{
@@ -207,4 +211,9 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	return c.Render(http.StatusOK, "representatives.html", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
+}
+
+// NewModule returns an fx.Option for the campaign handler
+func NewModule() fx.Option {
+	return fx.Provide(NewHandler)
 }

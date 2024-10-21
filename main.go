@@ -19,7 +19,7 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:embed web/templates/* web/templates/partials/*
+//go:embed web/templates/* web/templates/shared/* web/templates/partials/*
 var templateFS embed.FS
 
 func main() {
@@ -79,8 +79,15 @@ func provideHandler(
 	emailService email.Service,
 	tmplManager *server.TemplateManager,
 	userService user.ServiceInterface,
+	campaignService campaign.ServiceInterface,
 ) *server.Handler {
-	return server.NewHandler(logger, emailService, tmplManager, userService)
+	return server.NewHandler(
+		logger,
+		emailService,
+		tmplManager,
+		userService,
+		campaignService,
+	)
 }
 
 func registerRoutes(

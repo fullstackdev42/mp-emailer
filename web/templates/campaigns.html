@@ -3,20 +3,11 @@
 <main class="max-w-4xl mx-auto p-8">
     <h1 class="text-3xl font-bold mb-6">Campaigns</h1>
     <a href="/campaigns/new"
-        class="inline-block bg-blue-500 hover:bg-blue-600 text-gray-700 font-bold py-2 px-4 rounded mb-6 transition duration-300">Create
+        class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-6 transition duration-300">Create
         New Campaign</a>
 
     {{if .Campaigns}}
-    <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {{range .Campaigns}}
-        <li class="bg-white shadow-md rounded-lg overflow-hidden">
-            <h2 class="p-4">
-                <a href="/campaigns/{{.ID}}"
-                    class="text-xl font-semibold text-blue-600 hover:text-blue-800 transition duration-300">{{.Name}}</a>
-            </h2>
-        </li>
-        {{end}}
-    </ul>
+        {{template "campaign_list" .Campaigns}}
     {{else}}
     <p class="text-gray-600 text-lg">No campaigns found. Create a new campaign to get started.</p>
     {{end}}
