@@ -17,8 +17,14 @@ func NewErrorHandler(logger loggo.LoggerInterface) *ErrorHandler {
 
 func (eh *ErrorHandler) HandleError(c echo.Context, err error, statusCode int, message string) error {
 	eh.Logger.Error("Error occurred", err, "message", message, "statusCode", statusCode)
-	return c.Render(statusCode, "error.html", map[string]interface{}{
-		"Error":   message,
-		"Details": err.Error(),
-	})
+
+	pageData := PageData{
+		Title: "Error",
+		Error: message,
+		Content: map[string]string{
+			"Details": err.Error(),
+		},
+	}
+
+	return c.Render(statusCode, "error.html", pageData)
 }

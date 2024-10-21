@@ -11,7 +11,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/fx"
 )
 
 // Handler handles the HTTP requests for the campaign service
@@ -42,11 +41,13 @@ func NewHandler(
 	}
 }
 
+// CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
 	}
+
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
@@ -54,11 +55,16 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		}
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
 	}
-	return c.Render(http.StatusOK, "campaign_details.html", map[string]interface{}{
-		"Campaign": campaign,
-	})
+
+	pageData := shared.PageData{
+		Title:   "Campaign Details",
+		Content: campaign,
+	}
+
+	return c.Render(http.StatusOK, "campaign_details.html", pageData)
 }
 
+// GetAllCampaigns handles GET requests for all campaigns
 func (h *Handler) GetAllCampaigns(c echo.Context) error {
 	campaigns, err := h.service.GetAllCampaigns()
 	if err != nil {
@@ -67,10 +73,12 @@ func (h *Handler) GetAllCampaigns(c echo.Context) error {
 	return c.Render(http.StatusOK, "campaigns.html", map[string]interface{}{"Campaigns": campaigns})
 }
 
+// CreateCampaignForm handles GET requests for the campaign creation form
 func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	return c.Render(http.StatusOK, "campaign_create.html", nil)
 }
 
+// CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	name := c.FormValue("name")
 	template := c.FormValue("template")
@@ -89,6 +97,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 
+// DeleteCampaign handles DELETE requests for deleting a campaign
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -100,6 +109,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 
+// EditCampaignForm handles GET requests for the campaign edit form
 func (h *Handler) EditCampaignForm(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -121,6 +131,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	return c.Render(http.StatusOK, "campaign_edit.html", map[string]interface{}{"Campaign": campaignData})
 }
 
+// EditCampaign handles POST requests for updating a campaign
 func (h *Handler) EditCampaign(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -139,6 +150,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaigns/"+strconv.Itoa(id))
 }
 
+// SendCampaign handles POST requests for sending a campaign
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
 	postalCode, err := extractAndValidatePostalCode(c)
@@ -171,10 +183,12 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }
 
+// HandleError renders an error page
 func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
 	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
 }
 
+// RenderEmailTemplate renders the email template
 func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
 	data := struct {
 		Email   string
@@ -193,6 +207,7 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) err
 	return nil
 }
 
+// HandleRepresentativeLookup handles POST requests for fetching representatives
 func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	postalCode := c.FormValue("postal_code")
 	representativeType := c.FormValue("type")
@@ -211,9 +226,4 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	return c.Render(http.StatusOK, "representatives.html", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
-}
-
-// NewModule returns an fx.Option for the campaign handler
-func NewModule() fx.Option {
-	return fx.Provide(NewHandler)
 }

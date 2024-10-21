@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/fx"
 )
 
+// Handler struct
 type Handler struct {
 	Logger          loggo.LoggerInterface
 	Store           sessions.Store
@@ -23,6 +23,7 @@ type Handler struct {
 	errorHandler    *shared.ErrorHandler
 }
 
+// NewHandler creates a new Handler instance
 func NewHandler(
 	logger loggo.LoggerInterface,
 	emailService email.Service,
@@ -40,14 +41,18 @@ func NewHandler(
 	}
 }
 
+// Page data struct
+type PageData struct {
+	Campaigns []campaign.Campaign
+}
+
+// Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
 	campaigns, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
-	return c.Render(http.StatusOK, "index.html", map[string]interface{}{
-		"Campaigns": campaigns,
-	})
-}
 
-var Module = fx.Provide(NewHandler)
+	pageData := PageData{Campaigns: campaigns}
+	return c.Render(http.StatusOK, "index.html", pageData)
+}
