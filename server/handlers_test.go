@@ -9,6 +9,8 @@ import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
+	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
@@ -36,9 +38,9 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 
 func TestNewHandler(t *testing.T) {
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockEmailService := *new(email.Service)
+	mockEmailService := &mocksEmail.MockService{}
 	mockTemplateManager := &TemplateManager{}
-	mockUserService := new(user.Service)
+	mockUserService := new(mocksUser.MockServiceInterface)
 	mockCampaignService := new(campaign.Service)
 
 	handler := NewHandler(
@@ -52,9 +54,10 @@ func TestNewHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
 	assert.Equal(t, mockLogger, handler.Logger)
-	// assert.Equal(t, mockEmailService, handler.emailService)
+	assert.Equal(t, mockEmailService, handler.emailService)
 	assert.Equal(t, mockTemplateManager, handler.templateManager)
 	assert.Equal(t, mockUserService, handler.userService)
+	assert.Equal(t, mockCampaignService, handler.campaignService)
 }
 
 func TestHandler_HandleIndex(t *testing.T) {
@@ -70,6 +73,7 @@ func TestHandler_HandleIndex(t *testing.T) {
 		emailService:    *new(email.Service),
 		templateManager: &TemplateManager{},
 		userService:     new(user.Service),
+		campaignService: new(campaign.Service),
 	}
 
 	mockRenderer.On("Render", mock.Anything, "index.html", nil, mock.Anything).Return(nil)

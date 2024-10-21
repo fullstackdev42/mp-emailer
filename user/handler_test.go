@@ -8,6 +8,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -32,9 +33,9 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 }
 
 func TestNewHandler(t *testing.T) {
-	mockRepo := new(MockRepository)
+	mockRepo := new(mocksUser.MockRepository)
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockStore := new(MockSessionStore)
+	mockStore := new(sessions.CookieStore)
 	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
