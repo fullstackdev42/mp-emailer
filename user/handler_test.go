@@ -9,6 +9,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -35,15 +36,24 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 
 func TestNewHandler(t *testing.T) {
 	mockRepo := NewMockRepositoryInterface(t)
+	mockService := new(Service)
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := sessions.NewCookieStore([]byte("test-secret"))
-	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
+	mockConfig := config.NewConfig()
+	handler := NewHandler(
+		mockRepo,
+		mockService,
+		mockLogger,
+		mockStore,
+		mockConfig,
+	)
 
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
 	assert.Equal(t, mockRepo, handler.repo)
 	assert.Equal(t, mockLogger, handler.Logger)
 	assert.Equal(t, mockStore, handler.Store)
+	assert.Equal(t, mockConfig, handler.Config)
 }
 
 func TestHandler_RegisterGET(t *testing.T) {
@@ -104,7 +114,9 @@ func TestHandler_RegisterPOST(t *testing.T) {
 	mockRepo := NewMockRepositoryInterface(t)
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := sessions.NewCookieStore([]byte("test-secret"))
-	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
+	mockConfig := config.NewConfig()
+	mockService := new(Service)
+	handler := NewHandler(mockRepo, mockService, mockLogger, mockStore, mockConfig)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader("username=testuser&email=test@example.com&password=testpass"))
@@ -114,7 +126,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 
 	mockRepo.EXPECT().UserExists("testuser", "test@example.com").Return(false, nil)
 	mockRepo.EXPECT().CreateUser("testuser", "test@example.com", mock.AnythingOfType("string")).Return(nil)
-	mockRepo.EXPECT().GetUserByUsername("testuser").Return(&User{ID: 1, Username: "testuser"}, nil)
+	mockRepo.EXPECT().GetUserByUsername("testuser").Return(&User{ID: UserID(uuid.MustParse("1")), Username: "testuser"}, nil)
 
 	err := handler.RegisterPOST(c)
 

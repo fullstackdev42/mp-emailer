@@ -16,6 +16,7 @@ type Handler struct {
 	Logger      loggo.LoggerInterface
 	Store       sessions.Store
 	SessionName string
+	Config      *config.Config
 }
 
 func NewHandler(
@@ -31,6 +32,7 @@ func NewHandler(
 		Logger:      logger,
 		Store:       store,
 		SessionName: config.SessionName,
+		Config:      config,
 	}
 }
 
