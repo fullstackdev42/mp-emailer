@@ -11,14 +11,14 @@ import (
 )
 
 type Handler struct {
-	repo        Repository
+	repo        RepositoryInterface
 	Logger      loggo.LoggerInterface
 	Store       sessions.Store
 	SessionName string
 }
 
 func NewHandler(
-	repo Repository,
+	repo RepositoryInterface,
 	logger loggo.LoggerInterface,
 	store sessions.Store,
 	config *config.Config,

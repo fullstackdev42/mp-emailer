@@ -5,16 +5,14 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
-	"github.com/mailgun/mailgun-go/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 // MockRenderer is a mock of echo.Renderer
@@ -126,7 +124,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 	tests := []struct {
 		name         string
 		campaignID   string
-		mockReturn   *Campaign
+		mockCampaign *Campaign
+		mockReps     []Representative
+		mockFilters  map[string]string
 		mockError    error
 		expectedCode int
 		expectedBody string
@@ -134,7 +134,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 		{
 			name:         "Successful campaign retrieval",
 			campaignID:   "1",
-			mockReturn:   &Campaign{ID: 1, Name: "Test Campaign"},
+			mockCampaign: &Campaign{ID: 1, Name: "Test Campaign"},
+			mockReps:     []Representative{},
+			mockFilters:  map[string]string{},
 			mockError:    nil,
 			expectedCode: http.StatusOK,
 			expectedBody: "campaign_details.html",
@@ -142,7 +144,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 		{
 			name:         "Campaign not found",
 			campaignID:   "2",
-			mockReturn:   nil,
+			mockCampaign: nil,
+			mockReps:     []Representative{},
+			mockFilters:  map[string]string{},
 			mockError:    ErrCampaignNotFound,
 			expectedCode: http.StatusNotFound,
 			expectedBody: "error.html",
@@ -150,7 +154,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 		{
 			name:         "Internal server error",
 			campaignID:   "3",
-			mockReturn:   nil,
+			mockCampaign: nil,
+			mockReps:     []Representative{},
+			mockFilters:  map[string]string{},
 			mockError:    errors.New("internal server error"),
 			expectedCode: http.StatusInternalServerError,
 			expectedBody: "error.html",
@@ -158,7 +164,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 		{
 			name:         "Invalid campaign ID",
 			campaignID:   "invalid",
-			mockReturn:   nil,
+			mockCampaign: nil,
+			mockReps:     []Representative{},
+			mockFilters:  map[string]string{},
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
 			expectedBody: "error.html",
@@ -166,7 +174,9 @@ func TestHandler_CampaignGET(t *testing.T) {
 		{
 			name:         "Zero campaign ID",
 			campaignID:   "0",
-			mockReturn:   nil,
+			mockCampaign: nil,
+			mockReps:     []Representative{},
+			mockFilters:  map[string]string{},
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
 			expectedBody: "error.html",
@@ -175,40 +185,55 @@ func TestHandler_CampaignGET(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := mocks.NewMockServiceInterface(t)
+			mockService := NewMockServiceInterface(t)
 			mockLogger := mocks.NewMockLoggerInterface(t)
-			mockRepLookupService := mocks.NewMockRepresentativeLookupServiceInterface(t)
-			mockMailgunClient := mocksEmail.NewMockMailgunClient(t)
-			mockClient := mocks.NewMockClientInterface(t)
+			mockRepLookupService := NewMockRepresentativeLookupServiceInterface(t)
+			mockEmailService := mocksEmail.NewMockService(t)
+			mockClient := NewMockClientInterface(t)
 
-			// Create a new email.Service with the mock MailgunClient
-			emailService := &email.Service{MailgunClient: mockMailgunClient}
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
-			if tt.mockReturn != nil || tt.mockError != nil {
-				mockService.EXPECT().FetchCampaign(mock.AnythingOfType("int")).Return(tt.mockReturn, tt.mockError)
+			// Set up expectations for the mock service
+			if tt.campaignID != "invalid" && tt.campaignID != "0" {
+				campaignID, _ := strconv.Atoi(tt.campaignID)
+				mockService.EXPECT().FetchCampaign(campaignID).Return(tt.mockCampaign, tt.mockError)
+
+				// If the campaign has a postal code, set up expectation for FetchRepresentatives
+				if tt.mockCampaign != nil && tt.mockCampaign.PostalCode != "" {
+					mockRepLookupService.EXPECT().FetchRepresentatives(tt.mockCampaign.PostalCode).Return(tt.mockReps, nil)
+
+					// If filters are provided, set up expectation for FilterRepresentatives
+					if len(tt.mockFilters) > 0 {
+						mockRepLookupService.EXPECT().FilterRepresentatives(tt.mockReps, tt.mockFilters).Return(tt.mockReps)
+					}
+				}
 			}
 
-			h := NewHandler(mockService, mockLogger, mockRepLookupService, *emailService, mockClient)
+			h := NewHandler(mockService, mockLogger, mockRepLookupService, mockEmailService, mockClient)
 			req := httptest.NewRequest(http.MethodGet, "/campaigns/"+tt.campaignID, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 			c.SetParamNames("id")
 			c.SetParamValues(tt.campaignID)
 
-			// Example: Setting expectations on MockMailgunClient
-			mockMailgunClient.EXPECT().NewMessage(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&mailgun.Message{})
-			mockMailgunClient.EXPECT().Send(mock.Anything, mock.Anything).Return("message-id", "response", nil)
-
+			// Call the handler
 			err := h.CampaignGET(c)
+
+			// Assertions
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCode, rec.Code)
-			assert.Equal(t, tt.expectedBody, rec.Body.String())
+			assert.Contains(t, rec.Body.String(), tt.expectedBody)
 
-			if tt.expectedCode >= 400 {
-				assert.Contains(t, rec.Body.String(), "error")
+			if tt.expectedCode == http.StatusOK {
+				assert.Contains(t, rec.Body.String(), "campaign_details.html")
+			} else {
+				assert.Contains(t, rec.Body.String(), "error.html")
 			}
+
+			// Verify that all expected calls were made
+			mockService.AssertExpectations(t)
+			mockRepLookupService.AssertExpectations(t)
 		})
 	}
 }

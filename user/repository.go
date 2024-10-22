@@ -8,24 +8,27 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-// Repository defines the interface for user-related database operations
-type Repository interface {
+// RepositoryInterface defines the methods that a user repository must implement
+type RepositoryInterface interface {
 	CreateUser(username, email, passwordHash string) error
 	GetUserByUsername(username string) (*User, error)
 	UserExists(username, email string) (bool, error)
 }
 
-type repositoryImpl struct {
+// Ensure that Repository implements RepositoryInterface
+var _ RepositoryInterface = (*Repository)(nil)
+
+type Repository struct {
 	db     *database.DB
 	logger loggo.LoggerInterface
 }
 
 // NewRepository creates a new Repository instance
-func NewRepository(db *database.DB, logger loggo.LoggerInterface) Repository {
-	return &repositoryImpl{db: db, logger: logger}
+func NewRepository(db *database.DB, logger loggo.LoggerInterface) RepositoryInterface {
+	return &Repository{db: db, logger: logger}
 }
 
-func (r *repositoryImpl) CreateUser(username, email, passwordHash string) error {
+func (r *Repository) CreateUser(username, email, passwordHash string) error {
 	r.logger.Info(fmt.Sprintf("Creating user: %s", username))
 	query := "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
 	_, err := r.db.SQL.Exec(query, username, email, passwordHash)
@@ -36,7 +39,7 @@ func (r *repositoryImpl) CreateUser(username, email, passwordHash string) error 
 	return nil
 }
 
-func (r *repositoryImpl) GetUserByUsername(username string) (*User, error) {
+func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	var user User
 	query := "SELECT id, username, password_hash FROM users WHERE username = ?"
 	err := r.db.SQL.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
@@ -51,7 +54,7 @@ func (r *repositoryImpl) GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
-func (r *repositoryImpl) UserExists(username, email string) (bool, error) {
+func (r *Repository) UserExists(username, email string) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
 	err := r.db.SQL.QueryRow(query, username, email).Scan(&count)

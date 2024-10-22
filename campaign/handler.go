@@ -82,11 +82,13 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusUnauthorized, "Unauthorized")
 	}
+
 	campaign := &Campaign{
 		Name:     c.FormValue("name"),
 		Template: c.FormValue("template"),
 		OwnerID:  ownerID,
 	}
+
 	if err := h.service.CreateCampaign(campaign); err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error creating campaign")
 	}
@@ -120,23 +122,31 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	})
 }
 
+type EditCampaignParams struct {
+	ID       int
+	Name     string
+	Template string
+}
+
 // EditCampaign handles POST requests for updating a campaign
 func (h *Handler) EditCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	params := EditCampaignParams{}
+	var err error
+	params.ID, err = strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid campaign ID")
 	}
-	name := c.FormValue("name")
-	templateContent := c.FormValue("template")
-	campaign := &Campaign{
-		ID:       id,
-		Name:     name,
-		Template: templateContent,
-	}
-	if err := h.service.UpdateCampaign(campaign); err != nil {
+	params.Name = c.FormValue("name")
+	params.Template = c.FormValue("template")
+
+	if err := h.service.UpdateCampaign(&Campaign{
+		ID:       params.ID,
+		Name:     params.Name,
+		Template: params.Template,
+	}); err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error updating campaign")
 	}
-	return c.Redirect(http.StatusSeeOther, "/campaigns/"+strconv.Itoa(id))
+	return c.Redirect(http.StatusSeeOther, "/campaigns/"+strconv.Itoa(params.ID))
 }
 
 // SendCampaign handles POST requests for sending a campaign

@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestService_GetCampaignByID(t *testing.T) {
-	mockRepo := mocksCampaign.NewMockRepositoryInterface(t)
+	mockRepo := NewMockRepositoryInterface(t)
 	service := NewService(mockRepo)
 
 	campaign := &Campaign{ID: 1, Name: "Test Campaign"}
@@ -22,15 +21,14 @@ func TestService_GetCampaignByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, campaign, result)
 }
-
 func TestService_GetAllCampaigns(t *testing.T) {
-	mockRepo := mocksCampaign.NewMockRepositoryInterface(t)
+	mockRepo := NewMockRepositoryInterface(t) // Fixed the mock repository initialization
 	service := NewService(mockRepo)
 
 	campaigns := []Campaign{{ID: 1, Name: "Campaign 1"}, {ID: 2, Name: "Campaign 2"}}
 	mockRepo.EXPECT().GetAll().Return(campaigns, nil)
 
-	result, err := service.GetAllCampaigns()
+	result, err := service.GetAllCampaigns() // Added the call to GetAllCampaigns
 
 	assert.NoError(t, err)
 	assert.Equal(t, campaigns, result)

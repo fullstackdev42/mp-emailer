@@ -7,8 +7,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type RegisterUserParams struct {
+	Username string
+	Email    string
+	Password string
+}
+
 type ServiceInterface interface {
-	RegisterUser(username, email, password string) error
+	RegisterUser(params RegisterUserParams) error
 	VerifyUser(username, password string) (string, error)
 }
 
@@ -21,8 +27,8 @@ func NewService(repo Repository, logger loggo.LoggerInterface) ServiceInterface 
 	return &Service{repo: repo, logger: logger}
 }
 
-func (s *Service) RegisterUser(username, email, password string) error {
-	exists, err := s.repo.UserExists(username, email)
+func (s *Service) RegisterUser(params RegisterUserParams) error {
+	exists, err := s.repo.UserExists(params.Username, params.Email)
 	if err != nil {
 		return fmt.Errorf("error checking user existence: %w", err)
 	}
@@ -30,12 +36,12 @@ func (s *Service) RegisterUser(username, email, password string) error {
 		return fmt.Errorf("username or email already exists")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error hashing password: %w", err)
 	}
 
-	return s.repo.CreateUser(username, email, string(hashedPassword))
+	return s.repo.CreateUser(params.Username, params.Email, string(hashedPassword))
 }
 
 func (s *Service) VerifyUser(username, password string) (string, error) {

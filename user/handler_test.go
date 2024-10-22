@@ -4,14 +4,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 )
 
 // MockRenderer is a mock of echo.Renderer
@@ -33,13 +34,14 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 }
 
 func TestNewHandler(t *testing.T) {
-	mockUserRepo := new(mocksUser.MockRepository)
+	mockRepo := NewMockRepositoryInterface(t)
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockStore := new(sessions.CookieStore)
-	handler := NewHandler(mockUserRepo, mockLogger, mockStore, config.NewConfig())
+	mockStore := sessions.NewCookieStore([]byte("test-secret"))
+	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
+
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
-	assert.Equal(t, mockUserRepo, handler.repo)
+	assert.Equal(t, mockRepo, handler.repo)
 	assert.Equal(t, mockLogger, handler.Logger)
 	assert.Equal(t, mockStore, handler.Store)
 }
@@ -95,5 +97,28 @@ func TestHandler_LogoutGET(t *testing.T) {
 	assert.Equal(t, http.StatusSeeOther, rec.Code)
 
 	// Assert that the Location header is set to "/"
+	assert.Equal(t, "/", rec.Header().Get("Location"))
+}
+
+func TestHandler_RegisterPOST(t *testing.T) {
+	mockRepo := NewMockRepositoryInterface(t)
+	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockStore := sessions.NewCookieStore([]byte("test-secret"))
+	handler := NewHandler(mockRepo, mockLogger, mockStore, config.NewConfig())
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader("username=testuser&email=test@example.com&password=testpass"))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	mockRepo.EXPECT().UserExists("testuser", "test@example.com").Return(false, nil)
+	mockRepo.EXPECT().CreateUser("testuser", "test@example.com", mock.AnythingOfType("string")).Return(nil)
+	mockRepo.EXPECT().GetUserByUsername("testuser").Return(&User{ID: 1, Username: "testuser"}, nil)
+
+	err := handler.RegisterPOST(c)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusSeeOther, rec.Code)
 	assert.Equal(t, "/", rec.Header().Get("Location"))
 }

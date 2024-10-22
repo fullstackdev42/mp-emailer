@@ -6,6 +6,7 @@ type Campaign struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	PostalCode  string    `json:"postal_code"`
 	Template    string    `json:"template"`
 	OwnerID     int       `json:"owner_id"`
 	CreatedAt   time.Time `json:"created_at"`

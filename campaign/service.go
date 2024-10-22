@@ -6,7 +6,15 @@ import (
 	"time"
 )
 
-// ServiceInterface defines the interface for the campaign service
+type CampaignParams struct {
+	ID          int
+	Name        string
+	Description string
+	PostalCode  string
+	Template    string
+	OwnerID     int
+}
+
 type ServiceInterface interface {
 	ComposeEmail(mp Representative, c *Campaign, userData map[string]string) string
 	CreateCampaign(c *Campaign) error
@@ -17,12 +25,35 @@ type ServiceInterface interface {
 	UpdateCampaign(c *Campaign) error
 }
 
+func (s *Service) CreateCampaign(c *Campaign) error {
+	return s.repo.Create(&Campaign{
+		Name:        c.Name,
+		Description: c.Description,
+		PostalCode:  c.PostalCode,
+		Template:    c.Template,
+		OwnerID:     c.OwnerID,
+	})
+}
+
+func (s *Service) UpdateCampaign(c *Campaign) error {
+	return s.repo.Update(&Campaign{
+		ID:          c.ID,
+		Name:        c.Name,
+		Description: c.Description,
+		PostalCode:  c.PostalCode,
+		Template:    c.Template,
+		OwnerID:     c.OwnerID,
+	})
+}
+
 type Service struct {
 	repo RepositoryInterface
 }
 
 func NewService(repo RepositoryInterface) ServiceInterface {
-	return &Service{repo: repo}
+	return &Service{
+		repo: repo,
+	}
 }
 
 func (s *Service) GetCampaignByID(id int) (*Campaign, error) {
@@ -37,22 +68,6 @@ func (s *Service) GetAllCampaigns() ([]Campaign, error) {
 	return campaigns, nil
 }
 
-func (s *Service) CreateCampaign(campaign *Campaign) error {
-	if campaign.Name == "" {
-		return fmt.Errorf("campaign name cannot be empty")
-	}
-	if len(campaign.Template) < 10 {
-		return fmt.Errorf("campaign template must be at least 10 characters long")
-	}
-	campaign.CreatedAt = time.Now()
-	campaign.UpdatedAt = time.Now()
-	err := s.repo.Create(campaign)
-	if err != nil {
-		return fmt.Errorf("failed to create campaign: %w", err)
-	}
-	return nil
-}
-
 func (s *Service) DeleteCampaign(id int) error {
 	campaign, err := s.repo.GetByID(id)
 	if err != nil {
@@ -64,28 +79,6 @@ func (s *Service) DeleteCampaign(id int) error {
 	err = s.repo.Delete(id)
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
-	}
-	return nil
-}
-
-func (s *Service) UpdateCampaign(campaign *Campaign) error {
-	if campaign.Name == "" {
-		return fmt.Errorf("campaign name cannot be empty")
-	}
-	if len(campaign.Template) < 10 {
-		return fmt.Errorf("campaign template must be at least 10 characters long")
-	}
-	existingCampaign, err := s.repo.GetByID(campaign.ID)
-	if err != nil {
-		return fmt.Errorf("failed to get existing campaign: %w", err)
-	}
-	if existingCampaign == nil {
-		return fmt.Errorf("campaign not found")
-	}
-	campaign.UpdatedAt = time.Now()
-	err = s.repo.Update(campaign)
-	if err != nil {
-		return fmt.Errorf("failed to update campaign: %w", err)
 	}
 	return nil
 }

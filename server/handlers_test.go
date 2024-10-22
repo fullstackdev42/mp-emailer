@@ -10,7 +10,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
-	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
@@ -40,7 +39,7 @@ func TestNewHandler(t *testing.T) {
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockEmailService := &mocksEmail.MockService{}
 	mockTemplateManager := &TemplateManager{}
-	mockUserService := new(mocksUser.MockServiceInterface)
+	mockUserService := new(user.Service)
 	mockCampaignService := new(campaign.Service)
 
 	handler := NewHandler(

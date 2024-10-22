@@ -13,7 +13,7 @@ packages:
   github.com/fullstackdev42/mp-emailer/user:
     interfaces:
       ServiceInterface:
-      Repository:
+      RepositoryInterface:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
