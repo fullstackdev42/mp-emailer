@@ -19,12 +19,18 @@ type ServiceInterface interface {
 }
 
 type Service struct {
-	repo   Repository
+	repo   *Repository
 	logger loggo.LoggerInterface
 }
 
-func NewService(repo Repository, logger loggo.LoggerInterface) ServiceInterface {
-	return &Service{repo: repo, logger: logger}
+// Explicitly implement the ServiceInterface
+var _ ServiceInterface = (*Service)(nil)
+
+func NewService(repo *Repository, logger loggo.LoggerInterface) ServiceInterface {
+	return &Service{
+		repo:   repo,
+		logger: logger,
+	}
 }
 
 func (s *Service) RegisterUser(params RegisterUserParams) error {

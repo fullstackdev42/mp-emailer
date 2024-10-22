@@ -12,6 +12,7 @@ import (
 
 type Handler struct {
 	repo        RepositoryInterface
+	service     ServiceInterface
 	Logger      loggo.LoggerInterface
 	Store       sessions.Store
 	SessionName string
@@ -19,12 +20,14 @@ type Handler struct {
 
 func NewHandler(
 	repo RepositoryInterface,
+	service ServiceInterface,
 	logger loggo.LoggerInterface,
 	store sessions.Store,
 	config *config.Config,
 ) *Handler {
 	return &Handler{
 		repo:        repo,
+		service:     service,
 		Logger:      logger,
 		Store:       store,
 		SessionName: config.SessionName,

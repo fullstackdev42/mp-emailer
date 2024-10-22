@@ -10,9 +10,10 @@ import (
 
 // RepositoryInterface defines the methods that a user repository must implement
 type RepositoryInterface interface {
+	UserExists(username, email string) (bool, error)
 	CreateUser(username, email, passwordHash string) error
 	GetUserByUsername(username string) (*User, error)
-	UserExists(username, email string) (bool, error)
+	// Add any other methods that the Repository struct implements
 }
 
 // Ensure that Repository implements RepositoryInterface
@@ -24,8 +25,11 @@ type Repository struct {
 }
 
 // NewRepository creates a new Repository instance
-func NewRepository(db *database.DB, logger loggo.LoggerInterface) RepositoryInterface {
-	return &Repository{db: db, logger: logger}
+func NewRepository(db *database.DB, logger loggo.LoggerInterface) *Repository {
+	return &Repository{
+		db:     db,
+		logger: logger,
+	}
 }
 
 func (r *Repository) CreateUser(username, email, passwordHash string) error {

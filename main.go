@@ -19,7 +19,7 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:embed web/templates/* web/templates/shared/* web/templates/partials/*
+//go:embed web/templates/shared/* web/templates/partials/*
 var templateFS embed.FS
 
 func main() {
@@ -40,6 +40,10 @@ func main() {
 			server.New,
 			user.NewHandler,
 			user.NewRepository,
+			fx.Annotate(
+				user.NewRepository,
+				fx.As(new(user.RepositoryInterface)),
+			),
 			user.NewService,
 		),
 		fx.Invoke(registerRoutes, startServer),
