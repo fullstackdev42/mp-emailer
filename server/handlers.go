@@ -41,18 +41,20 @@ func NewHandler(
 	}
 }
 
-// Page data struct
-type PageData struct {
-	Campaigns []campaign.Campaign
-}
-
 // Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
-	campaigns, err := h.campaignService.GetAllCampaigns()
+	_, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
 
-	pageData := PageData{Campaigns: campaigns}
-	return c.Render(http.StatusOK, "index.html", pageData)
+	isAuthenticated := c.Get("isAuthenticated").(bool)
+
+	pageData := shared.PageData{
+		Content:         "",
+		Title:           "Home",
+		IsAuthenticated: isAuthenticated,
+	}
+
+	return c.Render(http.StatusOK, "home.html", pageData)
 }

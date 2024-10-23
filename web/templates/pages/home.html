@@ -2,8 +2,8 @@
 {{template "nav" .}}
 <main class="max-w-4xl mx-auto p-8">
     <h2 class="text-2xl font-bold mb-6">Active Campaigns</h2>
-    {{if .Campaigns}}
-        {{template "campaign_list" .Campaigns}}
+    {{if .Content}}
+        {{template "campaign_list" .Content}}
     {{else}}
         <p class="text-gray-600 text-lg">No active campaigns at the moment. Check back soon!</p>
     {{end}}

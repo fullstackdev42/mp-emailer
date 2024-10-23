@@ -15,6 +15,7 @@ type TemplateManager struct {
 func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
 	tmpl, err := template.ParseFS(
 		templateFiles,
+		"web/templates/pages/*.html",
 		"web/templates/shared/*.html",
 		"web/templates/partials/*.html",
 	)

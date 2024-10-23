@@ -19,7 +19,7 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:embed web/templates/shared/* web/templates/partials/*
+//go:embed web/templates/shared/* web/templates/partials/* web/templates/pages/*
 var templateFS embed.FS
 
 func main() {
