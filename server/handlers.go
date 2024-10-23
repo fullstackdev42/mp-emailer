@@ -43,7 +43,7 @@ func NewHandler(
 
 // Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
-	_, err := h.campaignService.GetAllCampaigns()
+	campaigns, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
 	}
@@ -51,7 +51,7 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	isAuthenticated := c.Get("isAuthenticated").(bool)
 
 	pageData := shared.PageData{
-		Content:         "",
+		Content:         campaigns,
 		Title:           "Home",
 		IsAuthenticated: isAuthenticated,
 	}
