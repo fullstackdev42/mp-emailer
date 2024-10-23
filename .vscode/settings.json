@@ -11,5 +11,6 @@
     },
     "editor.quickSuggestions": {
         "strings": true
-    }
+    },
+    "intelephense.environment.phpVersion": "8.2"
 }

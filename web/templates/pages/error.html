@@ -1,0 +1,11 @@
+{{template "header" .}}
+{{template "nav" .}}
+<main class="max-w-4xl mx-auto p-8">
+    <h2 class="text-2xl font-bold mb-6">404</h2>
+    {{if .data.Content}}
+        {{template "campaign_list" .data.Content}}
+    {{else}}
+        <p class="text-gray-600 text-lg">No active campaigns at the moment. Check back soon!</p>
+    {{end}}
+</main>
+{{template "footer" .}}
