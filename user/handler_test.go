@@ -39,7 +39,6 @@ func TestNewHandler(t *testing.T) {
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := sessions.NewCookieStore([]byte("test-secret"))
 	mockConfig := config.NewConfig()
-
 	handler := NewHandler(mockRepo, mockService, mockLogger, mockStore, mockConfig)
 
 	assert.NotNil(t, handler)
@@ -55,8 +54,8 @@ func TestHandler_RegisterGET(t *testing.T) {
 	mockRenderer := &MockRenderer{}
 	e.Renderer = mockRenderer
 	c, rec := SetupTestContext(e, "/register")
-
 	handler := &Handler{}
+
 	err := handler.RegisterGET(c)
 
 	assert.NoError(t, err)
@@ -69,8 +68,8 @@ func TestHandler_LoginGET(t *testing.T) {
 	mockRenderer := &MockRenderer{}
 	e.Renderer = mockRenderer
 	c, rec := SetupTestContext(e, "/login")
-
 	handler := &Handler{}
+
 	err := handler.LoginGET(c)
 
 	assert.NoError(t, err)
@@ -103,15 +102,11 @@ func TestHandler_RegisterPOST(t *testing.T) {
 	mockLogger := mocks.NewMockLoggerInterface(t)
 	mockStore := sessions.NewCookieStore([]byte("test-secret"))
 	mockConfig := &config.Config{SessionName: "test-session"}
-
 	h := NewHandler(mockRepo, mockService, mockLogger, mockStore, mockConfig)
 
-	// Set up expectations for the mock repository
 	mockRepo.EXPECT().UserExists(mock.Anything, mock.Anything).Return(false, nil)
 	mockRepo.EXPECT().CreateUser(mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockRepo.EXPECT().GetUserByUsername(mock.Anything).Return(&User{ID: "1", Username: "testuser"}, nil)
-
-	// Set up expectations for the mock service
 	mockService.EXPECT().RegisterUser(mock.AnythingOfType("user.RegisterUserParams")).Return(nil)
 
 	e := echo.New()
@@ -125,7 +120,6 @@ func TestHandler_RegisterPOST(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusSeeOther, rec.Code)
 	assert.Equal(t, "/", rec.Header().Get("Location"))
-
 	mockRepo.AssertExpectations(t)
 	mockService.AssertExpectations(t)
 }
