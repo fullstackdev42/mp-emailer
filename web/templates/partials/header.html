@@ -5,7 +5,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}} - MP Emailer</title>
+    <title>{{if .data.Title}}{{.data.Title}} - {{end}}MP Emailer</title>
+    <!-- Debug output -->
+    <!-- {{printf "%+v" .}} -->
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
