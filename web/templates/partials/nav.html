@@ -2,7 +2,7 @@
 <nav class="bg-blue-600 p-4">
     <ul class="flex justify-center space-x-6">
         <li><a href="/" class="text-white hover:text-gray-200">Home</a></li>
-        {{if .IsAuthenticated}}
+        {{if .data.IsAuthenticated}}
         <li><a href="/campaigns" class="text-white hover:text-gray-200">Campaigns</a></li>
         <li><a href="/logout" class="text-white hover:text-gray-200">Logout</a></li>
         {{else}}

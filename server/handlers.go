@@ -50,6 +50,8 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 
 	isAuthenticated := c.Get("isAuthenticated").(bool)
 
+	h.Logger.Debug("server.HandleIndex", "isAuthenticated", isAuthenticated)
+
 	pageData := shared.PageData{
 		Content:         campaigns,
 		Title:           "Home",
