@@ -9,10 +9,11 @@ import (
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
+	"github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 )
 
 // MockRenderer is a mock of echo.Renderer
@@ -26,17 +27,17 @@ func (m *MockRenderer) Render(w io.Writer, name string, _ interface{}, _ echo.Co
 
 func TestNewHandler(t *testing.T) {
 	// Mock dependencies
-	mockService := new(MockServiceInterface)
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockRepLookupService := new(MockRepresentativeLookupServiceInterface)
-	mockEmailService := mocksEmail.NewMockService(t)
-	mockClient := new(MockClientInterface)
+	mockRepLookupService := NewMockRepresentativeLookupServiceInterface(t)
+	mockService := NewMockServiceInterface(t)
+	mockEmailService := email.NewMockService(t)
+	mockClient := NewMockClientInterface(t)
 
 	type args struct {
 		service                     ServiceInterface
 		logger                      loggo.LoggerInterface
 		representativeLookupService RepresentativeLookupServiceInterface
-		emailService                *mocksEmail.MockService
+		emailService                *email.MockService
 		client                      ClientInterface
 	}
 
@@ -188,16 +189,23 @@ func TestHandler_CampaignGET(t *testing.T) {
 			mockService := NewMockServiceInterface(t)
 			mockLogger := mocks.NewMockLoggerInterface(t)
 			mockRepLookupService := NewMockRepresentativeLookupServiceInterface(t)
-			mockEmailService := mocksEmail.NewMockService(t)
+			mockEmailService := email.NewMockService(t)
 			mockClient := NewMockClientInterface(t)
 
 			e := echo.New()
 			e.Renderer = &MockRenderer{}
 
+			// Set up expectations for the mock logger
+			mockLogger.EXPECT().Error(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe()
+
 			// Set up expectations for the mock service
-			if tt.campaignID != "invalid" && tt.campaignID != "0" {
+			if tt.campaignID != "invalid" {
 				campaignID, _ := strconv.Atoi(tt.campaignID)
-				mockService.EXPECT().FetchCampaign(campaignID).Return(tt.mockCampaign, tt.mockError)
+				if campaignID == 0 {
+					mockService.EXPECT().FetchCampaign(campaignID).Return(nil, errors.New("invalid campaign ID"))
+				} else {
+					mockService.EXPECT().FetchCampaign(campaignID).Return(tt.mockCampaign, tt.mockError)
+				}
 
 				// If the campaign has a postal code, set up expectation for FetchRepresentatives
 				if tt.mockCampaign != nil && tt.mockCampaign.PostalCode != "" {

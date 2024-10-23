@@ -126,7 +126,7 @@ func TestHandler_RegisterPOST(t *testing.T) {
 
 	mockRepo.EXPECT().UserExists("testuser", "test@example.com").Return(false, nil)
 	mockRepo.EXPECT().CreateUser("testuser", "test@example.com", mock.AnythingOfType("string")).Return(nil)
-	mockRepo.EXPECT().GetUserByUsername("testuser").Return(&User{ID: UserID(uuid.MustParse("1")), Username: "testuser"}, nil)
+	mockRepo.EXPECT().GetUserByUsername("testuser").Return(&User{ID: ID(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")), Username: "testuser"}, nil)
 
 	err := handler.RegisterPOST(c)
 

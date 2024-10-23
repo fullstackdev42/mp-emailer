@@ -101,8 +101,9 @@ func TestRepository_GetByID(t *testing.T) {
 	defer db.Close()
 
 	id := 1
-	rows := sqlmock.NewRows([]string{"id", "name", "template", "owner_id", "created_at", "updated_at"}).
-		AddRow(id, "Campaign 1", "Template 1", 1, time.Now(), time.Now())
+	ownerID := "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+	rows := sqlmock.NewRows([]string{"id", "name", "description", "template", "owner_id", "created_at", "updated_at"}).
+		AddRow(id, "Campaign 1", "Description 1", "Template 1", ownerID, time.Now(), time.Now())
 
 	mock.ExpectQuery("SELECT (.+) FROM campaigns WHERE").
 		WithArgs(id).
@@ -113,6 +114,7 @@ func TestRepository_GetByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, campaign)
 	assert.Equal(t, id, campaign.ID)
+	assert.Equal(t, ownerID, campaign.OwnerID)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
