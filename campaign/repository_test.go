@@ -29,7 +29,7 @@ func TestRepository_Create(t *testing.T) {
 	campaign := &Campaign{
 		Name:     "Test Campaign",
 		Template: "Test Template",
-		OwnerID:  1,
+		OwnerID:  "1",
 	}
 
 	mock.ExpectExec("INSERT INTO campaigns").

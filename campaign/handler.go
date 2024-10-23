@@ -122,7 +122,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	})
 }
 
-type EditCampaignParams struct {
+type EditParams struct {
 	ID       int
 	Name     string
 	Template string
@@ -130,7 +130,7 @@ type EditCampaignParams struct {
 
 // EditCampaign handles POST requests for updating a campaign
 func (h *Handler) EditCampaign(c echo.Context) error {
-	params := EditCampaignParams{}
+	params := EditParams{}
 	var err error
 	params.ID, err = strconv.Atoi(c.Param("id"))
 	if err != nil {

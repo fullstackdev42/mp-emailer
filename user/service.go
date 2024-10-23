@@ -52,7 +52,6 @@ func (s *Service) RegisterUser(params RegisterUserParams) error {
 
 func (s *Service) VerifyUser(username, password string) (string, error) {
 	s.logger.Info(fmt.Sprintf("Verifying user: %s", username))
-
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
 		if err.Error() == "user not found" {
@@ -70,5 +69,5 @@ func (s *Service) VerifyUser(username, password string) (string, error) {
 	}
 
 	s.logger.Info(fmt.Sprintf("User verified successfully: %s", username))
-	return fmt.Sprintf("%d", user.ID), nil
+	return user.ID, nil
 }

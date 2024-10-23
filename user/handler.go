@@ -41,70 +41,47 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 }
 
 func (h *Handler) RegisterPOST(c echo.Context) error {
+	// Parse form values
 	username := c.FormValue("username")
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 
+	// Create params object
+	params := RegisterUserParams{Username: username, Email: email, Password: password}
+
+	// Check if user exists
 	exists, err := h.repo.UserExists(username, email)
 	if err != nil {
 		h.Logger.Error("Error checking user existence", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
+		return err
 	}
 	if exists {
-		return c.Render(http.StatusConflict, "register.html", map[string]interface{}{
-			"Error": "Username or email already exists",
-		})
+		h.Logger.Warn("User already exists")
+		return c.String(http.StatusBadRequest, "User already exists")
 	}
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// Register the user
+	err = h.service.RegisterUser(params)
 	if err != nil {
-		h.Logger.Error("Error hashing password", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
+		h.Logger.Error("Failed to register user", err)
+		return err
 	}
 
-	if err := h.repo.CreateUser(username, email, string(hashedPassword)); err != nil {
+	// Create user in repo
+	err = h.repo.CreateUser(username, email, password)
+	if err != nil {
 		h.Logger.Error("Error creating user", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while creating your account",
-		})
+		return err
 	}
 
-	// Create a new session
-	sess, err := h.Store.Get(c.Request(), h.SessionName)
+	// Get user by username
+	_, err = h.repo.GetUserByUsername(username)
 	if err != nil {
-		h.Logger.Error("Error getting session", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
-	}
-	// Get the newly created user
-	user, err := h.repo.GetUserByUsername(username)
-	if err != nil {
-		h.Logger.Error("Error fetching user after creation", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
+		h.Logger.Error("Error getting user by username", err)
+		return err
 	}
 
-	// Set user information in the session
-	sess.Values["user_id"] = user.ID
-	sess.Values["username"] = user.Username
-	sess.Values["authenticated"] = true
-
-	// Save the session
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		h.Logger.Error("Error saving session", err)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
-	}
-
-	// Redirect to the home page
+	// Redirect on success
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 

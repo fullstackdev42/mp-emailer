@@ -10,11 +10,6 @@ packages:
     interfaces:
       Migrator:
 
-  github.com/fullstackdev42/mp-emailer/user:
-    interfaces:
-      ServiceInterface:
-      RepositoryInterface:
-
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
       SMTPClient:

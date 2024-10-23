@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type CampaignParams struct {
+type Params struct {
 	ID          int
 	Name        string
 	Description string

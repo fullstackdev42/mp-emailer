@@ -66,9 +66,8 @@ func TestCreateUser(t *testing.T) {
 	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash\\) VALUES \\(\\?, \\?, \\?\\)").
 		WithArgs("testuser", "test@example.com", "hashedpassword").
 		WillReturnResult(sqlmock.NewResult(1, 1))
-
 	// Call the CreateUser function and assert the result
-	err = testDB.CreateUser("testuser", "test@example.com", "hashedpassword")
+	err = testDB.CreateUser("123e4567-e89b-12d3-a456-426614174000", "testuser", "test@example.com", "hashedpassword")
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
