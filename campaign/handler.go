@@ -41,24 +41,55 @@ func NewHandler(
 	}
 }
 
+// Define a DTO for returning campaign details
+type DetailDTO struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PostalCode  string `json:"postal_code"`
+	Template    string `json:"template"`
+	OwnerID     string `json:"owner_id"`
+}
+
 // CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid campaign ID")
+		h.logger.Warn("Invalid campaign ID", "error", err, "input", c.Param("id"))
+		return c.Render(http.StatusBadRequest, "error.html", map[string]interface{}{
+			"Title":   "Bad Request",
+			"Message": "Invalid campaign ID",
+		})
 	}
 
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
-			return h.errorHandler.HandleError(c, err, http.StatusNotFound, "Campaign not found")
+			h.logger.Info("FetchCampaign: Campaign not found", "campaignID", id)
+			return c.Render(http.StatusNotFound, "error.html", map[string]interface{}{
+				"Title":   "Not Found",
+				"Message": "Campaign not found",
+			})
 		}
-		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaign")
+		h.logger.Error("Error fetching campaign", err, "campaignID", id)
+		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+			"Title":   "Internal Server Error",
+			"Message": "An error occurred while fetching the campaign",
+		})
+	}
+
+	dto := DetailDTO{
+		ID:          campaign.ID,
+		Name:        campaign.Name,
+		Description: campaign.Description,
+		PostalCode:  campaign.PostalCode,
+		Template:    campaign.Template,
+		OwnerID:     campaign.OwnerID,
 	}
 
 	return c.Render(http.StatusOK, "campaign_details.html", shared.PageData{
 		Title:   "Campaign Details",
-		Content: campaign,
+		Content: dto,
 	})
 }
 
@@ -78,20 +109,26 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
+	// Bind and validate the incoming data using DTO
+	dto := new(CreateCampaignDTO)
+	if err := c.Bind(dto); err != nil {
+		return h.errorHandler.HandleError(c, err, http.StatusBadRequest, "Invalid input")
+	}
+
+	// Retrieve ownerID from session
 	ownerID, err := user.GetOwnerIDFromSession(c)
 	if err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusUnauthorized, "Unauthorized")
 	}
 
-	campaign := &Campaign{
-		Name:     c.FormValue("name"),
-		Template: c.FormValue("template"),
-		OwnerID:  ownerID,
-	}
+	// Assign ownerID to DTO
+	dto.OwnerID = ownerID
 
-	if err := h.service.CreateCampaign(campaign); err != nil {
+	// Call the service layer to create the campaign
+	if err := h.service.CreateCampaign(dto); err != nil {
 		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error creating campaign")
 	}
+
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 

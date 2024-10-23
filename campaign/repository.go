@@ -97,6 +97,9 @@ func (r *Repository) GetByID(id int) (*Campaign, error) {
 	var createdAt, updatedAt sql.NullString
 	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrCampaignNotFound
+		}
 		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}
 

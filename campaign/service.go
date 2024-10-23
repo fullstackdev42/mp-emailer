@@ -4,7 +4,18 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 )
+
+// CreateCampaignDTO defines the data structure for creating a campaign
+type CreateCampaignDTO struct {
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	PostalCode  string `json:"postal_code" validate:"required"`
+	Template    string `json:"template" validate:"required"`
+	OwnerID     string `json:"owner_id" validate:"required,uuid4"`
+}
 
 type Params struct {
 	ID          int
@@ -12,12 +23,12 @@ type Params struct {
 	Description string
 	PostalCode  string
 	Template    string
-	OwnerID     string // Change this from int to string
+	OwnerID     string
 }
 
 type ServiceInterface interface {
 	ComposeEmail(mp Representative, c *Campaign, userData map[string]string) string
-	CreateCampaign(c *Campaign) error
+	CreateCampaign(c *CreateCampaignDTO) error
 	DeleteCampaign(id int) error
 	FetchCampaign(id int) (*Campaign, error)
 	GetAllCampaigns() ([]Campaign, error)
@@ -26,34 +37,37 @@ type ServiceInterface interface {
 }
 
 type Service struct {
-	repo RepositoryInterface
+	repo     RepositoryInterface
+	validate *validator.Validate
 }
 
 func NewService(repo RepositoryInterface) ServiceInterface {
 	return &Service{
-		repo: repo,
+		repo:     repo,
+		validate: validator.New(),
 	}
 }
 
-func (s *Service) CreateCampaign(c *Campaign) error {
-	return s.repo.Create(&Campaign{
-		Name:        c.Name,
-		Description: c.Description,
-		PostalCode:  c.PostalCode,
-		Template:    c.Template,
-		OwnerID:     c.OwnerID, // This should now be a string (UUID)
-	})
+func (s *Service) CreateCampaign(dto *CreateCampaignDTO) error {
+	// Validate DTO fields here
+	err := s.validate.Struct(dto)
+	if err != nil {
+		return fmt.Errorf("invalid input: %w", err)
+	}
+
+	campaign := &Campaign{
+		Name:        dto.Name,
+		Description: dto.Description,
+		PostalCode:  dto.PostalCode,
+		Template:    dto.Template,
+		OwnerID:     dto.OwnerID,
+	}
+
+	return s.repo.Create(campaign)
 }
 
 func (s *Service) UpdateCampaign(c *Campaign) error {
-	return s.repo.Update(&Campaign{
-		ID:          c.ID,
-		Name:        c.Name,
-		Description: c.Description,
-		PostalCode:  c.PostalCode,
-		Template:    c.Template,
-		OwnerID:     c.OwnerID, // This should now be a string (UUID)
-	})
+	return s.repo.Update(c)
 }
 
 func (s *Service) GetCampaignByID(id int) (*Campaign, error) {
