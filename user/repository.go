@@ -1,10 +1,10 @@
 package user
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
 )
 
@@ -33,26 +33,19 @@ func NewRepository(db *database.DB, logger loggo.LoggerInterface) *Repository {
 }
 
 func (r *Repository) CreateUser(username, email, passwordHash string) error {
-	r.logger.Info(fmt.Sprintf("Creating user: %s", username))
-	query := "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
-	_, err := r.db.SQL.Exec(query, username, email, passwordHash)
-	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error creating user: %s", username), err)
-		return fmt.Errorf("error creating user: %w", err)
+	user := &User{
+		ID:           uuid.New().String(),
+		Username:     username,
+		Email:        email,
+		PasswordHash: passwordHash,
 	}
-	return nil
+	return r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
 }
 
 func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	var user User
-	query := "SELECT id, username, password_hash FROM users WHERE username = ?"
-	err := r.db.SQL.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
+	err := r.db.SQL.QueryRow("SELECT * FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			r.logger.Warn(fmt.Sprintf("User not found: %s", username))
-			return nil, fmt.Errorf("user not found")
-		}
-		r.logger.Error(fmt.Sprintf("Error getting user: %s", username), err)
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 	return &user, nil

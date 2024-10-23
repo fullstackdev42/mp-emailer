@@ -85,18 +85,18 @@ func RequireAuthMiddleware(store sessions.Store, sessionName string) echo.Middle
 }
 
 // GetOwnerIDFromSession retrieves the owner ID from the session
-func GetOwnerIDFromSession(c echo.Context) (int, error) {
+func GetOwnerIDFromSession(c echo.Context) (string, error) {
 	logger, err := getLogger(c)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	logger.Debug("GetOwnerIDFromSession: Starting")
 
-	ownerID, ok := c.Get("user_id").(int)
+	ownerID, ok := c.Get("user_id").(string)
 	if !ok {
-		err := fmt.Errorf("user_id not found in session or not an integer")
+		err := fmt.Errorf("user_id not found in session or not a string")
 		logger.Error("GetOwnerIDFromSession: %v", err)
-		return 0, err
+		return "", err
 	}
 
 	logger.Debug("GetOwnerIDFromSession: Owner ID retrieved", "ownerID", ownerID)

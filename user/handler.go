@@ -118,21 +118,27 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
+	h.Logger.Info("Login attempt", "username", username)
+
 	user, err := h.repo.GetUserByUsername(username)
 	if err != nil {
-		h.Logger.Warn("Login failed: user not found", "username", username)
+		h.Logger.Warn("Login failed: user not found", "username", username, "error", err)
 		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
 			"Error": "Invalid username or password",
 		})
 	}
 
+	h.Logger.Info("User found", "username", username, "user_id", user.ID)
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		h.Logger.Warn("Login failed: incorrect password", "username", username)
+		h.Logger.Warn("Login failed: incorrect password", "username", username, "error", err)
 		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
 			"Error": "Invalid username or password",
 		})
 	}
+
+	h.Logger.Info("Password verified", "username", username)
 
 	// Create a new session
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
@@ -142,6 +148,8 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 			"Message": "An error occurred while processing your request",
 		})
 	}
+
+	h.Logger.Info("Session created", "session_name", h.SessionName)
 
 	// Set user information in the session
 	sess.Values["user_id"] = user.ID
@@ -156,7 +164,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		})
 	}
 
-	h.Logger.Info("User logged in successfully", "username", username)
+	h.Logger.Info("Session saved successfully", "username", username)
 
 	// Redirect to the home page or dashboard
 	return c.Redirect(http.StatusSeeOther, "/")

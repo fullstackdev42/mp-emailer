@@ -30,8 +30,8 @@ func NewRepository(db *database.DB) RepositoryInterface {
 }
 
 func (r *Repository) Create(campaign *Campaign) error {
-	query := `INSERT INTO campaigns (name, template, owner_id)VALUES (?, ?, ?)`
-	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Template, campaign.OwnerID)
+	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
+	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Description, campaign.Template, campaign.OwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
@@ -44,7 +44,7 @@ func (r *Repository) Create(campaign *Campaign) error {
 }
 
 func (r *Repository) GetAll() ([]Campaign, error) {
-	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns"
+	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns"
 	rows, err := r.db.SQL.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
@@ -55,7 +55,7 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 	for rows.Next() {
 		var c Campaign
 		var createdAt, updatedAt sql.NullString
-		err := rows.Scan(&c.ID, &c.Name, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
+		err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning campaign: %w", err)
 		}
@@ -72,8 +72,8 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 }
 
 func (r *Repository) Update(campaign *Campaign) error {
-	query := "UPDATE campaigns SET name = ?, template = ?, updated_at = NOW() WHERE id = ?"
-	_, err := r.db.SQL.Exec(query, campaign.Name, campaign.Template, campaign.ID)
+	query := "UPDATE campaigns SET name = ?, description = ?, template = ?, updated_at = NOW() WHERE id = ?"
+	_, err := r.db.SQL.Exec(query, campaign.Name, campaign.Description, campaign.Template, campaign.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
@@ -90,12 +90,12 @@ func (r *Repository) Delete(id int) error {
 }
 
 func (r *Repository) GetByID(id int) (*Campaign, error) {
-	query := "SELECT id, name, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
+	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
 	row := r.db.SQL.QueryRow(query, id)
 
 	var c Campaign
 	var createdAt, updatedAt sql.NullString
-	err := row.Scan(&c.ID, &c.Name, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
+	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}

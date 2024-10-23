@@ -60,32 +60,35 @@ func (s *RepresentativeLookupService) FetchRepresentatives(postalCode string) ([
 func (s *RepresentativeLookupService) FilterRepresentatives(representatives []Representative, filters map[string]string) []Representative {
 	filtered := make([]Representative, 0)
 	for _, rep := range representatives {
-		match := true
-		for key, value := range filters {
-			switch key {
-			case "type":
-				if rep.ElectedOffice != value {
-					match = false
-				}
-			case "level":
-				if rep.ElectedOffice != value {
-					match = false
-				}
-			case "name":
-				if !strings.Contains(strings.ToLower(rep.Name), strings.ToLower(value)) {
-					match = false
-				}
-			case "party":
-				if !strings.EqualFold(rep.Party, value) {
-					match = false
-				}
-			default:
-				s.logger.Warn("Unknown filter key", "key", key)
-			}
-		}
-		if match {
+		if s.matchesFilters(rep, filters) {
 			filtered = append(filtered, rep)
 		}
 	}
 	return filtered
+}
+
+func (s *RepresentativeLookupService) matchesFilters(rep Representative, filters map[string]string) bool {
+	for key, value := range filters {
+		switch key {
+		case "type":
+			if rep.ElectedOffice != value {
+				return false
+			}
+		case "level":
+			if rep.ElectedOffice != value {
+				return false
+			}
+		case "name":
+			if !strings.Contains(strings.ToLower(rep.Name), strings.ToLower(value)) {
+				return false
+			}
+		case "party":
+			if !strings.EqualFold(rep.Party, value) {
+				return false
+			}
+		default:
+			s.logger.Warn("Unknown filter key", "key", key)
+		}
+	}
+	return true
 }

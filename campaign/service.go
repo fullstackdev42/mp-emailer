@@ -12,7 +12,7 @@ type CampaignParams struct {
 	Description string
 	PostalCode  string
 	Template    string
-	OwnerID     int
+	OwnerID     string // Change this from int to string
 }
 
 type ServiceInterface interface {
@@ -25,13 +25,23 @@ type ServiceInterface interface {
 	UpdateCampaign(c *Campaign) error
 }
 
+type Service struct {
+	repo RepositoryInterface
+}
+
+func NewService(repo RepositoryInterface) ServiceInterface {
+	return &Service{
+		repo: repo,
+	}
+}
+
 func (s *Service) CreateCampaign(c *Campaign) error {
 	return s.repo.Create(&Campaign{
 		Name:        c.Name,
 		Description: c.Description,
 		PostalCode:  c.PostalCode,
 		Template:    c.Template,
-		OwnerID:     c.OwnerID,
+		OwnerID:     c.OwnerID, // This should now be a string (UUID)
 	})
 }
 
@@ -42,18 +52,8 @@ func (s *Service) UpdateCampaign(c *Campaign) error {
 		Description: c.Description,
 		PostalCode:  c.PostalCode,
 		Template:    c.Template,
-		OwnerID:     c.OwnerID,
+		OwnerID:     c.OwnerID, // This should now be a string (UUID)
 	})
-}
-
-type Service struct {
-	repo RepositoryInterface
-}
-
-func NewService(repo RepositoryInterface) ServiceInterface {
-	return &Service{
-		repo: repo,
-	}
 }
 
 func (s *Service) GetCampaignByID(id int) (*Campaign, error) {

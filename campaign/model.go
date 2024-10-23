@@ -8,7 +8,7 @@ type Campaign struct {
 	Description string    `json:"description"`
 	PostalCode  string    `json:"postal_code"`
 	Template    string    `json:"template"`
-	OwnerID     int       `json:"owner_id"`
+	OwnerID     string    `json:"owner_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Tokens      []string  `json:"tokens"`
