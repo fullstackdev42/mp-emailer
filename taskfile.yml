@@ -60,7 +60,7 @@ tasks:
   migrate-down:
     desc: Run all down migrations
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations down
+      - migrate -database "{{.DB_URL}}" -path ./migrations down {{.CLI_ARGS}}
 
   migrate-up-one:
     desc: Run one up migration
@@ -76,6 +76,11 @@ tasks:
     desc: Force set migration version
     cmds:
       - migrate -database "{{.DB_URL}}" -path ./migrations force {{.CLI_ARGS}}
+
+  migrate-version:
+    desc: Show current migration version
+    cmds:
+      - migrate -database "{{.DB_URL}}" -path ./migrations version
 
   mailpit-logs:
     desc: View Mailpit logs
