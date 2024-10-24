@@ -55,12 +55,7 @@ func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DatabaseDSN()
-	db, err := database.NewDB(dsn, logger)
-	if err != nil {
-		logger.Error("Failed to initialize database", err)
-		return nil, err
-	}
-	return db, nil
+	return database.NewDB(dsn, logger)
 }
 
 func newTemplateManager() (*server.TemplateManager, error) {
@@ -108,11 +103,13 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 	})
 }
 
+// HandlerResult is the output struct for NewHandler
 type HandlerResult struct {
 	fx.Out
 	Handler *server.Handler
 }
 
+// NewHandler creates a new server.Handler
 func NewHandler(
 	logger loggo.LoggerInterface,
 	emailService email.Service,
@@ -132,11 +129,13 @@ func NewHandler(
 	return HandlerResult{Handler: handler}, nil
 }
 
+// CampaignServiceResult is the output struct for NewCampaignService
 type CampaignServiceResult struct {
 	fx.Out
 	Service campaign.ServiceInterface
 }
 
+// NewCampaignService creates a new campaign.Service
 func NewCampaignService(repo campaign.RepositoryInterface) (CampaignServiceResult, error) {
 	service, err := campaign.NewService(repo)
 	if err != nil {
@@ -145,11 +144,13 @@ func NewCampaignService(repo campaign.RepositoryInterface) (CampaignServiceResul
 	return CampaignServiceResult{Service: service}, nil
 }
 
+// UserServiceResult is the output struct for NewUserService
 type UserServiceResult struct {
 	fx.Out
 	Service user.ServiceInterface
 }
 
+// NewUserService creates a new user.Service
 func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface) (UserServiceResult, error) {
 	service, err := user.NewService(repo.(*user.Repository), logger)
 	if err != nil {
@@ -158,11 +159,13 @@ func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface)
 	return UserServiceResult{Service: service}, nil
 }
 
+// EmailServiceResult is the output struct for NewEmailService
 type EmailServiceResult struct {
 	fx.Out
 	Service email.Service
 }
 
+// NewEmailService creates a new email.Service
 func NewEmailService(cfg *config.Config, logger loggo.LoggerInterface) (EmailServiceResult, error) {
 	service, err := email.New(cfg, logger)
 	if err != nil {
