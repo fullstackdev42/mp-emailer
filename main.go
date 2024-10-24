@@ -85,7 +85,7 @@ func registerRoutes(
 	e.Static("/static", "web/public")
 }
 
-//go:embed web/templates/layout/* web/templates/shared/* web/templates/partials/* web/templates/pages/*
+//go:embed web/templates/**/*
 var templateFS embed.FS
 
 // Provide templateFS to the fx container

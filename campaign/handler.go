@@ -54,7 +54,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	}
 	h.logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
 	h.logger.Debug("CampaignGET: Attempting to render template")
-	err = c.Render(http.StatusOK, "campaign.gohtml", map[string]interface{}{"Campaign": campaign})
+	err = c.Render(http.StatusOK, "campaign", map[string]interface{}{"Campaign": campaign})
 	if err != nil {
 		h.logger.Error("CampaignGET: Failed to render template", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to render campaign", http.StatusInternalServerError)
@@ -78,7 +78,7 @@ func (h *Handler) GetAllCampaigns(c echo.Context) error {
 
 	// Log the campaigns data for debugging
 	h.logger.Debug("Campaigns data", "campaigns", campaigns)
-	return c.Render(http.StatusOK, "campaigns.gohtml", map[string]interface{}{
+	return c.Render(http.StatusOK, "campaigns", map[string]interface{}{
 		"Campaigns":       campaigns,
 		"IsAuthenticated": isAuthenticated,
 	})
@@ -87,7 +87,7 @@ func (h *Handler) GetAllCampaigns(c echo.Context) error {
 // CreateCampaignForm handles GET requests for the campaign creation form
 func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	h.logger.Debug("Handling CreateCampaignForm request")
-	return c.Render(http.StatusOK, "campaign_create.gohtml", nil)
+	return c.Render(http.StatusOK, "campaign_create", nil)
 }
 
 // CreateCampaign handles POST requests for creating a new campaign
@@ -145,7 +145,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		h.logger.Error("Error fetching campaign for edit", err, "campaignID", id)
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
 	}
-	return c.Render(http.StatusOK, "campaign_edit.gohtml", map[string]interface{}{
+	return c.Render(http.StatusOK, "campaign_edit", map[string]interface{}{
 		"Campaign": campaign,
 	})
 }
@@ -187,7 +187,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
 		h.logger.Warn("Invalid postal code submitted", err)
-		return c.Render(http.StatusBadRequest, "error.gohtml", map[string]interface{}{
+		return c.Render(http.StatusBadRequest, "error", map[string]interface{}{
 			"Error": "Invalid postal code",
 		})
 	}
@@ -230,7 +230,7 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) err
 		Content: template.HTML(content),
 	}
 
-	err := c.Render(http.StatusOK, "email.gohtml", map[string]interface{}{"Data": data})
+	err := c.Render(http.StatusOK, "email", map[string]interface{}{"Data": data})
 	if err != nil {
 		h.logger.Error("Error rendering email template", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error rendering email template", http.StatusInternalServerError)
@@ -258,7 +258,7 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	filteredRepresentatives := h.representativeLookupService.FilterRepresentatives(representatives, filters)
 
 	h.logger.Info("Representatives lookup successful", "count", len(filteredRepresentatives), "postalCode", postalCode, "type", representativeType)
-	return c.Render(http.StatusOK, "representatives.gohtml", map[string]interface{}{
+	return c.Render(http.StatusOK, "representatives", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
 }
