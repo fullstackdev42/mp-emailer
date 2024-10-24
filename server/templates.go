@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"html/template"
 	"io"
@@ -17,25 +16,6 @@ type TemplateRenderer interface {
 
 type TemplateManager struct {
 	templates *template.Template
-}
-
-// NewTemplateManager initializes and parses templates
-func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
-	tm := &TemplateManager{}
-
-	// Parse all templates
-	tmpl, err := template.New("").ParseFS(templateFiles, "web/templates/**/*.gohtml")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-
-	// Ensure the "app" template exists
-	if tmpl.Lookup("app") == nil {
-		return nil, fmt.Errorf("layout template 'app' not found")
-	}
-
-	tm.templates = tmpl
-	return tm, nil
 }
 
 func (tm *TemplateManager) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {

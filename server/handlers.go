@@ -4,7 +4,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -14,30 +13,10 @@ import (
 type Handler struct {
 	Logger          loggo.LoggerInterface
 	Store           sessions.Store
-	emailService    email.Service
-	templateManager TemplateRenderer
-	userService     user.ServiceInterface
+	templateManager *TemplateManager
 	campaignService campaign.ServiceInterface
 	errorHandler    *shared.ErrorHandler
 	EmailService    email.Service
-}
-
-// NewHandler creates a new Handler instance
-func NewHandler(
-	logger loggo.LoggerInterface,
-	emailService email.Service,
-	templateManager TemplateRenderer,
-	userService user.ServiceInterface,
-	campaignService campaign.ServiceInterface,
-) *Handler {
-	return &Handler{
-		Logger:          logger,
-		emailService:    emailService,
-		templateManager: templateManager,
-		userService:     userService,
-		campaignService: campaignService,
-		errorHandler:    shared.NewErrorHandler(logger),
-	}
 }
 
 // HandleIndex page handler
@@ -71,20 +50,4 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 
 	h.Logger.Debug("Template rendered successfully")
 	return nil
-}
-
-// ProvideRoutes returns the routes for the server
-func (h *Handler) ProvideRoutes(e *echo.Echo) ([]Route, error) {
-	// Define your routes here
-	routes := []Route{
-		{Method: "GET", Pattern: "/", Handler: h.HandleIndex},
-		// Add more routes as needed
-	}
-
-	// Register routes with Echo
-	for _, route := range routes {
-		e.Add(route.Method, route.Pattern, route.Handler)
-	}
-
-	return routes, nil
 }

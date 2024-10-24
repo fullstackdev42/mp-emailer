@@ -47,7 +47,9 @@ func newEcho() *echo.Echo {
 }
 
 // Central function to register routes
-func registerRoutes(e *echo.Echo, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+	// Register server routes
+	server.RegisterRoutes(serverHandler, e)
 	// Register campaign routes
 	campaign.RegisterRoutes(campaignHandler, e)
 	// Register user routes
