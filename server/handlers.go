@@ -13,7 +13,7 @@ import (
 type Handler struct {
 	Logger          loggo.LoggerInterface
 	Store           sessions.Store
-	templateManager *TemplateManager
+	templateManager *shared.TemplateRendererImpl
 	campaignService campaign.ServiceInterface
 	errorHandler    *shared.ErrorHandler
 	EmailService    email.Service

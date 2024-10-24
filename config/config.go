@@ -27,6 +27,7 @@ type Config struct {
 	LogLevel       string
 }
 
+// Load loads the configuration
 func Load() (*Config, error) {
 	// Load .env file if it exists
 	_ = godotenv.Load()

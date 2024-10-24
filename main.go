@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -12,6 +13,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/server"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -30,10 +32,12 @@ func main() {
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
 			provideTemplateFS,
 			newEcho,
+			provideTemplates,
 		),
 		campaign.Module,
-		server.ProvideModule(),
-		user.ProvideModule(),
+		server.Module,
+		user.Module,
+		shared.Module,
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
@@ -44,8 +48,26 @@ func newEcho() *echo.Echo {
 	return echo.New()
 }
 
+// Provide a *template.Template to the fx container
+func provideTemplates() (*template.Template, error) {
+	templates, err := template.ParseGlob("web/templates/**/*.gohtml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
+	}
+	return templates, nil
+}
+
 // Central function to register routes
-func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+func registerRoutes(
+	e *echo.Echo,
+	serverHandler *server.Handler,
+	campaignHandler *campaign.Handler,
+	userHandler *user.Handler,
+	renderer *shared.TemplateRendererImpl,
+) {
+	// Set the custom renderer
+	e.Renderer = renderer
+
 	// Middleware for logging
 	e.Use(middleware.Logger())
 	// Middleware for rate limiting
@@ -71,7 +93,13 @@ func provideTemplateFS() embed.FS {
 }
 
 func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
-	return loggo.NewLogger("mp-emailer.log", cfg.GetLogLevel())
+	logLevel := cfg.GetLogLevel()
+	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+	logger.Debug("Logger initialized with DEBUG level") // Example debug log
+	return logger, nil
 }
 
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {

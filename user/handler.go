@@ -12,17 +12,18 @@ import (
 )
 
 type Handler struct {
-	repo         RepositoryInterface
-	service      ServiceInterface
-	Logger       loggo.LoggerInterface
-	Store        sessions.Store
-	SessionName  string
-	Config       *config.Config
-	errorHandler *shared.ErrorHandler
+	repo            RepositoryInterface
+	service         ServiceInterface
+	Logger          loggo.LoggerInterface
+	Store           sessions.Store
+	SessionName     string
+	Config          *config.Config
+	errorHandler    *shared.ErrorHandler
+	templateManager shared.TemplateRenderer
 }
 
 func (h *Handler) RegisterGET(c echo.Context) error {
-	return c.Render(http.StatusOK, "register.gohtml", nil)
+	return h.templateManager.Render(c.Response(), "register.gohtml", nil, c)
 }
 
 func (h *Handler) RegisterPOST(c echo.Context) error {
@@ -71,7 +72,9 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 }
 
 func (h *Handler) LoginGET(c echo.Context) error {
-	return c.Render(http.StatusOK, "login.gohtml", nil)
+	h.Logger.Debug("LoginGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
+
+	return h.templateManager.Render(c.Response(), "login.gohtml", nil, c)
 }
 
 func (h *Handler) LoginPOST(c echo.Context) error {
@@ -160,7 +163,7 @@ func (h *Handler) RequireAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 	return func(c echo.Context) error {
 		sess, err := h.Store.Get(c.Request(), h.SessionName)
 		if err != nil || sess.Values["authenticated"] != true {
-			return c.Redirect(http.StatusSeeOther, "/login")
+			return c.Redirect(http.StatusSeeOther, "/user/login")
 		}
 		return next(c)
 	}

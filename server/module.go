@@ -1,10 +1,6 @@
 package server
 
 import (
-	"embed"
-	"fmt"
-	"html/template"
-
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -14,41 +10,20 @@ import (
 	"go.uber.org/fx"
 )
 
-// ProvideModule provides the server module dependencies
-func ProvideModule() fx.Option {
-	return fx.Options(
-		fx.Provide(
-			NewHandler,
-			NewTemplateManager,
-			shared.NewErrorHandler,
-		),
-	)
-}
-
-// NewTemplateManager initializes and parses templates
-func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
-	tm := &TemplateManager{}
-
-	// Parse all templates
-	tmpl, err := template.New("").ParseFS(templateFiles, "web/templates/**/*.gohtml")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-
-	// Ensure the "app" template exists
-	if tmpl.Lookup("app") == nil {
-		return nil, fmt.Errorf("layout template 'app' not found")
-	}
-
-	tm.templates = tmpl
-	return tm, nil
-}
+// Module defines the server module
+//
+//nolint:gochecknoglobals
+var Module = fx.Module("server",
+	fx.Provide(
+		NewHandler,
+	),
+)
 
 // NewHandler initializes a new Handler with the necessary dependencies
 func NewHandler(
 	logger loggo.LoggerInterface,
 	store sessions.Store,
-	tm *TemplateManager,
+	tm *shared.TemplateRendererImpl,
 	cs campaign.ServiceInterface,
 	eh *shared.ErrorHandler,
 	es email.Service,

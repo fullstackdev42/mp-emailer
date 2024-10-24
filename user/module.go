@@ -3,22 +3,23 @@ package user
 import (
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
-// ProvideModule provides the user module dependencies
-func ProvideModule() fx.Option {
-	return fx.Options(
-		fx.Provide(
-			NewRepository,
-			NewService,
-			NewHandler,
-		),
-	)
-}
+// Module defines the user module
+//
+//nolint:gochecknoglobals
+var Module = fx.Module("user",
+	fx.Provide(
+		NewRepository,
+		NewService,
+		NewHandler,
+	),
+)
 
 // NewRepository creates a new user repository
 func NewRepository(db *database.DB, logger loggo.LoggerInterface) RepositoryInterface {
@@ -55,13 +56,15 @@ func NewHandler(
 	logger loggo.LoggerInterface,
 	service ServiceInterface,
 	sessions sessions.Store,
+	templateManager *shared.TemplateRenderer,
 ) (HandlerResult, error) {
 	handler := &Handler{
-		service:     service,
-		Logger:      logger,
-		Store:       sessions,
-		SessionName: cfg.SessionName,
-		Config:      cfg,
+		service:         service,
+		Logger:          logger,
+		Store:           sessions,
+		SessionName:     cfg.SessionName,
+		Config:          cfg,
+		templateManager: *templateManager,
 	}
 	return HandlerResult{Handler: handler}, nil
 }
