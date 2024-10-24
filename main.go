@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/fx"
 )
 
@@ -45,6 +46,11 @@ func newEcho() *echo.Echo {
 
 // Central function to register routes
 func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+	// Middleware for logging
+	e.Use(middleware.Logger())
+	// Middleware for rate limiting
+	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+
 	// Register server routes
 	server.RegisterRoutes(serverHandler, e)
 	// Register campaign routes
@@ -92,7 +98,11 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 		},
 		OnStop: func(ctx context.Context) error {
 			logger.Debug("Server shutting down")
-			return e.Shutdown(ctx)
+			if err := e.Shutdown(ctx); err != nil {
+				logger.Error("Error shutting down server", err)
+				return err
+			}
+			return nil
 		},
 	})
 }
