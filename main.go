@@ -12,6 +12,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/routes"
 	"github.com/fullstackdev42/mp-emailer/server"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -194,8 +195,6 @@ func NewEmailService(cfg *config.Config, logger loggo.LoggerInterface) (EmailSer
 }
 
 func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {
-	logger.Error("Unhandled error", err, "url", c.Request().URL.String())
-
 	message := "Internal Server Error"
 	statusCode := http.StatusInternalServerError
 
@@ -209,8 +208,8 @@ func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, c
 			message = msg
 		}
 	}
-
-	if err := c.JSON(statusCode, map[string]string{"message": message}); err != nil {
-		logger.Error("Failed to send JSON response", err)
+	errorHandler := shared.NewErrorHandler(logger)
+	if err := errorHandler.HandleHTTPError(c, err, message, statusCode); err != nil {
+		logger.Error("Failed to handle HTTP error", err)
 	}
 }

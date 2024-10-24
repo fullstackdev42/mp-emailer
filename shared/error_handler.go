@@ -1,30 +1,24 @@
 package shared
 
 import (
+	"net/http"
+
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
 type ErrorHandler struct {
-	Logger loggo.LoggerInterface
+	logger loggo.LoggerInterface
 }
 
 func NewErrorHandler(logger loggo.LoggerInterface) *ErrorHandler {
-	return &ErrorHandler{
-		Logger: logger,
-	}
+	return &ErrorHandler{logger: logger}
 }
 
-func (eh *ErrorHandler) HandleError(c echo.Context, err error, statusCode int, message string) error {
-	eh.Logger.Error("Error occurred", err, "message", message, "statusCode", statusCode)
-
-	pageData := PageData{
-		Title: "Error",
-		Error: message,
-		Content: map[string]string{
-			"Details": err.Error(),
-		},
-	}
-
-	return c.Render(statusCode, "error.html", pageData)
+func (eh *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, statusCode int) error {
+	eh.logger.Error("Unhandled error", err, "url", c.Request().URL.String())
+	return c.Render(statusCode, "error.html", PageData{
+		Title:   http.StatusText(statusCode),
+		Content: map[string]string{"message": message},
+	})
 }

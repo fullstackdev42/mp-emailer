@@ -49,7 +49,7 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	campaigns, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
 		h.Logger.Error("Error fetching campaigns", err)
-		return h.errorHandler.HandleError(c, err, 500, "Error fetching campaigns") // Added status code 500
+		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
 	}
 
 	pageData := shared.PageData{
@@ -60,7 +60,7 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 
 	if err := h.templateManager.Render(c.Response(), "home.html", pageData, c); err != nil {
 		h.Logger.Error("Error rendering template", err)
-		return h.errorHandler.HandleError(c, err, 500, "Error rendering page") // Added status code 500
+		return h.errorHandler.HandleHTTPError(c, err, "Error rendering page", 500)
 	}
 
 	return nil

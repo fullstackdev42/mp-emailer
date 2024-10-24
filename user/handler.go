@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -11,12 +12,13 @@ import (
 )
 
 type Handler struct {
-	repo        RepositoryInterface
-	service     ServiceInterface
-	Logger      loggo.LoggerInterface
-	Store       sessions.Store
-	SessionName string
-	Config      *config.Config
+	repo         RepositoryInterface
+	service      ServiceInterface
+	Logger       loggo.LoggerInterface
+	Store        sessions.Store
+	SessionName  string
+	Config       *config.Config
+	errorHandler *shared.ErrorHandler
 }
 
 func NewHandler(
@@ -27,12 +29,13 @@ func NewHandler(
 	config *config.Config,
 ) *Handler {
 	return &Handler{
-		repo:        repo,
-		service:     service,
-		Logger:      logger,
-		Store:       store,
-		SessionName: config.SessionName,
-		Config:      config,
+		repo:         repo,
+		service:      service,
+		Logger:       logger,
+		Store:        store,
+		SessionName:  config.SessionName,
+		Config:       config,
+		errorHandler: shared.NewErrorHandler(logger),
 	}
 }
 
@@ -53,7 +56,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	exists, err := h.repo.UserExists(username, email)
 	if err != nil {
 		h.Logger.Error("Error checking user existence", err)
-		return err
+		return h.errorHandler.HandleHTTPError(c, err, "Error checking user existence", http.StatusInternalServerError)
 	}
 	if exists {
 		h.Logger.Warn("User already exists")
@@ -64,21 +67,21 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	err = h.service.RegisterUser(params)
 	if err != nil {
 		h.Logger.Error("Failed to register user", err)
-		return err
+		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
 
 	// Create user in repo
 	err = h.repo.CreateUser(username, email, password)
 	if err != nil {
 		h.Logger.Error("Error creating user", err)
-		return err
+		return h.errorHandler.HandleHTTPError(c, err, "Error creating user", http.StatusInternalServerError)
 	}
 
 	// Get user by username
 	_, err = h.repo.GetUserByUsername(username)
 	if err != nil {
 		h.Logger.Error("Error getting user by username", err)
-		return err
+		return h.errorHandler.HandleHTTPError(c, err, "Error getting user by username", http.StatusInternalServerError)
 	}
 
 	// Redirect on success
