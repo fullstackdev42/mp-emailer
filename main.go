@@ -87,6 +87,9 @@ func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *serv
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 
+	// Add static file serving
+	e.Static("/static", "web/public")
+
 	return e
 }
 
