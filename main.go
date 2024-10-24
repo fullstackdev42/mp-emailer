@@ -19,9 +19,6 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:embed web/templates/layout/* web/templates/shared/* web/templates/partials/* web/templates/pages/*
-var templateFS embed.FS
-
 func main() {
 	app := fx.New(
 		fx.Provide(
@@ -58,6 +55,9 @@ func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler
 	// Serve static files from the "static" directory
 	e.Static("/static", "web/public")
 }
+
+//go:embed web/templates/layout/* web/templates/shared/* web/templates/partials/* web/templates/pages/*
+var templateFS embed.FS
 
 // Provide templateFS to the fx container
 func provideTemplateFS() embed.FS {
@@ -102,29 +102,4 @@ type HandlerResult struct {
 	fx.Out
 	ServerHandler   *server.Handler
 	CampaignHandler *campaign.Handler
-}
-
-func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {
-	message := "Internal Server Error"
-	statusCode := http.StatusInternalServerError
-	if cfg.IsDevelopment() {
-		message = err.Error()
-	}
-	var httpErr *echo.HTTPError
-	if errors.As(err, &httpErr) {
-		statusCode = httpErr.Code
-		if msg, ok := httpErr.Message.(string); ok {
-			message = msg
-		}
-	}
-	c.Logger().Error(err)
-	if err := c.Render(statusCode, "error", map[string]interface{}{
-		"Title":   fmt.Sprintf("%d - %s", statusCode, http.StatusText(statusCode)),
-		"Message": message,
-	}); err != nil {
-		logger.Error("Failed to render error page", err)
-		if err := c.String(http.StatusInternalServerError, "Internal Server Error"); err != nil {
-			logger.Error("Failed to send error response", err)
-		}
-	}
 }

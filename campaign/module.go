@@ -11,6 +11,8 @@ import (
 )
 
 // Module defines the campaign module
+//
+//nolint:gochecknoglobals
 var Module = fx.Module("campaign",
 	fx.Provide(
 		NewRepository,
