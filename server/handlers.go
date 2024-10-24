@@ -1,8 +1,6 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -43,23 +41,15 @@ func NewHandler(
 
 // Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
-	h.Logger.Debug("server.HandleIndex", "message", "Handling index request")
+	h.Logger.Debug("Handling index request")
 	isAuthenticated := c.Get("isAuthenticated").(bool)
-	h.Logger.Debug("server.HandleIndex", "isAuthenticated", isAuthenticated)
-
-	var internalError bool
-	defer func() {
-		if r := recover(); r != nil {
-			h.Logger.Debug("server.HandleIndex: Panic recovered", "error", r)
-			internalError = true
-		}
-	}()
+	h.Logger.Debug("Authentication status", "isAuthenticated", isAuthenticated)
 
 	// Fetch campaigns using the campaign service
 	campaigns, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
-		h.Logger.Debug("server.HandleIndex: Error fetching campaigns", "error", err)
-		return c.HTML(http.StatusInternalServerError, "<h1>Error fetching campaigns</h1>")
+		h.Logger.Error("Error fetching campaigns", err)
+		return h.errorHandler.HandleError(c, err, 500, "Error fetching campaigns") // Added status code 500
 	}
 
 	pageData := shared.PageData{
@@ -68,14 +58,9 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 		IsAuthenticated: isAuthenticated,
 	}
 
-	err = h.templateManager.Render(c.Response(), "home.html", pageData, c)
-	if err != nil {
-		h.Logger.Debug("server.HandleIndex: Error rendering template", "error", err)
-		return c.HTML(http.StatusInternalServerError, "<h1>Error rendering page</h1>")
-	}
-
-	if internalError {
-		return c.HTML(http.StatusInternalServerError, "<h1>Internal Server Error</h1>")
+	if err := h.templateManager.Render(c.Response(), "home.html", pageData, c); err != nil {
+		h.Logger.Error("Error rendering template", err)
+		return h.errorHandler.HandleError(c, err, 500, "Error rendering page") // Added status code 500
 	}
 
 	return nil
