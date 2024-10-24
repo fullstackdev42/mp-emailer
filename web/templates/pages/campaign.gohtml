@@ -1,5 +1,6 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+
+{{define "content"}}
 <main class="max-w-4xl mx-auto p-8">
     <h1 class="text-3xl font-bold mb-2" id="campaign-name">{{.Campaign.Name}}</h1>
     <p class="mb-6 text-sm text-gray-600">
@@ -37,4 +38,4 @@
         Back to Campaigns
     </a>
 </main>
-{{template "footer" .}}
+{{end}}

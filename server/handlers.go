@@ -62,10 +62,14 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 		IsAuthenticated: isAuthenticated,
 	}
 
-	if err := h.templateManager.Render(c.Response(), "home.html", pageData, c); err != nil {
+	h.Logger.Debug("Attempting to render template", "template", "home")
+
+	err = h.templateManager.Render(c.Response(), "home", pageData, c)
+	if err != nil {
 		h.Logger.Error("Error rendering template", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error rendering page", 500)
 	}
 
+	h.Logger.Debug("Template rendered successfully")
 	return nil
 }

@@ -17,12 +17,15 @@ func RegisterRoutes(e *echo.Echo, sh *server.Handler, ch *campaign.Handler, uh *
 	// User routes
 	registerUserRoutes(e, uh)
 
+	// Campaign routes (both public and protected)
+	registerCampaignRoutes(e, ch)
+
 	// Protected routes
 	authGroup := e.Group("/campaigns")
 	authGroup.Use(user.RequireAuthMiddleware(uh.Store, uh.SessionName))
 
-	// Campaign routes
-	registerCampaignRoutes(e, authGroup, ch)
+	// Protected campaign routes
+	registerProtectedCampaignRoutes(authGroup, ch)
 }
 
 func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
@@ -33,21 +36,17 @@ func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 	e.GET("/logout", uh.LogoutGET)       // Handle GET request for logout
 	e.GET("/register", uh.RegisterGET)   // Handle GET request for registration
 	e.POST("/register", uh.RegisterPOST) // Handle POST request for registration
-
-	// Add any additional user-related routes here
-	// For example:
-	// e.GET("/profile", uh.HandleProfile)
-	// e.POST("/profile/update", uh.HandleProfileUpdate)
 }
 
-func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
+func registerCampaignRoutes(e *echo.Echo, ch *campaign.Handler) {
 	// Public campaign routes
 	e.GET("/campaigns", ch.GetAllCampaigns)
 	e.GET("/campaigns/:id", ch.CampaignGET)
 	e.POST("/campaigns/:id/send", ch.SendCampaign)
-
 	e.POST("/campaigns/lookup-representatives", ch.HandleRepresentativeLookup)
+}
 
+func registerProtectedCampaignRoutes(authGroup *echo.Group, ch *campaign.Handler) {
 	// Protected campaign routes
 	authGroup.GET("/new", ch.CreateCampaignForm)
 	authGroup.POST("/new", ch.CreateCampaign)

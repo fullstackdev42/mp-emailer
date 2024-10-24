@@ -1,5 +1,6 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+
+{{define "content"}}
 <main class="max-w-4xl mx-auto p-8">
     <h1 class="text-3xl font-bold mb-6">Campaigns</h1>
     <a href="/campaigns/new"
@@ -12,4 +13,4 @@
     <p class="text-gray-600 text-lg">No campaigns found. Create a new campaign to get started.</p>
     {{end}}
 </main>
-{{template "footer" .}}
+{{end}}

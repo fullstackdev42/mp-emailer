@@ -12,7 +12,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/routes"
 	"github.com/fullstackdev42/mp-emailer/server"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -21,7 +20,7 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:embed web/templates/shared/* web/templates/partials/* web/templates/pages/*
+//go:embed web/templates/layout/* web/templates/shared/* web/templates/partials/* web/templates/pages/*
 var templateFS embed.FS
 
 func main() {
@@ -211,8 +210,14 @@ func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, c
 			message = msg
 		}
 	}
-	errorHandler := shared.NewErrorHandler(logger)
-	if err := errorHandler.HandleHTTPError(c, err, message, statusCode); err != nil {
-		logger.Error("Failed to handle HTTP error", err)
+
+	c.Logger().Error(err)
+
+	if err := c.Render(statusCode, "error", map[string]interface{}{
+		"Title":   fmt.Sprintf("%d - %s", statusCode, http.StatusText(statusCode)),
+		"Message": message,
+	}); err != nil {
+		logger.Error("Failed to render error page", err)
+		c.String(http.StatusInternalServerError, "Internal Server Error")
 	}
 }

@@ -70,7 +70,7 @@ func TestHandler_HandleIndex(t *testing.T) {
 
 	mockLogger.EXPECT().Debug(mock.Anything, mock.Anything).Times(2)
 	mockCampaignService.EXPECT().GetAllCampaigns().Return([]campaign.Campaign{}, nil)
-	mockTemplateManager.On("Render", mock.Anything, "home.html", mock.Anything, mock.Anything).Return(nil)
+	mockTemplateManager.On("Render", mock.Anything, "home.gohtml", mock.Anything, mock.Anything).Return(nil)
 
 	c, rec := SetupTestContext(e, "/")
 	c.Set("isAuthenticated", true)

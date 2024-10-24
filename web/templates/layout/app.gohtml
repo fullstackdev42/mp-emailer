@@ -1,21 +1,25 @@
-{{define "header"}}
+{{define "app"}}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .data.Title}}{{.data.Title}} - {{end}}MP Emailer</title>
-    <!-- Debug output -->
-    <!-- {{printf "%+v" .}} -->
+    <title>{{if .Title}}{{.Title}} - {{end}}MP Emailer</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 </head>
-
 <body>
     <header class="bg-blue-700 text-white text-center py-4">
         <h1 class="text-4xl font-bold">MP Emailer</h1>
         <p class="text-lg mt-2">Contact Your Representative Easily</p>
     </header>
+
+    {{template "nav" .}}
+
+    {{.TemplateContent}}
+
+    {{template "footer" .}}
+</body>
+</html>
 {{end}}

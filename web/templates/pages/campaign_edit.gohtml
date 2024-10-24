@@ -1,5 +1,6 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+
+{{define "content"}}
 <main class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-6">Edit Campaign: {{.Campaign.Name}}</h1>
     <form action="/campaigns/{{.Campaign.ID}}/edit" method="POST" class="max-w-2xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -24,5 +25,4 @@
 </main>
 
 <script src="/static/js/quill-tailwind.js"></script>
-
-{{template "footer" .}}
+{{end}}

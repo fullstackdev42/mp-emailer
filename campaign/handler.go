@@ -74,7 +74,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	h.logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
 
 	h.logger.Debug("CampaignGET: Attempting to render template")
-	err = c.Render(http.StatusOK, "campaign.html", map[string]interface{}{
+	err = c.Render(http.StatusOK, "campaign.gohtml", map[string]interface{}{
 		"Campaign": campaign,
 	})
 	if err != nil {
@@ -96,20 +96,22 @@ func (h *Handler) GetAllCampaigns(c echo.Context) error {
 	}
 	h.logger.Debug("Rendering all campaigns", "count", len(campaigns))
 
-	// Add this error logging
-	err = c.Render(http.StatusOK, "campaigns.html", map[string]interface{}{"Campaigns": campaigns})
-	if err != nil {
-		h.logger.Error("Error rendering campaigns template", err)
-		return h.errorHandler.HandleHTTPError(c, err, "Error rendering campaigns", http.StatusInternalServerError)
-	}
+	// Get the authentication status from the context
+	isAuthenticated, _ := c.Get("isAuthenticated").(bool)
 
-	return nil
+	// Log the campaigns data for debugging
+	h.logger.Debug("Campaigns data", "campaigns", campaigns)
+
+	return c.Render(http.StatusOK, "campaigns.gohtml", map[string]interface{}{
+		"Campaigns":       campaigns,
+		"IsAuthenticated": isAuthenticated,
+	})
 }
 
 // CreateCampaignForm handles GET requests for the campaign creation form
 func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	h.logger.Debug("Handling CreateCampaignForm request")
-	return c.Render(http.StatusOK, "campaign_create.html", nil)
+	return c.Render(http.StatusOK, "campaign_create.gohtml", nil)
 }
 
 // CreateCampaign handles POST requests for creating a new campaign
@@ -167,7 +169,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		h.logger.Error("Error fetching campaign for edit", err, "campaignID", id)
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
 	}
-	return c.Render(http.StatusOK, "campaign_edit.html", map[string]interface{}{
+	return c.Render(http.StatusOK, "campaign_edit.gohtml", map[string]interface{}{
 		"Campaign": campaign,
 	})
 }
@@ -209,7 +211,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
 		h.logger.Warn("Invalid postal code submitted", err)
-		return c.Render(http.StatusBadRequest, "error.html", map[string]interface{}{
+		return c.Render(http.StatusBadRequest, "error.gohtml", map[string]interface{}{
 			"Error": "Invalid postal code",
 		})
 	}
@@ -241,11 +243,6 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }
 
-// HandleError renders an error page
-func (h *Handler) HandleError(c echo.Context, err error, statusCode int, message string) error {
-	return c.Render(statusCode, "error.html", map[string]interface{}{"Error": message, "Details": err.Error()})
-}
-
 // RenderEmailTemplate renders the email template
 func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
 	h.logger.Debug("Rendering email template", "recipientEmail", email)
@@ -257,7 +254,7 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) err
 		Content: template.HTML(content),
 	}
 
-	err := c.Render(http.StatusOK, "email.html", map[string]interface{}{"Data": data})
+	err := c.Render(http.StatusOK, "email.gohtml", map[string]interface{}{"Data": data})
 	if err != nil {
 		h.logger.Error("Error rendering email template", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error rendering email template", http.StatusInternalServerError)
@@ -285,7 +282,7 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	filteredRepresentatives := h.representativeLookupService.FilterRepresentatives(representatives, filters)
 
 	h.logger.Info("Representatives lookup successful", "count", len(filteredRepresentatives), "postalCode", postalCode, "type", representativeType)
-	return c.Render(http.StatusOK, "representatives.html", map[string]interface{}{
+	return c.Render(http.StatusOK, "representatives.gohtml", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
 }

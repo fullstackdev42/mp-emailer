@@ -60,7 +60,7 @@ func TestHandler_RegisterGET(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "register.html", mockRenderer.LastRenderedTemplate)
+	assert.Equal(t, "register.gohtml", mockRenderer.LastRenderedTemplate)
 }
 
 func TestHandler_LoginGET(t *testing.T) {
@@ -74,7 +74,7 @@ func TestHandler_LoginGET(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "login.html", mockRenderer.LastRenderedTemplate)
+	assert.Equal(t, "login.gohtml", mockRenderer.LastRenderedTemplate)
 }
 
 func TestHandler_LogoutGET(t *testing.T) {

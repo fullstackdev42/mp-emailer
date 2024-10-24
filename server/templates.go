@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"embed"
+	"fmt"
 	"html/template"
 	"io"
 
@@ -17,35 +19,38 @@ type TemplateManager struct {
 	templates *template.Template
 }
 
+// NewTemplateManager initializes and parses templates
 func NewTemplateManager(templateFiles embed.FS) (*TemplateManager, error) {
-	tmpl, err := template.ParseFS(
-		templateFiles,
-		"web/templates/pages/*.html",
-		"web/templates/shared/*.html",
-		"web/templates/partials/*.html",
-	)
+	tm := &TemplateManager{}
+
+	// Parse all templates
+	tmpl, err := template.New("").ParseFS(templateFiles, "web/templates/**/*.gohtml")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
-	return &TemplateManager{templates: tmpl}, nil
+
+	// Ensure the "app" template exists
+	if tmpl.Lookup("app") == nil {
+		return nil, fmt.Errorf("layout template 'app' not found")
+	}
+
+	tm.templates = tmpl
+	return tm, nil
 }
 
-func (tm *TemplateManager) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	var viewData map[string]interface{}
-
+func (tm *TemplateManager) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
+	viewData := make(map[string]interface{})
 	if data != nil {
-		var ok bool
-		viewData, ok = data.(map[string]interface{})
-		if !ok {
-			viewData = make(map[string]interface{})
-			viewData["data"] = data
-		}
-	} else {
-		viewData = make(map[string]interface{})
+		viewData["Data"] = data
 	}
 
-	// Add isAuthenticated to the view data
-	viewData["isAuthenticated"] = c.Get("isAuthenticated")
+	var content bytes.Buffer
+	if err := tm.templates.ExecuteTemplate(&content, name, viewData); err != nil {
+		return fmt.Errorf("failed to execute template %s: %w", name, err)
+	}
 
-	return tm.templates.ExecuteTemplate(w, name, viewData)
+	viewData["TemplateContent"] = template.HTML(content.String())
+	viewData["PageName"] = name // Add this line to pass the page name to the layout
+
+	return tm.templates.ExecuteTemplate(w, "app", viewData)
 }

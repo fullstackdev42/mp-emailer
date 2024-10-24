@@ -1,5 +1,5 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+{{define "content"}}
 <main>
     <h1>MP Emailer</h1>
     <form action="/submit" method="post">
@@ -8,4 +8,4 @@
         <input type="submit" value="Find MP">
     </form>
 </main>
-{{template "footer" .}}
+{{end}}

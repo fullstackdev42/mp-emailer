@@ -1,11 +1,14 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+
+{{define "content"}}
 <main class="max-w-4xl mx-auto p-8">
-    <h2 class="text-2xl font-bold mb-6">404</h2>
-    {{if .data.Content}}
-        {{template "campaign_list" .data.Content}}
-    {{else}}
-        <p class="text-gray-600 text-lg">No active campaigns at the moment. Check back soon!</p>
-    {{end}}
+    <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4">{{.StatusCode}} Error</h1>
+        <p class="text-xl mb-4">{{.ErrorMessage}}</p>
+        <p class="text-gray-600">Sorry, something went wrong. Please try again later or contact support if the problem persists.</p>
+        <a href="/" class="mt-6 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Go to Homepage
+        </a>
+    </div>
 </main>
-{{template "footer" .}}
+{{end}}

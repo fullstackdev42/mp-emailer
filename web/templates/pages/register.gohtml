@@ -1,5 +1,6 @@
-{{template "header" .}}
-{{template "nav" .}}
+{{template "app.gohtml" .}}
+
+{{define "content"}}
 <main class="max-w-md mx-auto p-8">
     <h1 class="text-3xl font-bold mb-6">Register</h1>
     {{if .Error}}
@@ -38,4 +39,4 @@
         </div>
     </form>
 </main>
-{{template "footer" .}}
+{{end}}
