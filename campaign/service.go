@@ -42,20 +42,14 @@ type Service struct {
 	validate *validator.Validate
 }
 
-func NewService(repo RepositoryInterface) (ServiceInterface, error) {
-	if repo == nil {
-		return nil, fmt.Errorf("repository cannot be nil")
-	}
-
+// NewService creates a new campaign service
+func NewService(repo RepositoryInterface) (*Service, error) {
 	validate := validator.New()
-	if validate == nil {
-		return nil, fmt.Errorf("failed to create validator")
-	}
-
-	return &Service{
+	service := &Service{
 		repo:     repo,
 		validate: validate,
-	}, nil
+	}
+	return service, nil
 }
 
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) error {

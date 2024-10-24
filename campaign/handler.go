@@ -11,7 +11,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/fx"
 )
 
 // Handler handles the HTTP requests for the campaign service
@@ -280,11 +279,4 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	return c.Render(http.StatusOK, "representatives.gohtml", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
-}
-
-// ProvideModule returns the campaign handler dependencies
-func ProvideModule() fx.Option {
-	return fx.Options(
-		fx.Provide(NewHandler),
-	)
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
-	"github.com/fullstackdev42/mp-emailer/routes"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
@@ -31,22 +30,11 @@ func main() {
 			newDB,
 			newTemplateManager,
 			newSessionStore,
-			fx.Annotate(
-				NewHandler,
-				fx.As(new(server.Route)),
-				fx.ResultTags(`group:"routes"`),
-			),
+			NewHandler,
 			newEcho,
-			userRepositoryProvider,
-			NewUserService,
-			user.NewHandler,
-			campaignRepositoryProvider,
-			NewCampaignService,
-			// Replace the direct reference to campaign.NewHandler with the ProvideModule function
-			// campaign.NewHandler,
 		),
-		// Add the campaign module here
 		campaign.ProvideModule(),
+		user.ProvideModule(),
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
@@ -70,7 +58,7 @@ func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }
 
-func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager, route server.Route) *echo.Echo {
+func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager, routes []server.Route) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -92,8 +80,10 @@ func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *serv
 	// Add static file serving
 	e.Static("/static", "web/public")
 
-	// Register the route
-	e.Add("GET", route.Pattern(), echo.WrapHandler(route))
+	// Register the routes
+	for _, route := range routes {
+		e.Add("GET", route.Pattern(), echo.WrapHandler(route))
+	}
 
 	return e
 }
@@ -107,17 +97,33 @@ func NewServeMux(routes []server.Route) *http.ServeMux {
 	return mux
 }
 
-func userRepositoryProvider(db *database.DB, logger loggo.LoggerInterface) (user.RepositoryInterface, error) {
-	return user.NewRepository(db, logger), nil
-}
-
-func campaignRepositoryProvider(db *database.DB) (campaign.RepositoryInterface, error) {
-	return campaign.NewRepository(db), nil
-}
-
-func registerRoutes(e *echo.Echo, handler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler, logger loggo.LoggerInterface) {
+func registerRoutes(
+	e *echo.Echo,
+	serverHandler *server.Handler,
+	userHandler *user.Handler,
+	campaignHandler *campaign.Handler,
+	logger loggo.LoggerInterface,
+) {
 	logger.Debug("Registering routes")
-	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
+
+	// Server routes
+	e.GET("/", serverHandler.HandleIndex)
+
+	// User routes
+	e.GET("/user/register", userHandler.RegisterGET)
+	e.POST("/user/register", userHandler.RegisterPOST)
+	e.GET("/user/login", userHandler.LoginGET)
+	e.POST("/user/login", userHandler.LoginPOST)
+	e.GET("/user/logout", userHandler.LogoutGET)
+
+	// Campaign routes
+	e.GET("/campaign", campaignHandler.GetAllCampaigns)
+	e.POST("/campaign", campaignHandler.CreateCampaign)
+	e.GET("/campaign/:id", campaignHandler.CampaignGET)
+	e.PUT("/campaign/:id", campaignHandler.EditCampaign)
+	e.DELETE("/campaign/:id", campaignHandler.DeleteCampaign)
+	e.POST("/campaign/:id/send", campaignHandler.SendCampaign)
+
 	logger.Debug("Routes registered successfully")
 }
 
@@ -143,7 +149,9 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 // HandlerResult is the output struct for NewHandler
 type HandlerResult struct {
 	fx.Out
-	Handler *server.Handler
+	ServerHandler   *server.Handler
+	UserHandler     *user.Handler `name:"mainUserHandler"`
+	CampaignHandler *campaign.Handler
 }
 
 // NewHandler creates a new server.Handler
@@ -151,12 +159,13 @@ func NewHandler(
 	logger loggo.LoggerInterface,
 	emailService email.Service,
 	tmplManager *server.TemplateManager,
-	userRepo user.RepositoryInterface,
 	userService user.ServiceInterface,
 	campaignService campaign.ServiceInterface,
-	store sessions.Store,
 	config *config.Config,
-) (*server.Handler, *user.Handler, *campaign.Handler, error) {
+	userRepo user.RepositoryInterface,
+	representativeLookupService campaign.RepresentativeLookupServiceInterface,
+	campaignClient campaign.ClientInterface,
+) (HandlerResult, error) {
 	// Create the server handler
 	serverHandler := server.NewHandler(
 		logger,
@@ -165,42 +174,24 @@ func NewHandler(
 		userService,
 		campaignService,
 	)
-
-	// Create user handler
-	userHandler := user.NewHandler(
-		userRepo,
-		userService,
-		logger,
-		store,
-		config,
-	)
-
-	// Create campaign handler
+	// Create the user handler
+	userHandler, err := user.NewHandler(userRepo, userService, logger, sessions.NewCookieStore([]byte(config.SessionSecret)), config)
+	if err != nil {
+		return HandlerResult{}, fmt.Errorf("failed to create user handler: %w", err)
+	}
+	// Create the campaign handler
 	campaignHandler := campaign.NewHandler(
 		campaignService,
 		logger,
-		nil, // RepresentativeLookupServiceInterface
+		representativeLookupService,
 		emailService,
-		nil, // ClientInterface
+		campaignClient,
 	)
 
-	return serverHandler, userHandler, campaignHandler, nil
-}
-
-// CampaignServiceResult is the output struct for NewCampaignService
-type CampaignServiceResult struct {
-	fx.Out
-	Service campaign.ServiceInterface
-}
-
-// NewCampaignService creates a new campaign.Service
-func NewCampaignService(repo campaign.RepositoryInterface) (CampaignServiceResult, error) {
-	service, err := campaign.NewService(repo)
-	if err != nil {
-		return CampaignServiceResult{}, err
-	}
-	return CampaignServiceResult{
-		Service: service,
+	return HandlerResult{
+		ServerHandler:   serverHandler,
+		UserHandler:     userHandler.Handler,
+		CampaignHandler: campaignHandler,
 	}, nil
 }
 
@@ -211,14 +202,12 @@ type UserServiceResult struct {
 }
 
 // NewUserService creates a new user.Service
-func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface) (UserServiceResult, error) {
+func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface) (user.ServiceInterface, error) {
 	service, err := user.NewService(repo.(*user.Repository), logger)
 	if err != nil {
-		return UserServiceResult{}, err
+		return nil, err
 	}
-	return UserServiceResult{
-		Service: service,
-	}, nil
+	return service, nil
 }
 
 // EmailServiceResult is the output struct for NewEmailService

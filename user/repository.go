@@ -26,14 +26,6 @@ type Repository struct {
 	logger loggo.LoggerInterface
 }
 
-// NewRepository creates a new Repository instance
-func NewRepository(db *database.DB, logger loggo.LoggerInterface) *Repository {
-	return &Repository{
-		db:     db,
-		logger: logger,
-	}
-}
-
 func (r *Repository) CreateUser(username, email, passwordHash string) error {
 	user := &User{
 		ID:           uuid.New().String(),

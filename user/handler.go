@@ -21,24 +21,6 @@ type Handler struct {
 	errorHandler *shared.ErrorHandler
 }
 
-func NewHandler(
-	repo RepositoryInterface,
-	service ServiceInterface,
-	logger loggo.LoggerInterface,
-	store sessions.Store,
-	config *config.Config,
-) *Handler {
-	return &Handler{
-		repo:         repo,
-		service:      service,
-		Logger:       logger,
-		Store:        store,
-		SessionName:  config.SessionName,
-		Config:       config,
-		errorHandler: shared.NewErrorHandler(logger),
-	}
-}
-
 func (h *Handler) RegisterGET(c echo.Context) error {
 	return c.Render(http.StatusOK, "register.gohtml", nil)
 }

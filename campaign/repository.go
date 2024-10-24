@@ -25,10 +25,10 @@ type Repository struct {
 	db *database.DB
 }
 
-func NewRepository(db *database.DB) RepositoryInterface {
-	return &Repository{db: db}
+// NewRepository creates a new campaign repository
+func NewRepository(db *database.DB) (RepositoryInterface, error) {
+	return &Repository{db: db}, nil
 }
-
 func (r *Repository) Create(campaign *Campaign) error {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
 	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Description, campaign.Template, campaign.OwnerID)

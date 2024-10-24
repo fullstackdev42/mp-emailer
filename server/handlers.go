@@ -1,9 +1,6 @@
 package server
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -74,21 +71,4 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 
 	h.Logger.Debug("Template rendered successfully")
 	return nil
-}
-
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Implement the logic to handle the request
-	switch r.URL.Path {
-	case "/":
-		c := echo.New().NewContext(r, w)
-		if err := h.HandleIndex(c); err != nil {
-			h.Logger.Error("Error handling index", err)
-			http.Error(w, fmt.Sprintf("Error handling index: %v", err), http.StatusInternalServerError)
-		}
-	}
-}
-
-// Pattern reports the path at which this handler is registered.
-func (h *Handler) Pattern() string {
-	return "/"
 }
