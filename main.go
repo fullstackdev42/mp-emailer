@@ -23,45 +23,46 @@ import (
 var templateFS embed.FS
 
 func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to load config: %v", err))
+	}
+
 	app := fx.New(
 		fx.Provide(
-			campaign.NewDefaultClient,
-			campaign.NewHandler,
-			campaign.NewRepository,
-			campaign.NewRepresentativeLookupService,
-			campaign.NewService,
-			config.Load,
-			email.New,
-			newDB,
+			func() (*config.Config, error) { return cfg, nil },
 			newLogger,
-			newSessionStore,
+			newDB,
 			newTemplateManager,
-			provideHandler,
-			server.New,
+			newSessionStore,
+			newEcho,
+			userRepositoryProvider,
+			userServiceProvider,
 			user.NewHandler,
-			user.NewRepository,
-			fx.Annotate(
-				user.NewRepository,
-				fx.As(new(user.RepositoryInterface)),
-			),
-			user.NewService,
+			campaignRepositoryProvider,
+			campaignServiceProvider,
+			campaign.NewHandler,
+			campaign.NewRepresentativeLookupService,
+			campaign.NewDefaultClient,
+			email.New,
+			provideHandler,
 		),
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
 }
 
-func newLogger(config *config.Config) (loggo.LoggerInterface, error) {
-	logger, err := loggo.NewLogger("mp-emailer.log", config.GetLogLevel())
+func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
+	logger, err := loggo.NewLogger("mp-emailer.log", cfg.GetLogLevel())
 	if err != nil {
 		return nil, err
 	}
 	return logger, nil
 }
 
-func newDB(logger loggo.LoggerInterface, config *config.Config) (*database.DB, error) {
+func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
 	logger.Info("Initializing database connection")
-	dsn := config.DatabaseDSN()
+	dsn := cfg.DatabaseDSN()
 	db, err := database.NewDB(dsn, logger)
 	if err != nil {
 		logger.Error("Failed to initialize database", err)
@@ -74,8 +75,28 @@ func newTemplateManager() (*server.TemplateManager, error) {
 	return server.NewTemplateManager(templateFS)
 }
 
-func newSessionStore(config *config.Config) sessions.Store {
-	return sessions.NewCookieStore([]byte(config.SessionSecret))
+func newSessionStore(cfg *config.Config) sessions.Store {
+	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
+}
+
+func newEcho() *echo.Echo {
+	return echo.New()
+}
+
+func userRepositoryProvider(db *database.DB, logger loggo.LoggerInterface) (user.RepositoryInterface, error) {
+	return user.NewRepository(db, logger), nil
+}
+
+func userServiceProvider(repo user.RepositoryInterface, logger loggo.LoggerInterface) (user.ServiceInterface, error) {
+	return user.NewService(repo.(*user.Repository), logger), nil
+}
+
+func campaignRepositoryProvider(db *database.DB) (campaign.RepositoryInterface, error) {
+	return campaign.NewRepository(db), nil
+}
+
+func campaignServiceProvider(repo campaign.RepositoryInterface) (campaign.ServiceInterface, error) {
+	return campaign.NewService(repo), nil
 }
 
 func provideHandler(
@@ -94,21 +115,11 @@ func provideHandler(
 	)
 }
 
-func registerRoutes(
-	e *echo.Echo,
-	handler *server.Handler,
-	campaignHandler *campaign.Handler,
-	userHandler *user.Handler,
-) {
+func registerRoutes(e *echo.Echo, handler *server.Handler, campaignHandler *campaign.Handler, userHandler *user.Handler) {
 	routes.RegisterRoutes(e, handler, campaignHandler, userHandler)
 }
 
-func startServer(
-	lc fx.Lifecycle,
-	e *echo.Echo,
-	config *config.Config,
-	logger loggo.LoggerInterface,
-) {
+func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger loggo.LoggerInterface) {
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			go func() {

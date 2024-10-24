@@ -10,12 +10,12 @@ type MockLoggerInterface struct {
 	mock.Mock
 }
 
-type MockLoggerInterface_Expecter struct {
+type MockLoggerInterfaceExpecter struct {
 	mock *mock.Mock
 }
 
-func (_m *MockLoggerInterface) EXPECT() *MockLoggerInterface_Expecter {
-	return &MockLoggerInterface_Expecter{mock: &_m.Mock}
+func (_m *MockLoggerInterface) EXPECT() *MockLoggerInterfaceExpecter {
+	return &MockLoggerInterfaceExpecter{mock: &_m.Mock}
 }
 
 // Debug provides a mock function with given fields: msg, args
@@ -26,25 +26,25 @@ func (_m *MockLoggerInterface) Debug(msg string, args ...interface{}) {
 	_m.Called(_ca...)
 }
 
-// MockLoggerInterface_Debug_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Debug'
-type MockLoggerInterface_Debug_Call struct {
+// MockLoggerInterfaceDebugCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Debug'
+type MockLoggerInterfaceDebugCall struct {
 	*mock.Call
 }
 
 // Debug is a helper method to define mock.On call
 //   - msg string
 //   - args ...interface{}
-func (_e *MockLoggerInterface_Expecter) Debug(msg interface{}, args ...interface{}) *MockLoggerInterface_Debug_Call {
-	return &MockLoggerInterface_Debug_Call{Call: _e.mock.On("Debug",
+func (_e *MockLoggerInterfaceExpecter) Debug(msg interface{}, args ...interface{}) *MockLoggerInterfaceDebugCall {
+	return &MockLoggerInterfaceDebugCall{Call: _e.mock.On("Debug",
 		append([]interface{}{msg}, args...)...)}
 }
 
-func (_c *MockLoggerInterface_Debug_Call) Run(run func(msg string, args ...interface{})) *MockLoggerInterface_Debug_Call {
+func (_c *MockLoggerInterfaceDebugCall) Run(run func(msg string, args ...interface{})) *MockLoggerInterfaceDebugCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]interface{}, len(args)-1)
 		for i, a := range args[1:] {
 			if a != nil {
-				variadicArgs[i] = a.(interface{})
+				variadicArgs[i] = a
 			}
 		}
 		run(args[0].(string), variadicArgs...)
@@ -52,12 +52,12 @@ func (_c *MockLoggerInterface_Debug_Call) Run(run func(msg string, args ...inter
 	return _c
 }
 
-func (_c *MockLoggerInterface_Debug_Call) Return() *MockLoggerInterface_Debug_Call {
+func (_c *MockLoggerInterfaceDebugCall) Return() *MockLoggerInterfaceDebugCall {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockLoggerInterface_Debug_Call) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterface_Debug_Call {
+func (_c *MockLoggerInterfaceDebugCall) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterfaceDebugCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -70,8 +70,8 @@ func (_m *MockLoggerInterface) Error(msg string, err error, args ...interface{})
 	_m.Called(_ca...)
 }
 
-// MockLoggerInterface_Error_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Error'
-type MockLoggerInterface_Error_Call struct {
+// MockLoggerInterfaceErrorCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Error'
+type MockLoggerInterfaceErrorCall struct {
 	*mock.Call
 }
 
@@ -79,17 +79,17 @@ type MockLoggerInterface_Error_Call struct {
 //   - msg string
 //   - err error
 //   - args ...interface{}
-func (_e *MockLoggerInterface_Expecter) Error(msg interface{}, err interface{}, args ...interface{}) *MockLoggerInterface_Error_Call {
-	return &MockLoggerInterface_Error_Call{Call: _e.mock.On("Error",
+func (_e *MockLoggerInterfaceExpecter) Error(msg interface{}, err interface{}, args ...interface{}) *MockLoggerInterfaceErrorCall {
+	return &MockLoggerInterfaceErrorCall{Call: _e.mock.On("Error",
 		append([]interface{}{msg, err}, args...)...)}
 }
 
-func (_c *MockLoggerInterface_Error_Call) Run(run func(msg string, err error, args ...interface{})) *MockLoggerInterface_Error_Call {
+func (_c *MockLoggerInterfaceErrorCall) Run(run func(msg string, err error, args ...interface{})) *MockLoggerInterfaceErrorCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]interface{}, len(args)-2)
 		for i, a := range args[2:] {
 			if a != nil {
-				variadicArgs[i] = a.(interface{})
+				variadicArgs[i] = a
 			}
 		}
 		run(args[0].(string), args[1].(error), variadicArgs...)
@@ -97,12 +97,12 @@ func (_c *MockLoggerInterface_Error_Call) Run(run func(msg string, err error, ar
 	return _c
 }
 
-func (_c *MockLoggerInterface_Error_Call) Return() *MockLoggerInterface_Error_Call {
+func (_c *MockLoggerInterfaceErrorCall) Return() *MockLoggerInterfaceErrorCall {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockLoggerInterface_Error_Call) RunAndReturn(run func(string, error, ...interface{})) *MockLoggerInterface_Error_Call {
+func (_c *MockLoggerInterfaceErrorCall) RunAndReturn(run func(string, error, ...interface{})) *MockLoggerInterfaceErrorCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -115,8 +115,8 @@ func (_m *MockLoggerInterface) Fatal(msg string, err error, args ...interface{})
 	_m.Called(_ca...)
 }
 
-// MockLoggerInterface_Fatal_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Fatal'
-type MockLoggerInterface_Fatal_Call struct {
+// MockLoggerInterfaceFatalCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Fatal'
+type MockLoggerInterfaceFatalCall struct {
 	*mock.Call
 }
 
@@ -124,17 +124,17 @@ type MockLoggerInterface_Fatal_Call struct {
 //   - msg string
 //   - err error
 //   - args ...interface{}
-func (_e *MockLoggerInterface_Expecter) Fatal(msg interface{}, err interface{}, args ...interface{}) *MockLoggerInterface_Fatal_Call {
-	return &MockLoggerInterface_Fatal_Call{Call: _e.mock.On("Fatal",
+func (_e *MockLoggerInterfaceExpecter) Fatal(msg interface{}, err interface{}, args ...interface{}) *MockLoggerInterfaceFatalCall {
+	return &MockLoggerInterfaceFatalCall{Call: _e.mock.On("Fatal",
 		append([]interface{}{msg, err}, args...)...)}
 }
 
-func (_c *MockLoggerInterface_Fatal_Call) Run(run func(msg string, err error, args ...interface{})) *MockLoggerInterface_Fatal_Call {
+func (_c *MockLoggerInterfaceFatalCall) Run(run func(msg string, err error, args ...interface{})) *MockLoggerInterfaceFatalCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]interface{}, len(args)-2)
 		for i, a := range args[2:] {
 			if a != nil {
-				variadicArgs[i] = a.(interface{})
+				variadicArgs[i] = a // Remove the unnecessary type assertion
 			}
 		}
 		run(args[0].(string), args[1].(error), variadicArgs...)
@@ -142,12 +142,12 @@ func (_c *MockLoggerInterface_Fatal_Call) Run(run func(msg string, err error, ar
 	return _c
 }
 
-func (_c *MockLoggerInterface_Fatal_Call) Return() *MockLoggerInterface_Fatal_Call {
+func (_c *MockLoggerInterfaceFatalCall) Return() *MockLoggerInterfaceFatalCall {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockLoggerInterface_Fatal_Call) RunAndReturn(run func(string, error, ...interface{})) *MockLoggerInterface_Fatal_Call {
+func (_c *MockLoggerInterfaceFatalCall) RunAndReturn(run func(string, error, ...interface{})) *MockLoggerInterfaceFatalCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -160,25 +160,25 @@ func (_m *MockLoggerInterface) Info(msg string, args ...interface{}) {
 	_m.Called(_ca...)
 }
 
-// MockLoggerInterface_Info_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Info'
-type MockLoggerInterface_Info_Call struct {
+// MockLoggerInterfaceInfoCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Info'
+type MockLoggerInterfaceInfoCall struct {
 	*mock.Call
 }
 
 // Info is a helper method to define mock.On call
 //   - msg string
 //   - args ...interface{}
-func (_e *MockLoggerInterface_Expecter) Info(msg interface{}, args ...interface{}) *MockLoggerInterface_Info_Call {
-	return &MockLoggerInterface_Info_Call{Call: _e.mock.On("Info",
+func (_e *MockLoggerInterfaceExpecter) Info(msg interface{}, args ...interface{}) *MockLoggerInterfaceInfoCall {
+	return &MockLoggerInterfaceInfoCall{Call: _e.mock.On("Info",
 		append([]interface{}{msg}, args...)...)}
 }
 
-func (_c *MockLoggerInterface_Info_Call) Run(run func(msg string, args ...interface{})) *MockLoggerInterface_Info_Call {
+func (_c *MockLoggerInterfaceInfoCall) Run(run func(msg string, args ...interface{})) *MockLoggerInterfaceInfoCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]interface{}, len(args)-1)
 		for i, a := range args[1:] {
 			if a != nil {
-				variadicArgs[i] = a.(interface{})
+				variadicArgs[i] = a
 			}
 		}
 		run(args[0].(string), variadicArgs...)
@@ -186,12 +186,12 @@ func (_c *MockLoggerInterface_Info_Call) Run(run func(msg string, args ...interf
 	return _c
 }
 
-func (_c *MockLoggerInterface_Info_Call) Return() *MockLoggerInterface_Info_Call {
+func (_c *MockLoggerInterfaceInfoCall) Return() *MockLoggerInterfaceInfoCall {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockLoggerInterface_Info_Call) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterface_Info_Call {
+func (_c *MockLoggerInterfaceInfoCall) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterfaceInfoCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -214,29 +214,29 @@ func (_m *MockLoggerInterface) IsDebugEnabled() bool {
 	return r0
 }
 
-// MockLoggerInterface_IsDebugEnabled_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsDebugEnabled'
-type MockLoggerInterface_IsDebugEnabled_Call struct {
+// MockLoggerInterfaceIsDebugEnabledCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsDebugEnabled'
+type MockLoggerInterfaceIsDebugEnabledCall struct {
 	*mock.Call
 }
 
 // IsDebugEnabled is a helper method to define mock.On call
-func (_e *MockLoggerInterface_Expecter) IsDebugEnabled() *MockLoggerInterface_IsDebugEnabled_Call {
-	return &MockLoggerInterface_IsDebugEnabled_Call{Call: _e.mock.On("IsDebugEnabled")}
+func (_e *MockLoggerInterfaceExpecter) IsDebugEnabled() *MockLoggerInterfaceIsDebugEnabledCall {
+	return &MockLoggerInterfaceIsDebugEnabledCall{Call: _e.mock.On("IsDebugEnabled")}
 }
 
-func (_c *MockLoggerInterface_IsDebugEnabled_Call) Run(run func()) *MockLoggerInterface_IsDebugEnabled_Call {
-	_c.Call.Run(func(args mock.Arguments) {
+func (_c *MockLoggerInterfaceIsDebugEnabledCall) Run(run func()) *MockLoggerInterfaceIsDebugEnabledCall {
+	_c.Call.Run(func(_ mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockLoggerInterface_IsDebugEnabled_Call) Return(_a0 bool) *MockLoggerInterface_IsDebugEnabled_Call {
+func (_c *MockLoggerInterfaceIsDebugEnabledCall) Return(_a0 bool) *MockLoggerInterfaceIsDebugEnabledCall {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockLoggerInterface_IsDebugEnabled_Call) RunAndReturn(run func() bool) *MockLoggerInterface_IsDebugEnabled_Call {
+func (_c *MockLoggerInterfaceIsDebugEnabledCall) RunAndReturn(run func() bool) *MockLoggerInterfaceIsDebugEnabledCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -249,25 +249,25 @@ func (_m *MockLoggerInterface) Warn(msg string, args ...interface{}) {
 	_m.Called(_ca...)
 }
 
-// MockLoggerInterface_Warn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Warn'
-type MockLoggerInterface_Warn_Call struct {
+// MockLoggerInterfaceWarnCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Warn'
+type MockLoggerInterfaceWarnCall struct {
 	*mock.Call
 }
 
 // Warn is a helper method to define mock.On call
 //   - msg string
 //   - args ...interface{}
-func (_e *MockLoggerInterface_Expecter) Warn(msg interface{}, args ...interface{}) *MockLoggerInterface_Warn_Call {
-	return &MockLoggerInterface_Warn_Call{Call: _e.mock.On("Warn",
+func (_e *MockLoggerInterfaceExpecter) Warn(msg interface{}, args ...interface{}) *MockLoggerInterfaceWarnCall {
+	return &MockLoggerInterfaceWarnCall{Call: _e.mock.On("Warn",
 		append([]interface{}{msg}, args...)...)}
 }
 
-func (_c *MockLoggerInterface_Warn_Call) Run(run func(msg string, args ...interface{})) *MockLoggerInterface_Warn_Call {
+func (_c *MockLoggerInterfaceWarnCall) Run(run func(msg string, args ...interface{})) *MockLoggerInterfaceWarnCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]interface{}, len(args)-1)
 		for i, a := range args[1:] {
 			if a != nil {
-				variadicArgs[i] = a.(interface{})
+				variadicArgs[i] = a
 			}
 		}
 		run(args[0].(string), variadicArgs...)
@@ -275,12 +275,12 @@ func (_c *MockLoggerInterface_Warn_Call) Run(run func(msg string, args ...interf
 	return _c
 }
 
-func (_c *MockLoggerInterface_Warn_Call) Return() *MockLoggerInterface_Warn_Call {
+func (_c *MockLoggerInterfaceWarnCall) Return() *MockLoggerInterfaceWarnCall {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockLoggerInterface_Warn_Call) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterface_Warn_Call {
+func (_c *MockLoggerInterfaceWarnCall) RunAndReturn(run func(string, ...interface{})) *MockLoggerInterfaceWarnCall {
 	_c.Call.Return(run)
 	return _c
 }
@@ -305,30 +305,30 @@ func (_m *MockLoggerInterface) WithOperation(operationID string) loggo.LoggerInt
 	return r0
 }
 
-// MockLoggerInterface_WithOperation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WithOperation'
-type MockLoggerInterface_WithOperation_Call struct {
+// MockLoggerInterfaceWithOperationCall is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WithOperation'
+type MockLoggerInterfaceWithOperationCall struct {
 	*mock.Call
 }
 
 // WithOperation is a helper method to define mock.On call
 //   - operationID string
-func (_e *MockLoggerInterface_Expecter) WithOperation(operationID interface{}) *MockLoggerInterface_WithOperation_Call {
-	return &MockLoggerInterface_WithOperation_Call{Call: _e.mock.On("WithOperation", operationID)}
+func (_e *MockLoggerInterfaceExpecter) WithOperation(operationID interface{}) *MockLoggerInterfaceWithOperationCall {
+	return &MockLoggerInterfaceWithOperationCall{Call: _e.mock.On("WithOperation", operationID)}
 }
 
-func (_c *MockLoggerInterface_WithOperation_Call) Run(run func(operationID string)) *MockLoggerInterface_WithOperation_Call {
+func (_c *MockLoggerInterfaceWithOperationCall) Run(run func(operationID string)) *MockLoggerInterfaceWithOperationCall {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(string))
 	})
 	return _c
 }
 
-func (_c *MockLoggerInterface_WithOperation_Call) Return(_a0 loggo.LoggerInterface) *MockLoggerInterface_WithOperation_Call {
+func (_c *MockLoggerInterfaceWithOperationCall) Return(_a0 loggo.LoggerInterface) *MockLoggerInterfaceWithOperationCall {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockLoggerInterface_WithOperation_Call) RunAndReturn(run func(string) loggo.LoggerInterface) *MockLoggerInterface_WithOperation_Call {
+func (_c *MockLoggerInterfaceWithOperationCall) RunAndReturn(run func(string) loggo.LoggerInterface) *MockLoggerInterfaceWithOperationCall {
 	_c.Call.Return(run)
 	return _c
 }
