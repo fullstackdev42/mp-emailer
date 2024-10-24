@@ -21,11 +21,19 @@ type MailgunEmailService struct {
 	logger loggo.LoggerInterface
 }
 
-func NewMailgunEmailService(domain, apiKey string) *MailgunEmailService {
+func NewMailgunEmailService(domain, apiKey string, logger loggo.LoggerInterface) (Service, error) {
+	if domain == "" || apiKey == "" {
+		return nil, fmt.Errorf("invalid Mailgun configuration: domain and API key must not be empty")
+	}
+
+	client := mailgun.NewMailgun(domain, apiKey)
+
 	return &MailgunEmailService{
 		domain: domain,
 		apiKey: apiKey,
-	}
+		client: client,
+		logger: logger,
+	}, nil
 }
 
 func (s *MailgunEmailService) SendEmail(to, subject, body string) error {

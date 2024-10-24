@@ -26,11 +26,18 @@ type Service struct {
 // Explicitly implement the ServiceInterface
 var _ ServiceInterface = (*Service)(nil)
 
-func NewService(repo *Repository, logger loggo.LoggerInterface) ServiceInterface {
+func NewService(repo *Repository, logger loggo.LoggerInterface) (ServiceInterface, error) {
+	if repo == nil {
+		return nil, fmt.Errorf("repository cannot be nil")
+	}
+	if logger == nil {
+		return nil, fmt.Errorf("logger cannot be nil")
+	}
+
 	return &Service{
 		repo:   repo,
 		logger: logger,
-	}
+	}, nil
 }
 
 func (s *Service) RegisterUser(params RegisterUserParams) error {

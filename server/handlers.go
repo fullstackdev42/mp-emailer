@@ -43,14 +43,24 @@ func NewHandler(
 
 // Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
+	h.Logger.Debug("server.HandleIndex", "message", "Handling index request")
+	isAuthenticated := c.Get("isAuthenticated").(bool)
+	h.Logger.Debug("server.HandleIndex", "isAuthenticated", isAuthenticated)
+
+	var internalError bool
+	defer func() {
+		if r := recover(); r != nil {
+			h.Logger.Debug("server.HandleIndex: Panic recovered", "error", r)
+			internalError = true
+		}
+	}()
+
+	// Fetch campaigns using the campaign service
 	campaigns, err := h.campaignService.GetAllCampaigns()
 	if err != nil {
-		return h.errorHandler.HandleError(c, err, http.StatusInternalServerError, "Error fetching campaigns")
+		h.Logger.Debug("server.HandleIndex: Error fetching campaigns", "error", err)
+		return c.HTML(http.StatusInternalServerError, "<h1>Error fetching campaigns</h1>")
 	}
-
-	isAuthenticated := c.Get("isAuthenticated").(bool)
-
-	h.Logger.Debug("server.HandleIndex", "isAuthenticated", isAuthenticated)
 
 	pageData := shared.PageData{
 		Content:         campaigns,
@@ -58,5 +68,15 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 		IsAuthenticated: isAuthenticated,
 	}
 
-	return c.Render(http.StatusOK, "home.html", pageData)
+	err = h.templateManager.Render(c.Response(), "home.html", pageData, c)
+	if err != nil {
+		h.Logger.Debug("server.HandleIndex: Error rendering template", "error", err)
+		return c.HTML(http.StatusInternalServerError, "<h1>Error rendering page</h1>")
+	}
+
+	if internalError {
+		return c.HTML(http.StatusInternalServerError, "<h1>Internal Server Error</h1>")
+	}
+
+	return nil
 }
