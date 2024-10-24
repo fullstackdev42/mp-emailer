@@ -14,27 +14,25 @@ type TemplateRenderer interface {
 	Render(w io.Writer, name string, data interface{}, c echo.Context) error
 }
 
-// TemplateRendererImpl is a custom renderer for Echo
-type TemplateRendererImpl struct {
+// CustomTemplateRenderer is a custom renderer for Echo
+type CustomTemplateRenderer struct {
 	templates *template.Template
 }
 
 // NewTemplateRenderer creates a new TemplateRendererImpl
-func NewTemplateRenderer(templates *template.Template) *TemplateRendererImpl {
-	return &TemplateRendererImpl{
+func NewTemplateRenderer(templates *template.Template) *CustomTemplateRenderer {
+	return &CustomTemplateRenderer{
 		templates: templates,
 	}
 }
 
 // Render renders a template document
-func (t *TemplateRendererImpl) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	viewData := make(map[string]interface{})
-	if data != nil {
-		viewData["Data"] = data
+func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	viewData := map[string]interface{}{
+		"Data":      data,
+		"RequestID": c.Response().Header().Get(echo.HeaderXRequestID),
+		"PageName":  name,
 	}
-
-	// Example: Add request-specific data to viewData
-	viewData["RequestID"] = c.Response().Header().Get(echo.HeaderXRequestID)
 
 	var content bytes.Buffer
 	if err := t.templates.ExecuteTemplate(&content, name, viewData); err != nil {
@@ -43,7 +41,6 @@ func (t *TemplateRendererImpl) Render(w io.Writer, name string, data interface{}
 	}
 
 	viewData["TemplateContent"] = template.HTML(content.String())
-	viewData["PageName"] = name
 
 	return t.templates.ExecuteTemplate(w, "app", viewData)
 }

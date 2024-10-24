@@ -56,7 +56,7 @@ func NewHandler(
 	logger loggo.LoggerInterface,
 	service ServiceInterface,
 	sessions sessions.Store,
-	templateManager *shared.TemplateRenderer,
+	templateManager *shared.CustomTemplateRenderer,
 ) (HandlerResult, error) {
 	handler := &Handler{
 		service:         service,
@@ -64,7 +64,7 @@ func NewHandler(
 		Store:           sessions,
 		SessionName:     cfg.SessionName,
 		Config:          cfg,
-		templateManager: *templateManager,
+		templateManager: templateManager,
 	}
 	return HandlerResult{Handler: handler}, nil
 }

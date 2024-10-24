@@ -33,11 +33,12 @@ func main() {
 			provideTemplateFS,
 			newEcho,
 			provideTemplates,
+			shared.NewTemplateRenderer,
 		),
+		shared.Module,
+		user.Module,
 		campaign.Module,
 		server.Module,
-		user.Module,
-		shared.Module,
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
@@ -63,7 +64,7 @@ func registerRoutes(
 	serverHandler *server.Handler,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
-	renderer *shared.TemplateRendererImpl,
+	renderer *shared.CustomTemplateRenderer,
 ) {
 	// Set the custom renderer
 	e.Renderer = renderer

@@ -10,7 +10,6 @@ import (
 var Module = fx.Module(
 	"shared",
 	fx.Provide(
-		NewTemplateRenderer,
 		NewErrorHandler,
 	),
 )
