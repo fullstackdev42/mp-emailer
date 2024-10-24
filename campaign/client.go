@@ -15,14 +15,6 @@ type DefaultClient struct {
 	logger        loggo.LoggerInterface
 }
 
-// NewDefaultClient creates a new DefaultClient
-func NewDefaultClient(logger loggo.LoggerInterface) ClientInterface {
-	return &DefaultClient{
-		lookupService: NewRepresentativeLookupService(logger),
-		logger:        logger,
-	}
-}
-
 // FetchRepresentatives fetches representatives for the given postal code
 func (c *DefaultClient) FetchRepresentatives(postalCode string) ([]Representative, error) {
 	c.logger.Info("Fetching representatives for postal code", "postalCode", postalCode)

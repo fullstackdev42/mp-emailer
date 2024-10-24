@@ -40,7 +40,7 @@ func NewHandler(
 	}
 }
 
-// Home page handler
+// HandleIndex page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
 	h.Logger.Debug("Handling index request")
 	isAuthenticated := false

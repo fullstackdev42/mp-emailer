@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -44,7 +45,7 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	var createdAt, updatedAt sql.NullString
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &createdAt, &updatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user not found")
 		}
 		return nil, fmt.Errorf("error getting user: %w", err)

@@ -41,7 +41,7 @@ func NewHandler(
 	}
 }
 
-// Define a DTO for returning campaign details
+// DetailDTO for returning campaign details
 type DetailDTO struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -65,7 +65,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
 		h.logger.Error("CampaignGET: Failed to fetch campaign", err, "id", id)
-		if err == ErrCampaignNotFound {
+		if errors.Is(err, ErrCampaignNotFound) {
 			return h.errorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
 		}
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to fetch campaign", http.StatusInternalServerError)

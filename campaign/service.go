@@ -104,7 +104,7 @@ func (s *Service) DeleteCampaign(id int) error {
 func (s *Service) FetchCampaign(id int) (*Campaign, error) {
 	campaign, err := s.repo.GetCampaign(id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
 		}
 		return nil, fmt.Errorf("failed to fetch campaign: %w", err)

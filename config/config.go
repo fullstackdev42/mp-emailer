@@ -27,12 +27,6 @@ type Config struct {
 	LogLevel       string
 }
 
-func NewConfig() *Config {
-	return &Config{
-		SessionName: "mpe",
-	}
-}
-
 func Load() (*Config, error) {
 	// Load .env file if it exists
 	_ = godotenv.Load()

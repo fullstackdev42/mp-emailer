@@ -13,10 +13,6 @@ type MPLookupService struct {
 	logger loggo.LoggerInterface
 }
 
-func NewMPLookupService(logger loggo.LoggerInterface) *MPLookupService {
-	return &MPLookupService{logger: logger}
-}
-
 func (s *MPLookupService) FetchRepresentatives(postalCode string) ([]Representative, error) {
 	url := fmt.Sprintf("https://represent.opennorth.ca/postcodes/%s/?format=json", postalCode)
 	s.logger.Info("Making request to", "url", url)
@@ -26,7 +22,12 @@ func (s *MPLookupService) FetchRepresentatives(postalCode string) ([]Representat
 		s.logger.Error("Error making request", err)
 		return nil, fmt.Errorf("error making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	s.logger.Info("Response received", "status", resp.Status)
 

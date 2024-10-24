@@ -22,13 +22,6 @@ type RepresentativeLookupService struct {
 	baseURL string
 }
 
-func NewRepresentativeLookupService(logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
-	return &RepresentativeLookupService{
-		logger:  logger,
-		baseURL: "https://represent.opennorth.ca",
-	}
-}
-
 func (s *RepresentativeLookupService) FetchRepresentatives(postalCode string) ([]Representative, error) {
 	url := fmt.Sprintf("%s/postcodes/%s/?format=json", s.baseURL, postalCode)
 	s.logger.Info("Making request to", "url", url)
@@ -38,7 +31,12 @@ func (s *RepresentativeLookupService) FetchRepresentatives(postalCode string) ([
 		s.logger.Error("Error making request", err)
 		return nil, fmt.Errorf("error making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	s.logger.Info("Response received", "status", resp.Status)
 

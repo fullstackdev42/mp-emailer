@@ -12,11 +12,6 @@ type MPFinder struct {
 	logger loggo.LoggerInterface
 }
 
-// NewMPFinder creates a new instance of MPFinder.
-func NewMPFinder(client ClientInterface, logger loggo.LoggerInterface) *MPFinder {
-	return &MPFinder{client: client, logger: logger}
-}
-
 // FindMP finds the MP for a given postal code.
 func (f *MPFinder) FindMP(postalCode string) (Representative, error) {
 	if f.client == nil {

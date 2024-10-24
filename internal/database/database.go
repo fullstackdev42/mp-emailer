@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	// Import the MySQL driver for database/sql
@@ -62,7 +63,7 @@ func (db *DB) VerifyUser(username, password string) (string, error) {
 	query := "SELECT id, password_hash FROM users WHERE username = ?"
 	err := db.SQL.QueryRow(query, username).Scan(&userID, &storedHash)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("invalid username or password")
 		}
 		return "", fmt.Errorf("error querying user: %w", err)

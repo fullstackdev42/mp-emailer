@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -145,7 +146,7 @@ type migrator interface {
 func runMigrationsWithInstance(m migrator, logger loggo.LoggerInterface) error {
 	logger.Debug("Starting migration process") // Add debug log at the start
 	var migrationErr error
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		migrationErr = fmt.Errorf("error running migrations: %w", err)
 		logger.Error("Error running migrations", err)
 	} else {

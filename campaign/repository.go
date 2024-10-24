@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -49,7 +50,12 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
 
 	var campaigns []Campaign
 	for rows.Next() {
@@ -97,7 +103,7 @@ func (r *Repository) GetByID(id int) (*Campaign, error) {
 	var createdAt, updatedAt sql.NullString
 	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
 		}
 		return nil, fmt.Errorf("error scanning campaign: %w", err)

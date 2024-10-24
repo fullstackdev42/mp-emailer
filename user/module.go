@@ -34,12 +34,12 @@ type ServiceResult struct {
 }
 
 // NewService creates a new user service
-func NewService(repo RepositoryInterface, logger loggo.LoggerInterface) (ServiceInterface, error) {
+func NewService(repo RepositoryInterface, logger loggo.LoggerInterface) (ServiceResult, error) {
 	service := &Service{
 		repo:   repo,
 		logger: logger,
 	}
-	return service, nil
+	return ServiceResult{Service: service}, nil
 }
 
 // HandlerResult is the output struct for NewHandler

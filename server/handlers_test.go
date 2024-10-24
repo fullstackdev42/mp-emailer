@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	mocks "github.com/fullstackdev42/mp-emailer/mocks"
+	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/fullstackdev42/mp-emailer/user"
 

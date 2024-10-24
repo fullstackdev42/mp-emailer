@@ -339,10 +339,10 @@ func NewMockLoggerInterface(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockLoggerInterface {
-	mock := &MockLoggerInterface{}
-	mock.Mock.Test(t)
+	m := &MockLoggerInterface{}
+	m.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() { m.AssertExpectations(t) })
 
-	return mock
+	return m
 }

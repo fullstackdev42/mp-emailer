@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -24,15 +25,6 @@ type MigrationService struct {
 	logger         loggo.LoggerInterface
 }
 
-// NewMigrationService creates a new instance of MigrationService
-func NewMigrationService(dsn, migrationsPath string, logger loggo.LoggerInterface) *MigrationService {
-	return &MigrationService{
-		dsn:            dsn,
-		migrationsPath: migrationsPath,
-		logger:         logger,
-	}
-}
-
 // Run executes the migrations
 func (ms *MigrationService) Run(migrator Migrator) error {
 	// Validate DSN
@@ -51,7 +43,8 @@ func (ms *MigrationService) Run(migrator Migrator) error {
 	}
 
 	// Run migrations
-	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+	switch err := migrator.Up(); {
+	case err != nil && !errors.Is(err, migrate.ErrNoChange):
 		ms.logger.Error("Error running migrations", err)
 		return fmt.Errorf("error running migrations: %w", err)
 	}
@@ -80,19 +73,4 @@ func (dm *DefaultMigrator) Up() error {
 func (dm *DefaultMigrator) Close() error {
 	_, err := dm.Migrate.Close()
 	return err
-}
-
-// RunMigrations runs the database migrations
-func RunMigrations(dsn string, migrationsPath string, logger loggo.LoggerInterface) error {
-	ms := NewMigrationService(dsn, migrationsPath, logger)
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", ms.migrationsPath),
-		fmt.Sprintf("mysql://%s", ms.dsn),
-	)
-	if err != nil {
-		logger.Error("Error creating migration instance", err)
-		return fmt.Errorf("error creating migration instance: %w", err)
-	}
-	dm := &DefaultMigrator{m}
-	return ms.Run(dm)
 }

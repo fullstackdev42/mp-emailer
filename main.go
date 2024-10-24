@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -88,15 +89,6 @@ func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *serv
 	return e
 }
 
-// NewServeMux creates and returns a new http.ServeMux
-func NewServeMux(routes []server.Route) *http.ServeMux {
-	mux := http.NewServeMux()
-	for _, route := range routes {
-		mux.Handle(route.Pattern(), route)
-	}
-	return mux
-}
-
 func registerRoutes(
 	e *echo.Echo,
 	serverHandler *server.Handler,
@@ -133,7 +125,7 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			go func() {
 				logger.Debug("Server starting")
 				logger.Info(fmt.Sprintf("Starting server on :%s", config.AppPort))
-				if err := e.Start(":" + config.AppPort); err != http.ErrServerClosed {
+				if err := e.Start(":" + config.AppPort); !errors.Is(err, http.ErrServerClosed) {
 					logger.Error("Error starting server", err)
 				}
 			}()
@@ -195,45 +187,14 @@ func NewHandler(
 	}, nil
 }
 
-// UserServiceResult is the output struct for NewUserService
-type UserServiceResult struct {
-	fx.Out
-	Service user.ServiceInterface
-}
-
-// NewUserService creates a new user.Service
-func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface) (user.ServiceInterface, error) {
-	service, err := user.NewService(repo.(*user.Repository), logger)
-	if err != nil {
-		return nil, err
-	}
-	return service, nil
-}
-
-// EmailServiceResult is the output struct for NewEmailService
-type EmailServiceResult struct {
-	fx.Out
-	Service email.Service
-}
-
-// NewEmailService creates a new email.Service
-func NewEmailService(cfg *config.Config, logger loggo.LoggerInterface) (EmailServiceResult, error) {
-	service, err := email.New(cfg, logger)
-	if err != nil {
-		return EmailServiceResult{}, err
-	}
-	return EmailServiceResult{
-		Service: service,
-	}, nil
-}
-
 func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {
 	message := "Internal Server Error"
 	statusCode := http.StatusInternalServerError
 	if cfg.IsDevelopment() {
 		message = err.Error()
 	}
-	if httpErr, ok := err.(*echo.HTTPError); ok {
+	var httpErr *echo.HTTPError
+	if errors.As(err, &httpErr) {
 		statusCode = httpErr.Code
 		if msg, ok := httpErr.Message.(string); ok {
 			message = msg
@@ -249,10 +210,4 @@ func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, c
 			logger.Error("Failed to send error response", err)
 		}
 	}
-}
-
-// Add this interface definition
-type Route interface {
-	http.Handler
-	Pattern() string
 }
