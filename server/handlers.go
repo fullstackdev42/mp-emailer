@@ -15,7 +15,7 @@ type Handler struct {
 	Logger          loggo.LoggerInterface
 	Store           sessions.Store
 	emailService    email.Service
-	templateManager *TemplateManager
+	templateManager TemplateRenderer
 	userService     user.ServiceInterface
 	campaignService campaign.ServiceInterface
 	errorHandler    *shared.ErrorHandler
@@ -25,14 +25,14 @@ type Handler struct {
 func NewHandler(
 	logger loggo.LoggerInterface,
 	emailService email.Service,
-	tmplManager *TemplateManager,
+	templateManager TemplateRenderer,
 	userService user.ServiceInterface,
 	campaignService campaign.ServiceInterface,
 ) *Handler {
 	return &Handler{
 		Logger:          logger,
 		emailService:    emailService,
-		templateManager: tmplManager,
+		templateManager: templateManager,
 		userService:     userService,
 		campaignService: campaignService,
 		errorHandler:    shared.NewErrorHandler(logger),
@@ -42,7 +42,11 @@ func NewHandler(
 // Home page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
 	h.Logger.Debug("Handling index request")
-	isAuthenticated := c.Get("isAuthenticated").(bool)
+
+	isAuthenticated := false
+	if auth, ok := c.Get("isAuthenticated").(bool); ok {
+		isAuthenticated = auth
+	}
 	h.Logger.Debug("Authentication status", "isAuthenticated", isAuthenticated)
 
 	// Fetch campaigns using the campaign service

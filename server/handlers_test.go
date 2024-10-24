@@ -1,23 +1,24 @@
 package server
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/email"
-	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocks "github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/fullstackdev42/mp-emailer/user"
-	"github.com/gorilla/sessions"
+
+	"github.com/fullstackdev42/mp-emailer/campaign"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// MockRenderer is a mock of echo.Renderer
+// MockRenderer is a mock of TemplateRenderer
 type MockRenderer struct {
 	mock.Mock
 }
@@ -37,18 +38,12 @@ func SetupTestContext(e *echo.Echo, path string) (echo.Context, *httptest.Respon
 
 func TestNewHandler(t *testing.T) {
 	mockLogger := mocks.NewMockLoggerInterface(t)
-	mockEmailService := &mocksEmail.MockService{}
-	mockTemplateManager := &TemplateManager{}
-	mockUserService := new(user.Service)
-	mockCampaignService := new(campaign.Service)
+	mockEmailService := mocksEmail.NewMockService(t)
+	mockTemplateManager := new(MockRenderer)
+	mockUserService := user.NewMockServiceInterface(t)
+	mockCampaignService := campaign.NewMockServiceInterface(t)
 
-	handler := NewHandler(
-		mockLogger,
-		mockEmailService,
-		mockTemplateManager,
-		mockUserService,
-		mockCampaignService,
-	)
+	handler := NewHandler(mockLogger, mockEmailService, mockTemplateManager, mockUserService, mockCampaignService)
 
 	assert.NotNil(t, handler)
 	assert.IsType(t, &Handler{}, handler)
@@ -57,32 +52,60 @@ func TestNewHandler(t *testing.T) {
 	assert.Equal(t, mockTemplateManager, handler.templateManager)
 	assert.Equal(t, mockUserService, handler.userService)
 	assert.Equal(t, mockCampaignService, handler.campaignService)
+	assert.NotNil(t, handler.errorHandler)
 }
 
 func TestHandler_HandleIndex(t *testing.T) {
 	e := echo.New()
-	mockRenderer := new(MockRenderer)
-	e.Renderer = mockRenderer
-
-	c, rec := SetupTestContext(e, "/")
 	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockCampaignService := campaign.NewMockServiceInterface(t)
+	mockTemplateManager := new(MockRenderer)
+
 	handler := &Handler{
 		Logger:          mockLogger,
-		Store:           sessions.NewCookieStore([]byte("test-secret")),
-		emailService:    *new(email.Service),
-		templateManager: &TemplateManager{},
-		userService:     new(user.Service),
-		campaignService: new(campaign.Service),
+		campaignService: mockCampaignService,
+		templateManager: mockTemplateManager,
+		errorHandler:    &shared.ErrorHandler{Logger: mockLogger},
 	}
 
-	// Expect the Debug call
-	mockLogger.On("Debug", "Handling index request").Return()
+	mockLogger.EXPECT().Debug(mock.Anything, mock.Anything).Times(2)
+	mockCampaignService.EXPECT().GetAllCampaigns().Return([]campaign.Campaign{}, nil)
+	mockTemplateManager.On("Render", mock.Anything, "home.html", mock.Anything, mock.Anything).Return(nil)
 
-	mockRenderer.On("Render", mock.Anything, "index.html", nil, mock.Anything).Return(nil)
+	c, rec := SetupTestContext(e, "/")
+	c.Set("isAuthenticated", true)
 
 	err := handler.HandleIndex(c)
+
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	mockRenderer.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
+	mockCampaignService.AssertExpectations(t)
+	mockTemplateManager.AssertExpectations(t)
+}
+
+func TestHandler_HandleIndex_Error(t *testing.T) {
+	e := echo.New()
+	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockCampaignService := campaign.NewMockServiceInterface(t)
+	mockTemplateManager := new(MockRenderer)
+
+	handler := &Handler{
+		Logger:          mockLogger,
+		campaignService: mockCampaignService,
+		templateManager: mockTemplateManager,
+		errorHandler:    &shared.ErrorHandler{Logger: mockLogger},
+	}
+
+	mockLogger.EXPECT().Debug(mock.Anything, mock.Anything).Times(2)
+	mockLogger.EXPECT().Error(mock.Anything, mock.Anything).Times(1)
+	mockCampaignService.EXPECT().GetAllCampaigns().Return(nil, errors.New("database error"))
+
+	c, rec := SetupTestContext(e, "/")
+	c.Set("isAuthenticated", true)
+
+	err := handler.HandleIndex(c)
+
+	assert.Error(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	mockCampaignService.AssertExpectations(t)
 }

@@ -8,6 +8,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// TemplateRenderer interface for rendering templates
+type TemplateRenderer interface {
+	Render(w io.Writer, name string, data interface{}, c echo.Context) error
+}
+
 type TemplateManager struct {
 	templates *template.Template
 }
