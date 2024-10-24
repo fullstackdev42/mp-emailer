@@ -54,7 +54,6 @@ func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler
 	campaign.RegisterRoutes(campaignHandler, e)
 	// Register user routes
 	user.RegisterRoutes(userHandler, e)
-	// Add more route registrations as needed
 
 	// Serve static files from the "static" directory
 	e.Static("/static", "web/public")
