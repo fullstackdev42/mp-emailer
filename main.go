@@ -55,6 +55,9 @@ func registerRoutes(e *echo.Echo, serverHandler *server.Handler, campaignHandler
 	// Register user routes
 	user.RegisterRoutes(userHandler, e)
 	// Add more route registrations as needed
+
+	// Serve static files from the "static" directory
+	e.Static("/static", "web/public")
 }
 
 // Provide templateFS to the fx container
