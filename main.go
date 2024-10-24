@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/fx"
 )
 
@@ -66,8 +67,26 @@ func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }
 
-func newEcho() *echo.Echo {
-	return echo.New()
+func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager) *echo.Echo {
+	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
+	e.Debug = cfg.IsDevelopment()
+
+	// Set the renderer
+	e.Renderer = tmplManager
+
+	// Custom error handler
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		HTTPErrorHandler(err, c, logger, cfg)
+	}
+
+	// Add middleware
+	e.Use(middleware.Recover())
+	e.Use(middleware.Logger())
+	e.Use(middleware.CORS())
+
+	return e
 }
 
 func userRepositoryProvider(db *database.DB, logger loggo.LoggerInterface) (user.RepositoryInterface, error) {
@@ -172,4 +191,26 @@ func NewEmailService(cfg *config.Config, logger loggo.LoggerInterface) (EmailSer
 		return EmailServiceResult{}, err
 	}
 	return EmailServiceResult{Service: service}, nil
+}
+
+func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {
+	logger.Error("Unhandled error", err, "url", c.Request().URL.String())
+
+	message := "Internal Server Error"
+	statusCode := http.StatusInternalServerError
+
+	if cfg.IsDevelopment() {
+		message = err.Error()
+	}
+
+	if httpErr, ok := err.(*echo.HTTPError); ok {
+		statusCode = httpErr.Code
+		if msg, ok := httpErr.Message.(string); ok {
+			message = msg
+		}
+	}
+
+	if err := c.JSON(statusCode, map[string]string{"message": message}); err != nil {
+		logger.Error("Failed to send JSON response", err)
+	}
 }

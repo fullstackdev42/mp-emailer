@@ -94,3 +94,7 @@ func (c *Config) DatabaseDSN() string {
 	// DSN format specific to MariaDB
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
 }
+
+func (c *Config) IsDevelopment() bool {
+	return c.AppEnv == "development"
+}
