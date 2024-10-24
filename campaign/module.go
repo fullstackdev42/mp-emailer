@@ -10,17 +10,19 @@ import (
 	"go.uber.org/fx"
 )
 
-// ProvideModule bundles and provides all campaign-related dependencies
-func ProvideModule() fx.Option {
-	return fx.Options(
-		fx.Provide(
-			NewRepository,
-			NewService,
-			NewHandler,
-		),
-		fx.Invoke(InvokeModule),
-	)
-}
+// Module defines the campaign module
+var Module = fx.Module("campaign",
+	fx.Provide(
+		NewRepository,
+		NewService,
+		NewHandler,
+		NewRepresentativeLookupService,
+		NewClient,
+		func() string {
+			return "https://represent.opennorth.ca"
+		},
+	),
+)
 
 // ServiceResult is the output struct for NewService
 type ServiceResult struct {
@@ -40,11 +42,13 @@ func NewRepository(db *database.DB) (RepositoryInterface, error) {
 }
 
 // NewService creates a new campaign service
-func NewService(repo RepositoryInterface) (*Service, error) {
+func NewService(repo RepositoryInterface) (ServiceResult, error) {
 	validate := validator.New()
-	service := &Service{
-		repo:     repo,
-		validate: validate,
+	service := ServiceResult{
+		Service: &Service{
+			repo:     repo,
+			validate: validate,
+		},
 	}
 	return service, nil
 }
@@ -67,12 +71,29 @@ func NewHandler(
 	}
 }
 
-func InvokeModule(e *echo.Echo, handler *Handler) {
-	// Register campaign-related routes
-	e.GET("/campaign", handler.GetAllCampaigns)
-	e.POST("/campaign", handler.CreateCampaign)
-	e.GET("/campaign/:id", handler.CampaignGET)
-	e.PUT("/campaign/:id", handler.EditCampaign)
-	e.DELETE("/campaign/:id", handler.DeleteCampaign)
-	e.POST("/campaign/:id/send", handler.SendCampaign)
+// RegisterRoutes registers the campaign routes
+func RegisterRoutes(h *Handler, e *echo.Echo) {
+	e.GET("/campaign", h.GetAllCampaigns)
+	e.POST("/campaign", h.CreateCampaign)
+	e.GET("/campaign/:id", h.CampaignGET)
+	e.PUT("/campaign/:id", h.EditCampaign)
+	e.DELETE("/campaign/:id", h.DeleteCampaign)
+	e.POST("/campaign/:id/send", h.SendCampaign)
+}
+
+// NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
+func NewRepresentativeLookupService(logger loggo.LoggerInterface, baseURL string) (RepresentativeLookupServiceInterface, error) {
+	return &RepresentativeLookupService{
+		logger:  logger,
+		baseURL: baseURL,
+	}, nil
+}
+
+// NewClient creates a new instance of ClientInterface
+func NewClient(logger loggo.LoggerInterface, lookupService RepresentativeLookupServiceInterface) (ClientInterface, error) {
+	client := &DefaultClient{
+		logger:        logger,
+		lookupService: lookupService,
+	}
+	return client, nil
 }

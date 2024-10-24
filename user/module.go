@@ -17,7 +17,6 @@ func ProvideModule() fx.Option {
 			NewService,
 			NewHandler,
 		),
-		fx.Invoke(InvokeModule),
 	)
 }
 
@@ -67,11 +66,11 @@ func NewHandler(
 	return HandlerResult{Handler: handler}, nil
 }
 
-func InvokeModule(e *echo.Echo, handler *Handler) {
-	// Register routes
-	e.GET("/user/register", handler.RegisterGET)
-	e.POST("/user/register", handler.RegisterPOST)
-	e.GET("/user/login", handler.LoginGET)
-	e.POST("/user/login", handler.LoginPOST)
-	e.GET("/user/logout", handler.LogoutGET)
+// RegisterRoutes registers the user routes
+func RegisterRoutes(h *Handler, e *echo.Echo) {
+	e.GET("/user/register", h.RegisterGET)
+	e.POST("/user/register", h.RegisterPOST)
+	e.GET("/user/login", h.LoginGET)
+	e.POST("/user/login", h.LoginPOST)
+	e.GET("/user/logout", h.LogoutGET)
 }

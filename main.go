@@ -9,13 +9,13 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/fx"
 )
 
@@ -25,20 +25,39 @@ var templateFS embed.FS
 func main() {
 	app := fx.New(
 		fx.Provide(
-			(*server.Handler).ProvideRoutes,
 			config.Load,
 			newLogger,
 			newDB,
-			newTemplateManager,
 			newSessionStore,
+			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
+			provideTemplateFS,
 			newEcho,
-			// server.NewHandler,
 		),
-		campaign.ProvideModule(),
+		campaign.Module,
+		server.ProvideModule(),
 		user.ProvideModule(),
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
+}
+
+// Provide a new Echo instance
+func newEcho() *echo.Echo {
+	return echo.New()
+}
+
+// Central function to register routes
+func registerRoutes(e *echo.Echo, campaignHandler *campaign.Handler, userHandler *user.Handler) {
+	// Register campaign routes
+	campaign.RegisterRoutes(campaignHandler, e)
+	// Register user routes
+	user.RegisterRoutes(userHandler, e)
+	// Add more route registrations as needed
+}
+
+// Provide templateFS to the fx container
+func provideTemplateFS() embed.FS {
+	return templateFS
 }
 
 func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
@@ -51,72 +70,8 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, erro
 	return database.NewDB(dsn, logger)
 }
 
-func newTemplateManager() (*server.TemplateManager, error) {
-	return server.NewTemplateManager(templateFS)
-}
-
 func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
-}
-
-func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager, routes []server.Route) *echo.Echo {
-	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
-	e.Debug = cfg.IsDevelopment()
-
-	// Set the renderer
-	e.Renderer = tmplManager
-
-	// Custom error handler
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		HTTPErrorHandler(err, c, logger, cfg)
-	}
-
-	// Add middleware
-	e.Use(middleware.Recover())
-	e.Use(middleware.Logger())
-	e.Use(middleware.CORS())
-
-	// Add static file serving
-	e.Static("/static", "web/public")
-
-	// Register the routes
-	for _, route := range routes {
-		e.Add(route.Method, route.Pattern, route.Handler)
-	}
-
-	return e
-}
-
-func registerRoutes(
-	e *echo.Echo,
-	serverHandler *server.Handler,
-	userHandler *user.Handler,
-	campaignHandler *campaign.Handler,
-	logger loggo.LoggerInterface,
-) {
-	logger.Debug("Registering routes")
-
-	// Server routes
-	e.GET("/", serverHandler.HandleIndex)
-
-	// User routes
-	e.GET("/user/register", userHandler.RegisterGET)
-	e.POST("/user/register", userHandler.RegisterPOST)
-	e.GET("/user/login", userHandler.LoginGET)
-	e.POST("/user/login", userHandler.LoginPOST)
-	e.GET("/user/logout", userHandler.LogoutGET)
-
-	// Campaign routes
-	e.GET("/campaign", campaignHandler.GetAllCampaigns)
-	e.POST("/campaign", campaignHandler.CreateCampaign)
-	e.GET("/campaign/:id", campaignHandler.CampaignGET)
-	e.PUT("/campaign/:id", campaignHandler.EditCampaign)
-	e.DELETE("/campaign/:id", campaignHandler.DeleteCampaign)
-	e.POST("/campaign/:id/send", campaignHandler.SendCampaign)
-
-	logger.Debug("Routes registered successfully")
 }
 
 func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger loggo.LoggerInterface) {

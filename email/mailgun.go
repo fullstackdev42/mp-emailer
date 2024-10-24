@@ -21,6 +21,15 @@ type MailgunEmailService struct {
 	logger loggo.LoggerInterface
 }
 
+func NewMailgunEmailService(domain, apiKey string, client MailgunClient, logger loggo.LoggerInterface) *MailgunEmailService {
+	return &MailgunEmailService{
+		domain: domain,
+		apiKey: apiKey,
+		client: client,
+		logger: logger,
+	}
+}
+
 func (s *MailgunEmailService) SendEmail(to, subject, body string) error {
 	message := s.client.NewMessage(
 		fmt.Sprintf("no-reply@%s", s.domain),
