@@ -53,46 +53,37 @@ type DetailDTO struct {
 
 // CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
-	h.logger.Debug("Handling CampaignGET request")
+	h.logger.Debug("CampaignGET: Starting")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		h.logger.Warn("Invalid campaign ID", err, "input", c.Param("id"))
-		return c.Render(http.StatusBadRequest, "error.html", map[string]interface{}{
-			"Title":   "Bad Request",
-			"Message": "Invalid campaign ID",
-		})
+		h.logger.Error("CampaignGET: Invalid campaign ID", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
+	h.logger.Debug("CampaignGET: Parsed ID", "id", id)
 
+	// Fetch campaign data
 	campaign, err := h.service.FetchCampaign(id)
 	if err != nil {
-		if errors.Is(err, ErrCampaignNotFound) {
-			h.logger.Info("Campaign not found", "campaignID", id)
-			return c.Render(http.StatusNotFound, "error.html", map[string]interface{}{
-				"Title":   "Not Found",
-				"Message": "Campaign not found",
-			})
+		h.logger.Error("CampaignGET: Failed to fetch campaign", err, "id", id)
+		if err == ErrCampaignNotFound {
+			return h.errorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
 		}
-		h.logger.Error("Error fetching campaign", err, "campaignID", id)
-		return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-			"Title":   "Internal Server Error",
-			"Message": "An error occurred while fetching the campaign",
-		})
+		return h.errorHandler.HandleHTTPError(c, err, "Failed to fetch campaign", http.StatusInternalServerError)
 	}
+	h.logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
 
-	dto := DetailDTO{
-		ID:          campaign.ID,
-		Name:        campaign.Name,
-		Description: campaign.Description,
-		PostalCode:  campaign.PostalCode,
-		Template:    campaign.Template,
-		OwnerID:     campaign.OwnerID,
-	}
-
-	h.logger.Debug("Rendering campaign details", "campaignID", id)
-	return c.Render(http.StatusOK, "campaign_details.html", shared.PageData{
-		Title:   "Campaign Details",
-		Content: dto,
+	h.logger.Debug("CampaignGET: Attempting to render template")
+	err = c.Render(http.StatusOK, "campaign.html", map[string]interface{}{
+		"Campaign": campaign,
 	})
+	if err != nil {
+		h.logger.Error("CampaignGET: Failed to render template", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Failed to render campaign", http.StatusInternalServerError)
+	}
+	h.logger.Debug("CampaignGET: Rendered successfully")
+
+	return nil
 }
 
 // GetAllCampaigns handles GET requests for all campaigns

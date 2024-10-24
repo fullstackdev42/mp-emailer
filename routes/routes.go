@@ -41,16 +41,14 @@ func registerUserRoutes(e *echo.Echo, uh *user.Handler) {
 }
 
 func registerCampaignRoutes(e *echo.Echo, authGroup *echo.Group, ch *campaign.Handler) {
-	// Public campaign route
+	// Public campaign routes
 	e.GET("/campaigns", ch.GetAllCampaigns)
+	e.GET("/campaigns/:id", ch.CampaignGET)
+	e.POST("/campaigns/:id/send", ch.SendCampaign)
 
-	e.GET("/campaign/:id", ch.CampaignGET)
-	e.POST("/campaign/:id/send", ch.SendCampaign)
-
-	e.POST("/campaign/lookup-representatives", ch.HandleRepresentativeLookup)
+	e.POST("/campaigns/lookup-representatives", ch.HandleRepresentativeLookup)
 
 	// Protected campaign routes
-	// authGroup.GET("/", ch.GetAllCampaigns)
 	authGroup.GET("/new", ch.CreateCampaignForm)
 	authGroup.POST("/new", ch.CreateCampaign)
 	authGroup.POST("/:id/delete", ch.DeleteCampaign)

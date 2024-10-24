@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -109,10 +110,10 @@ func (s *Service) DeleteCampaign(id int) error {
 func (s *Service) FetchCampaign(id int) (*Campaign, error) {
 	campaign, err := s.repo.GetCampaign(id)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if err == sql.ErrNoRows {
 			return nil, ErrCampaignNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch campaign: %w", err)
 	}
 	return campaign, nil
 }
