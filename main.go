@@ -23,27 +23,9 @@ import (
 var templateFS embed.FS
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to load config: %v", err))
-	}
-
-	// Add this line to check if debug logging is working
-	fmt.Printf("Log level: %v\n", cfg.GetLogLevel())
-
-	logger, err := newLogger(cfg)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create logger: %v", err))
-	}
-
-	// Add these lines to test debug logging
-	logger.Debug("This is a debug message")
-	logger.Info("This is an info message")
-	logger.Error("This is an error message", fmt.Errorf("sample error"))
-
 	app := fx.New(
 		fx.Provide(
-			func() (*config.Config, error) { return cfg, nil },
+			config.Load,
 			newLogger,
 			newDB,
 			newTemplateManager,
@@ -63,23 +45,11 @@ func main() {
 		fx.Invoke(registerRoutes, startServer),
 	)
 
-	// Use the existing logger to log the start of the application
-	logger.Debug("Starting application")
-
 	app.Run()
 }
 
 func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
-	logLevel := cfg.GetLogLevel()
-	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add this line to verify the log level
-	fmt.Printf("Logger created with level: %v\n", logLevel)
-
-	return logger, nil
+	return loggo.NewLogger("mp-emailer.log", cfg.GetLogLevel())
 }
 
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
