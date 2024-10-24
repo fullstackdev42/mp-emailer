@@ -66,7 +66,7 @@ func (_c *MockServiceInterface_ComposeEmail_Call) RunAndReturn(run func(Represen
 }
 
 // CreateCampaign provides a mock function with given fields: c
-func (_m *MockServiceInterface) CreateCampaign(c *Campaign) error {
+func (_m *MockServiceInterface) CreateCampaign(c *CreateCampaignDTO) error {
 	ret := _m.Called(c)
 
 	if len(ret) == 0 {
@@ -74,7 +74,7 @@ func (_m *MockServiceInterface) CreateCampaign(c *Campaign) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*Campaign) error); ok {
+	if rf, ok := ret.Get(0).(func(*CreateCampaignDTO) error); ok {
 		r0 = rf(c)
 	} else {
 		r0 = ret.Error(0)
@@ -89,14 +89,14 @@ type MockServiceInterface_CreateCampaign_Call struct {
 }
 
 // CreateCampaign is a helper method to define mock.On call
-//   - c *Campaign
+//   - c *CreateCampaignDTO
 func (_e *MockServiceInterface_Expecter) CreateCampaign(c interface{}) *MockServiceInterface_CreateCampaign_Call {
 	return &MockServiceInterface_CreateCampaign_Call{Call: _e.mock.On("CreateCampaign", c)}
 }
 
-func (_c *MockServiceInterface_CreateCampaign_Call) Run(run func(c *Campaign)) *MockServiceInterface_CreateCampaign_Call {
+func (_c *MockServiceInterface_CreateCampaign_Call) Run(run func(c *CreateCampaignDTO)) *MockServiceInterface_CreateCampaign_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*Campaign))
+		run(args[0].(*CreateCampaignDTO))
 	})
 	return _c
 }
@@ -106,7 +106,7 @@ func (_c *MockServiceInterface_CreateCampaign_Call) Return(_a0 error) *MockServi
 	return _c
 }
 
-func (_c *MockServiceInterface_CreateCampaign_Call) RunAndReturn(run func(*Campaign) error) *MockServiceInterface_CreateCampaign_Call {
+func (_c *MockServiceInterface_CreateCampaign_Call) RunAndReturn(run func(*CreateCampaignDTO) error) *MockServiceInterface_CreateCampaign_Call {
 	_c.Call.Return(run)
 	return _c
 }

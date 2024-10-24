@@ -65,9 +65,9 @@ func TestHandler_HandleIndex(t *testing.T) {
 	e.Renderer = mockRenderer
 
 	c, rec := SetupTestContext(e, "/")
-
+	mockLogger := mocks.NewMockLoggerInterface(t)
 	handler := &Handler{
-		Logger:          mocks.NewMockLoggerInterface(t),
+		Logger:          mockLogger,
 		Store:           sessions.NewCookieStore([]byte("test-secret")),
 		emailService:    *new(email.Service),
 		templateManager: &TemplateManager{},
@@ -75,11 +75,14 @@ func TestHandler_HandleIndex(t *testing.T) {
 		campaignService: new(campaign.Service),
 	}
 
+	// Expect the Debug call
+	mockLogger.On("Debug", "Handling index request").Return()
+
 	mockRenderer.On("Render", mock.Anything, "index.html", nil, mock.Anything).Return(nil)
 
 	err := handler.HandleIndex(c)
-
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	mockRenderer.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
 }
