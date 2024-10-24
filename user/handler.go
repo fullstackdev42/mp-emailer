@@ -74,7 +74,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 func (h *Handler) LoginGET(c echo.Context) error {
 	h.Logger.Debug("LoginGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
 
-	return h.templateManager.Render(c.Response(), "login.gohtml", nil, c)
+	return h.templateManager.Render(c.Response(), "login", nil, c)
 }
 
 func (h *Handler) LoginPOST(c echo.Context) error {
