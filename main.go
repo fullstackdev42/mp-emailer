@@ -31,21 +31,20 @@ func main() {
 			newDB,
 			newTemplateManager,
 			newSessionStore,
+			fx.Annotate(NewHandler, fx.As(new(server.Route))),
 			newEcho,
 			userRepositoryProvider,
 			NewUserService,
 			user.NewHandler,
 			campaignRepositoryProvider,
 			NewCampaignService,
-			campaign.NewHandler,
-			campaign.NewRepresentativeLookupService,
-			campaign.NewDefaultClient,
-			NewEmailService,
-			NewHandler,
+			// Replace the direct reference to campaign.NewHandler with the ProvideModule function
+			// campaign.NewHandler,
 		),
+		// Add the campaign module here
+		campaign.ProvideModule(),
 		fx.Invoke(registerRoutes, startServer),
 	)
-
 	app.Run()
 }
 
@@ -67,7 +66,7 @@ func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }
 
-func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager) *echo.Echo {
+func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *server.TemplateManager, route server.Route) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -89,7 +88,19 @@ func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *serv
 	// Add static file serving
 	e.Static("/static", "web/public")
 
+	// Register the route
+	e.Add("GET", route.Pattern(), echo.WrapHandler(route))
+
 	return e
+}
+
+// NewServeMux creates and returns a new http.ServeMux
+func NewServeMux(routes []server.Route) *http.ServeMux {
+	mux := http.NewServeMux()
+	for _, route := range routes {
+		mux.Handle(route.Pattern(), route)
+	}
+	return mux
 }
 
 func userRepositoryProvider(db *database.DB, logger loggo.LoggerInterface) (user.RepositoryInterface, error) {
@@ -148,7 +159,9 @@ func NewHandler(
 		campaignService,
 	)
 	logger.Debug("Handler created successfully")
-	return HandlerResult{Handler: handler}, nil
+	return HandlerResult{
+		Handler: handler,
+	}, nil
 }
 
 // CampaignServiceResult is the output struct for NewCampaignService
@@ -163,7 +176,9 @@ func NewCampaignService(repo campaign.RepositoryInterface) (CampaignServiceResul
 	if err != nil {
 		return CampaignServiceResult{}, err
 	}
-	return CampaignServiceResult{Service: service}, nil
+	return CampaignServiceResult{
+		Service: service,
+	}, nil
 }
 
 // UserServiceResult is the output struct for NewUserService
@@ -178,7 +193,9 @@ func NewUserService(repo user.RepositoryInterface, logger loggo.LoggerInterface)
 	if err != nil {
 		return UserServiceResult{}, err
 	}
-	return UserServiceResult{Service: service}, nil
+	return UserServiceResult{
+		Service: service,
+	}, nil
 }
 
 // EmailServiceResult is the output struct for NewEmailService
@@ -193,31 +210,37 @@ func NewEmailService(cfg *config.Config, logger loggo.LoggerInterface) (EmailSer
 	if err != nil {
 		return EmailServiceResult{}, err
 	}
-	return EmailServiceResult{Service: service}, nil
+	return EmailServiceResult{
+		Service: service,
+	}, nil
 }
 
 func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {
 	message := "Internal Server Error"
 	statusCode := http.StatusInternalServerError
-
 	if cfg.IsDevelopment() {
 		message = err.Error()
 	}
-
 	if httpErr, ok := err.(*echo.HTTPError); ok {
 		statusCode = httpErr.Code
 		if msg, ok := httpErr.Message.(string); ok {
 			message = msg
 		}
 	}
-
 	c.Logger().Error(err)
-
 	if err := c.Render(statusCode, "error", map[string]interface{}{
 		"Title":   fmt.Sprintf("%d - %s", statusCode, http.StatusText(statusCode)),
 		"Message": message,
 	}); err != nil {
 		logger.Error("Failed to render error page", err)
-		c.String(http.StatusInternalServerError, "Internal Server Error")
+		if err := c.String(http.StatusInternalServerError, "Internal Server Error"); err != nil {
+			logger.Error("Failed to send error response", err)
+		}
 	}
+}
+
+// Add this interface definition
+type Route interface {
+	http.Handler
+	Pattern() string
 }

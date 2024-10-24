@@ -11,6 +11,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 // Handler handles the HTTP requests for the campaign service
@@ -54,7 +55,6 @@ type DetailDTO struct {
 // CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
 	h.logger.Debug("CampaignGET: Starting")
-
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		h.logger.Error("CampaignGET: Invalid campaign ID", err)
@@ -72,17 +72,13 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to fetch campaign", http.StatusInternalServerError)
 	}
 	h.logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
-
 	h.logger.Debug("CampaignGET: Attempting to render template")
-	err = c.Render(http.StatusOK, "campaign.gohtml", map[string]interface{}{
-		"Campaign": campaign,
-	})
+	err = c.Render(http.StatusOK, "campaign.gohtml", map[string]interface{}{"Campaign": campaign})
 	if err != nil {
 		h.logger.Error("CampaignGET: Failed to render template", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to render campaign", http.StatusInternalServerError)
 	}
 	h.logger.Debug("CampaignGET: Rendered successfully")
-
 	return nil
 }
 
@@ -101,7 +97,6 @@ func (h *Handler) GetAllCampaigns(c echo.Context) error {
 
 	// Log the campaigns data for debugging
 	h.logger.Debug("Campaigns data", "campaigns", campaigns)
-
 	return c.Render(http.StatusOK, "campaigns.gohtml", map[string]interface{}{
 		"Campaigns":       campaigns,
 		"IsAuthenticated": isAuthenticated,
@@ -285,4 +280,11 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	return c.Render(http.StatusOK, "representatives.gohtml", map[string]interface{}{
 		"Representatives": filteredRepresentatives,
 	})
+}
+
+// ProvideModule returns the campaign handler dependencies
+func ProvideModule() fx.Option {
+	return fx.Options(
+		fx.Provide(NewHandler),
+	)
 }

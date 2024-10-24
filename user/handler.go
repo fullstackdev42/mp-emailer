@@ -88,34 +88,26 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
-// Handler for GET requests
 func (h *Handler) LoginGET(c echo.Context) error {
 	return c.Render(http.StatusOK, "login.gohtml", nil)
 }
 
-// Handler for POST requests
 func (h *Handler) LoginPOST(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
 	h.Logger.Info("Login attempt", "username", username)
-
 	user, err := h.repo.GetUserByUsername(username)
 	if err != nil {
 		h.Logger.Warn("Login failed: user not found", "username", username, "error", err)
-		return c.Render(http.StatusUnauthorized, "login.gohtml", map[string]interface{}{
-			"Error": "Invalid username or password",
-		})
+		return c.Render(http.StatusUnauthorized, "login.gohtml", map[string]interface{}{"Error": "Invalid username or password"})
 	}
 
 	h.Logger.Info("User found", "username", username, "user_id", user.ID)
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		h.Logger.Warn("Login failed: incorrect password", "username", username, "error", err)
-		return c.Render(http.StatusUnauthorized, "login.gohtml", map[string]interface{}{
-			"Error": "Invalid username or password",
-		})
+		return c.Render(http.StatusUnauthorized, "login.gohtml", map[string]interface{}{"Error": "Invalid username or password"})
 	}
 
 	h.Logger.Info("Password verified", "username", username)
@@ -124,9 +116,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
 	if err != nil {
 		h.Logger.Error("Error getting session", err)
-		return c.Render(http.StatusInternalServerError, "error.gohtml", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
+		return c.Render(http.StatusInternalServerError, "error.gohtml", map[string]interface{}{"Message": "An error occurred while processing your request"})
 	}
 
 	h.Logger.Info("Session created", "session_name", h.SessionName)
@@ -139,9 +129,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	// Save the session
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		h.Logger.Error("Error saving session", err)
-		return c.Render(http.StatusInternalServerError, "error.gohtml", map[string]interface{}{
-			"Message": "An error occurred while processing your request",
-		})
+		return c.Render(http.StatusInternalServerError, "error.gohtml", map[string]interface{}{"Message": "An error occurred while processing your request"})
 	}
 
 	h.Logger.Info("Session saved successfully", "username", username)
@@ -173,9 +161,7 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 }
 
 func (h *Handler) CreateUser(c echo.Context) error {
-	return c.Render(http.StatusBadRequest, "error.gohtml", map[string]interface{}{
-		"Message": "Invalid request payload",
-	})
+	return c.Render(http.StatusBadRequest, "error.gohtml", map[string]interface{}{"Message": "Invalid request payload"})
 }
 
 func (h *Handler) GetUser(c echo.Context) error {
@@ -183,13 +169,17 @@ func (h *Handler) GetUser(c echo.Context) error {
 	user, err := h.repo.GetUserByUsername(username)
 	if err != nil {
 		h.Logger.Warn("User not found", "username", username)
-		return c.Render(http.StatusNotFound, "error.gohtml", map[string]interface{}{
-			"Message":  "User not found",
-			"Username": username,
-		})
+		return c.Render(http.StatusNotFound, "error.gohtml", map[string]interface{}{"Message": "User not found", "Username": username})
 	}
+	return c.Render(http.StatusOK, "user_details.gohtml", map[string]interface{}{"User": user})
+}
 
-	return c.Render(http.StatusOK, "user_details.gohtml", map[string]interface{}{
-		"User": user,
-	})
+func (h *Handler) RequireAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		sess, err := h.Store.Get(c.Request(), h.SessionName)
+		if err != nil || sess.Values["authenticated"] != true {
+			return c.Redirect(http.StatusSeeOther, "/login")
+		}
+		return next(c)
+	}
 }
