@@ -31,7 +31,11 @@ func main() {
 			newDB,
 			newTemplateManager,
 			newSessionStore,
-			fx.Annotate(NewHandler, fx.As(new(server.Route))),
+			fx.Annotate(
+				NewHandler,
+				fx.As(new(server.Route)),
+				fx.ResultTags(`group:"routes"`),
+			),
 			newEcho,
 			userRepositoryProvider,
 			NewUserService,
@@ -147,21 +151,40 @@ func NewHandler(
 	logger loggo.LoggerInterface,
 	emailService email.Service,
 	tmplManager *server.TemplateManager,
+	userRepo user.RepositoryInterface,
 	userService user.ServiceInterface,
 	campaignService campaign.ServiceInterface,
-) (HandlerResult, error) {
-	logger.Debug("Creating new handler")
-	handler := server.NewHandler(
+	store sessions.Store,
+	config *config.Config,
+) (*server.Handler, *user.Handler, *campaign.Handler, error) {
+	// Create the server handler
+	serverHandler := server.NewHandler(
 		logger,
 		emailService,
 		tmplManager,
 		userService,
 		campaignService,
 	)
-	logger.Debug("Handler created successfully")
-	return HandlerResult{
-		Handler: handler,
-	}, nil
+
+	// Create user handler
+	userHandler := user.NewHandler(
+		userRepo,
+		userService,
+		logger,
+		store,
+		config,
+	)
+
+	// Create campaign handler
+	campaignHandler := campaign.NewHandler(
+		campaignService,
+		logger,
+		nil, // RepresentativeLookupServiceInterface
+		emailService,
+		nil, // ClientInterface
+	)
+
+	return serverHandler, userHandler, campaignHandler, nil
 }
 
 // CampaignServiceResult is the output struct for NewCampaignService

@@ -22,6 +22,7 @@ type Handler struct {
 	userService     user.ServiceInterface
 	campaignService campaign.ServiceInterface
 	errorHandler    *shared.ErrorHandler
+	EmailService    email.Service
 }
 
 // NewHandler creates a new Handler instance
