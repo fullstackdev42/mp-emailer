@@ -23,24 +23,6 @@ type Handler struct {
 	errorHandler                *shared.ErrorHandler
 }
 
-// NewHandler initializes a new Handler
-func NewHandler(
-	service ServiceInterface,
-	logger loggo.LoggerInterface,
-	representativeLookupService RepresentativeLookupServiceInterface,
-	emailService email.Service,
-	client ClientInterface,
-) *Handler {
-	return &Handler{
-		service:                     service,
-		logger:                      logger,
-		representativeLookupService: representativeLookupService,
-		emailService:                emailService,
-		client:                      client,
-		errorHandler:                shared.NewErrorHandler(logger),
-	}
-}
-
 // DetailDTO for returning campaign details
 type DetailDTO struct {
 	ID          int    `json:"id"`

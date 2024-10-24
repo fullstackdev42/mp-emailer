@@ -3,15 +3,12 @@ package email
 import (
 	"fmt"
 	"net/smtp"
-
-	"github.com/jonesrussell/loggo"
 )
 
 type MailpitEmailService struct {
 	host       string
 	port       string
 	smtpClient SMTPClient
-	logger     *loggo.Logger
 }
 
 type SMTPClient interface {

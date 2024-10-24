@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/jonesrussell/loggo"
 )
 
 // RepositoryInterface defines the methods that a campaign repository must implement
@@ -23,13 +24,10 @@ type RepositoryInterface interface {
 var _ RepositoryInterface = (*Repository)(nil)
 
 type Repository struct {
-	db *database.DB
+	db     *database.DB
+	logger loggo.LoggerInterface
 }
 
-// NewRepository creates a new campaign repository
-func NewRepository(db *database.DB) (RepositoryInterface, error) {
-	return &Repository{db: db}, nil
-}
 func (r *Repository) Create(campaign *Campaign) error {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
 	result, err := r.db.SQL.Exec(query, campaign.Name, campaign.Description, campaign.Template, campaign.OwnerID)
@@ -53,7 +51,7 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-
+			r.logger.Error("Error closing rows", err)
 		}
 	}(rows)
 

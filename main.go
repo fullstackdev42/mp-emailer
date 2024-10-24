@@ -9,7 +9,6 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/user"
@@ -26,13 +25,14 @@ var templateFS embed.FS
 func main() {
 	app := fx.New(
 		fx.Provide(
+			(*server.Handler).ProvideRoutes,
 			config.Load,
 			newLogger,
 			newDB,
 			newTemplateManager,
 			newSessionStore,
-			NewHandler,
 			newEcho,
+			// server.NewHandler,
 		),
 		campaign.ProvideModule(),
 		user.ProvideModule(),
@@ -83,7 +83,7 @@ func newEcho(cfg *config.Config, logger loggo.LoggerInterface, tmplManager *serv
 
 	// Register the routes
 	for _, route := range routes {
-		e.Add("GET", route.Pattern(), echo.WrapHandler(route))
+		e.Add(route.Method, route.Pattern, route.Handler)
 	}
 
 	return e
@@ -142,49 +142,7 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 type HandlerResult struct {
 	fx.Out
 	ServerHandler   *server.Handler
-	UserHandler     *user.Handler `name:"mainUserHandler"`
 	CampaignHandler *campaign.Handler
-}
-
-// NewHandler creates a new server.Handler
-func NewHandler(
-	logger loggo.LoggerInterface,
-	emailService email.Service,
-	tmplManager *server.TemplateManager,
-	userService user.ServiceInterface,
-	campaignService campaign.ServiceInterface,
-	config *config.Config,
-	userRepo user.RepositoryInterface,
-	representativeLookupService campaign.RepresentativeLookupServiceInterface,
-	campaignClient campaign.ClientInterface,
-) (HandlerResult, error) {
-	// Create the server handler
-	serverHandler := server.NewHandler(
-		logger,
-		emailService,
-		tmplManager,
-		userService,
-		campaignService,
-	)
-	// Create the user handler
-	userHandler, err := user.NewHandler(userRepo, userService, logger, sessions.NewCookieStore([]byte(config.SessionSecret)), config)
-	if err != nil {
-		return HandlerResult{}, fmt.Errorf("failed to create user handler: %w", err)
-	}
-	// Create the campaign handler
-	campaignHandler := campaign.NewHandler(
-		campaignService,
-		logger,
-		representativeLookupService,
-		emailService,
-		campaignClient,
-	)
-
-	return HandlerResult{
-		ServerHandler:   serverHandler,
-		UserHandler:     userHandler.Handler,
-		CampaignHandler: campaignHandler,
-	}, nil
 }
 
 func HTTPErrorHandler(err error, c echo.Context, logger loggo.LoggerInterface, cfg *config.Config) {

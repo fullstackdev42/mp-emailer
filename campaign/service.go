@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -40,16 +41,6 @@ type ServiceInterface interface {
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
-}
-
-// NewService creates a new campaign service
-func NewService(repo RepositoryInterface) (*Service, error) {
-	validate := validator.New()
-	service := &Service{
-		repo:     repo,
-		validate: validate,
-	}
-	return service, nil
 }
 
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) error {

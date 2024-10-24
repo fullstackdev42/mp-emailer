@@ -72,3 +72,19 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	h.Logger.Debug("Template rendered successfully")
 	return nil
 }
+
+// ProvideRoutes returns the routes for the server
+func (h *Handler) ProvideRoutes(e *echo.Echo) ([]Route, error) {
+	// Define your routes here
+	routes := []Route{
+		{Method: "GET", Pattern: "/", Handler: h.HandleIndex},
+		// Add more routes as needed
+	}
+
+	// Register routes with Echo
+	for _, route := range routes {
+		e.Add(route.Method, route.Pattern, route.Handler)
+	}
+
+	return routes, nil
+}

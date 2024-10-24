@@ -1,12 +1,17 @@
 package server
 
-import "net/http"
+import (
+	"github.com/labstack/echo/v4"
+)
 
-// Route is an http.Handler that knows the mux pattern
-// under which it will be registered.
-type Route interface {
-	http.Handler
+// Route represents a server route.
+type Route struct {
+	Method  string
+	Pattern string
+	Handler echo.HandlerFunc
+}
 
-	// Pattern reports the path at which this is registered.
-	Pattern() string
+// NewRoute creates a new Route.
+func NewRoute(method, pattern string, handler echo.HandlerFunc) Route {
+	return Route{method, pattern, handler}
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -14,8 +15,9 @@ func ProvideModule() fx.Option {
 		fx.Provide(
 			NewRepository,
 			NewService,
-			// NewHandler,
+			NewHandler,
 		),
+		fx.Invoke(InvokeModule),
 	)
 }
 
@@ -50,19 +52,26 @@ type HandlerResult struct {
 
 // NewHandler creates a new user handler
 func NewHandler(
-	repo RepositoryInterface,
-	service ServiceInterface,
+	cfg *config.Config,
 	logger loggo.LoggerInterface,
-	store sessions.Store,
-	config *config.Config,
+	service ServiceInterface,
+	sessions sessions.Store,
 ) (HandlerResult, error) {
 	handler := &Handler{
-		repo:        repo,
 		service:     service,
 		Logger:      logger,
-		Store:       store,
-		SessionName: config.SessionName,
-		Config:      config,
+		Store:       sessions,
+		SessionName: cfg.SessionName,
+		Config:      cfg,
 	}
 	return HandlerResult{Handler: handler}, nil
+}
+
+func InvokeModule(e *echo.Echo, handler *Handler) {
+	// Register routes
+	e.GET("/user/register", handler.RegisterGET)
+	e.POST("/user/register", handler.RegisterPOST)
+	e.GET("/user/login", handler.LoginGET)
+	e.POST("/user/login", handler.LoginPOST)
+	e.GET("/user/logout", handler.LogoutGET)
 }

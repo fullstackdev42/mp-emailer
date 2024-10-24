@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )

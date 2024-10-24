@@ -25,7 +25,7 @@ func (s *MPLookupService) FetchRepresentatives(postalCode string) ([]Representat
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-
+			s.logger.Error("Error closing response body", err)
 		}
 	}(resp.Body)
 
