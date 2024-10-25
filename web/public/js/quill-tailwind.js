@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', function() {
   ];
 
   window.initQuill = function() {
+    const editorElement = document.getElementById('editor');
+    if (!editorElement) {
+      console.error('Editor element not found');
+      return null;
+    }
     return new Quill('#editor', {
       modules: {
         toolbar: toolbarOptions,
@@ -32,11 +37,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const editorElement = document.getElementById('editor');
   if (editorElement) {
     const quill = initQuill();
-    const form = document.querySelector('form');
-    form?.addEventListener('submit', function(event) {
-      event.preventDefault();
-      document.getElementById('template').value = quill.root.innerHTML;
-      this.submit();
-    });
+    if (quill) {
+      const form = document.querySelector('form');
+      form?.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const templateElement = document.getElementById('template');
+        if (templateElement) {
+          templateElement.value = quill.root.innerHTML;
+          this.submit();
+        } else {
+          console.error('Template element not found');
+        }
+      });
+    }
+  } else {
+    console.warn('Editor element not found, Quill initialization skipped');
   }
 });

@@ -1,0 +1,73 @@
+### User Routes
+
+# Get registration page
+GET http://localhost:8080/user/register
+
+# Register a new user
+POST http://localhost:8080/user/register
+Content-Type: application/x-www-form-urlencoded
+
+username=newuser&email=newuser@example.com&password=securepassword
+
+# Get login page
+GET http://localhost:8080/user/login
+
+# Login user
+POST http://localhost:8080/user/login
+Content-Type: application/x-www-form-urlencoded
+
+username=existinguser&password=userpassword
+
+# Logout user
+GET http://localhost:8080/user/logout
+
+# Get user details
+GET http://localhost:8080/user/username
+
+### Campaign Routes
+
+# Get all campaigns
+GET http://localhost:8080/campaigns
+
+# Get campaign details
+GET http://localhost:8080/campaigns/1
+
+# Get campaign creation form
+GET http://localhost:8080/campaigns/create
+
+# Create a new campaign
+POST http://localhost:8080/campaigns
+Content-Type: application/json
+
+{
+  "name": "New Campaign",
+  "description": "Campaign description",
+  "postal_code": "12345",
+  "template": "Email template content"
+}
+
+# Delete a campaign
+DELETE http://localhost:8080/campaigns/1
+
+# Get campaign edit form
+GET http://localhost:8080/campaigns/1/edit
+
+# Update a campaign
+POST http://localhost:8080/campaigns/1
+Content-Type: application/x-www-form-urlencoded
+
+name=Updated Campaign&template=Updated template content
+
+# Send a campaign
+POST http://localhost:8080/campaigns/1/send
+Content-Type: application/x-www-form-urlencoded
+
+postal_code=12345&user_name=John Doe&user_email=john@example.com
+
+### Representative Routes
+
+# Lookup representatives
+POST http://localhost:8080/representatives/lookup
+Content-Type: application/x-www-form-urlencoded
+
+postal_code=12345&type=MP

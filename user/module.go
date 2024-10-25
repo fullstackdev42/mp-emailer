@@ -57,6 +57,7 @@ func NewHandler(
 	service ServiceInterface,
 	sessions sessions.Store,
 	templateManager *shared.CustomTemplateRenderer,
+	repo RepositoryInterface,
 ) (HandlerResult, error) {
 	handler := &Handler{
 		service:         service,
@@ -65,6 +66,7 @@ func NewHandler(
 		SessionName:     cfg.SessionName,
 		Config:          cfg,
 		templateManager: templateManager,
+		repo:            repo,
 	}
 	return HandlerResult{Handler: handler}, nil
 }

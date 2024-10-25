@@ -150,6 +150,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	})
 }
 
+// EditParams for updating a campaign
 type EditParams struct {
 	ID       int
 	Name     string

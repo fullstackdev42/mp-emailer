@@ -34,7 +34,13 @@ func (r *Repository) CreateUser(username, email, passwordHash string) error {
 		Email:        email,
 		PasswordHash: passwordHash,
 	}
-	return r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
+
+	err := r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
+	if err != nil {
+		r.logger.Error(fmt.Sprintf("Error creating user: %s, %s", username, email), err)
+		return fmt.Errorf("error creating user: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) GetUserByUsername(username string) (*User, error) {
@@ -48,6 +54,7 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user not found")
 		}
+		r.logger.Error(fmt.Sprintf("Error getting user by username: %s", username), err)
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 
