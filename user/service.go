@@ -8,7 +8,7 @@ import (
 )
 
 type ServiceInterface interface {
-	RegisterUser(params RegisterUserParams) error
+	RegisterUser(params RegisterUserServiceParams) error
 	VerifyUser(username, password string) (string, error)
 }
 
@@ -20,7 +20,14 @@ type Service struct {
 // Explicitly implement the ServiceInterface
 var _ ServiceInterface = (*Service)(nil)
 
-func (s *Service) RegisterUser(params RegisterUserParams) error {
+// RegisterUserServiceParams for registering a user
+type RegisterUserServiceParams struct {
+	Username string
+	Email    string
+	Password string
+}
+
+func (s *Service) RegisterUser(params RegisterUserServiceParams) error {
 	s.logger.Info(fmt.Sprintf("Registering user: %s", params.Username))
 
 	// Check if user exists

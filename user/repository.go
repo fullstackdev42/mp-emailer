@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
 )
@@ -27,6 +27,7 @@ type Repository struct {
 	logger loggo.LoggerInterface
 }
 
+// CreateUser creates a new user
 func (r *Repository) CreateUser(username, email, passwordHash string) error {
 	user := &User{
 		ID:           uuid.New().String(),
@@ -43,6 +44,7 @@ func (r *Repository) CreateUser(username, email, passwordHash string) error {
 	return nil
 }
 
+// GetUserByUsername gets a user by username
 func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	query := `SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = ?`
 	row := r.db.SQL.QueryRow(query, username)
@@ -58,12 +60,13 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 
-	user.CreatedAt, _ = parseDateTime(createdAt.String)
-	user.UpdatedAt, _ = parseDateTime(updatedAt.String)
+	user.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
+	user.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
 
 	return &user, nil
 }
 
+// UserExists checks if a user exists
 func (r *Repository) UserExists(username, email string) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
@@ -73,12 +76,4 @@ func (r *Repository) UserExists(username, email string) (bool, error) {
 		return false, fmt.Errorf("error checking user existence: %w", err)
 	}
 	return count > 0, nil
-}
-
-// Add this helper function if it doesn't exist
-func parseDateTime(dateStr string) (time.Time, error) {
-	if dateStr == "" {
-		return time.Time{}, nil
-	}
-	return time.Parse("2006-01-02 15:04:05", dateStr)
 }

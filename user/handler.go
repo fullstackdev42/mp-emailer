@@ -56,19 +56,14 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	// Check if user exists
-	exists, err := h.repo.UserExists(params.Username, params.Email)
-	if err != nil {
-		h.Logger.Error("Error checking user existence", err)
-		return h.errorHandler.HandleHTTPError(c, err, "Error checking user existence", http.StatusInternalServerError)
-	}
-	if exists {
-		h.Logger.Warn("User already exists")
-		return c.String(http.StatusBadRequest, "User already exists")
+	// Convert handler params to service params
+	serviceParams := RegisterUserServiceParams{
+		Username: params.Username,
+		Email:    params.Email,
+		Password: params.Password,
 	}
 
-	// Register the user
-	if err := h.service.RegisterUser(*params); err != nil {
+	if err := h.service.RegisterUser(serviceParams); err != nil {
 		h.Logger.Error("Failed to register user", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}

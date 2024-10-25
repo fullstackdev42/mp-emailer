@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// extractUserData extracts user data from the context
 func extractUserData(c echo.Context) map[string]string {
 	return map[string]string{
 		"First Name":    c.FormValue("first_name"),
@@ -20,6 +21,7 @@ func extractUserData(c echo.Context) map[string]string {
 	}
 }
 
+// validatePostalCode validates the postal code
 func validatePostalCode(postalCode string) (string, error) {
 	if postalCode == "" {
 		return "", fmt.Errorf("postal code is required")
@@ -32,6 +34,7 @@ func validatePostalCode(postalCode string) (string, error) {
 	return postalCode, nil
 }
 
+// extractAndValidatePostalCode extracts and validates the postal code
 func extractAndValidatePostalCode(c echo.Context) (string, error) {
 	postalCode := c.FormValue("postal_code")
 	validatedPostalCode, err := validatePostalCode(postalCode)

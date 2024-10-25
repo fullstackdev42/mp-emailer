@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/jonesrussell/loggo"
 )
 
@@ -63,8 +63,8 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error scanning campaign: %w", err)
 		}
-		c.CreatedAt, _ = parseDateTime(createdAt.String)
-		c.UpdatedAt, _ = parseDateTime(updatedAt.String)
+		c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
+		c.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
 		campaigns = append(campaigns, c)
 	}
 
@@ -107,19 +107,12 @@ func (r *Repository) GetByID(id int) (*Campaign, error) {
 		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}
 
-	c.CreatedAt, _ = parseDateTime(createdAt.String)
-	c.UpdatedAt, _ = parseDateTime(updatedAt.String)
+	c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
+	c.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
 
 	return &c, nil
 }
 
 func (r *Repository) GetCampaign(id int) (*Campaign, error) {
 	return r.GetByID(id)
-}
-
-func parseDateTime(dateStr string) (time.Time, error) {
-	if dateStr == "0000-00-00 00:00:00" {
-		return time.Time{}, nil
-	}
-	return time.Parse("2006-01-02 15:04:05", dateStr)
 }
