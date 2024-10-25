@@ -7,12 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type RegisterUserParams struct {
-	Username string
-	Email    string
-	Password string
-}
-
 type ServiceInterface interface {
 	RegisterUser(params RegisterUserParams) error
 	VerifyUser(username, password string) (string, error)

@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Handler for user routes
 type Handler struct {
 	repo            RepositoryInterface
 	service         ServiceInterface
@@ -23,10 +24,25 @@ type Handler struct {
 	templateManager shared.TemplateRenderer
 }
 
+// RegisterUserParams for registering a user
+type RegisterUserParams struct {
+	Username string `form:"username"`
+	Email    string `form:"email"`
+	Password string `form:"password"`
+}
+
+// LoginUserParams for logging in a user
+type LoginUserParams struct {
+	Username string `form:"username"`
+	Password string `form:"password"`
+}
+
+// RegisterGET handler for the register page
 func (h *Handler) RegisterGET(c echo.Context) error {
 	return h.templateManager.Render(c.Response(), "register", nil, c)
 }
 
+// RegisterPOST handler for the register page
 func (h *Handler) RegisterPOST(c echo.Context) error {
 	if h.repo == nil || h.service == nil {
 		h.Logger.Error("Repository or Service is not initialized", errors.New("repository or service is not initialized"))
@@ -34,10 +50,10 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	}
 
 	// Parse form values
-	params := RegisterUserParams{
-		Username: c.FormValue("username"),
-		Email:    c.FormValue("email"),
-		Password: c.FormValue("password"),
+	params := new(RegisterUserParams)
+	if err := c.Bind(params); err != nil {
+		h.Logger.Error("Error binding register form data", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
 	// Check if user exists
@@ -52,7 +68,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	}
 
 	// Register the user
-	if err := h.service.RegisterUser(params); err != nil {
+	if err := h.service.RegisterUser(*params); err != nil {
 		h.Logger.Error("Failed to register user", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
@@ -61,28 +77,33 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+// LoginGET handler for the login page
 func (h *Handler) LoginGET(c echo.Context) error {
 	h.Logger.Debug("LoginGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
 	return h.templateManager.Render(c.Response(), "login", nil, c)
 }
 
+// LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
-	username := c.FormValue("username")
-	password := c.FormValue("password")
+	params := new(LoginUserParams)
+	if err := c.Bind(params); err != nil {
+		h.Logger.Error("Error binding login form data", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+	}
 
-	h.Logger.Info("Login attempt", "username", username)
-	user, err := h.repo.GetUserByUsername(username)
+	h.Logger.Info("Login attempt", "username", params.Username)
+	user, err := h.repo.GetUserByUsername(params.Username)
 	if err != nil || user == nil {
-		h.Logger.Warn("Login failed: user not found", "username", username, "error", err)
+		h.Logger.Warn("Login failed: user not found", "username", params.Username, "error", err)
 		return h.templateManager.Render(c.Response(), "login", map[string]interface{}{"Error": "Invalid username or password"}, c)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		h.Logger.Warn("Login failed: incorrect password", "username", username, "error", err)
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
+		h.Logger.Warn("Login failed: incorrect password", "username", params.Username, "error", err)
 		return h.templateManager.Render(c.Response(), "login", map[string]interface{}{"Error": "Invalid username or password"}, c)
 	}
 
-	h.Logger.Info("Password verified", "username", username)
+	h.Logger.Info("Password verified", "username", params.Username)
 
 	// Create a new session
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
@@ -102,12 +123,13 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return h.templateManager.Render(c.Response(), "error", map[string]interface{}{"Message": "An error occurred while processing your request"}, c)
 	}
 
-	h.Logger.Info("Session saved successfully", "username", username)
+	h.Logger.Info("Session saved successfully", "username", params.Username)
 
 	// Redirect to the home page or dashboard
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+// LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
 	if err != nil {
@@ -126,6 +148,7 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+// GetUser handler for getting a user
 func (h *Handler) GetUser(c echo.Context) error {
 	username := c.Param("username")
 	user, err := h.repo.GetUserByUsername(username)
@@ -136,6 +159,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 	return h.templateManager.Render(c.Response(), "user_details", map[string]interface{}{"User": user}, c)
 }
 
+// RequireAuthMiddleware middleware to require authentication
 func (h *Handler) RequireAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		sess, err := h.Store.Get(c.Request(), h.SessionName)
