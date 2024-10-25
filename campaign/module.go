@@ -20,9 +20,13 @@ var Module = fx.Module("campaign",
 		NewHandler,
 		NewRepresentativeLookupService,
 		NewClient,
-		func() string {
-			return "https://represent.opennorth.ca"
+		fx.Annotated{
+			Name: "representativeLookupBaseURL",
+			Target: func() string {
+				return "https://represent.opennorth.ca"
+			},
 		},
+		validator.New,
 	),
 )
 
@@ -39,37 +43,53 @@ type HandlerResult struct {
 }
 
 // NewRepository creates a new campaign repository
-func NewRepository(db *database.DB) (RepositoryInterface, error) {
-	return &Repository{db: db}, nil
+type RepositoryParams struct {
+	fx.In
+
+	DB *database.DB
+}
+
+func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
+	return &Repository{db: params.DB}, nil
 }
 
 // NewService creates a new campaign service
-func NewService(repo RepositoryInterface) (ServiceResult, error) {
-	validate := validator.New()
+type ServiceParams struct {
+	fx.In
+
+	Repo     RepositoryInterface
+	Validate *validator.Validate
+}
+
+func NewService(params ServiceParams) (ServiceResult, error) {
 	service := ServiceResult{
 		Service: &Service{
-			repo:     repo,
-			validate: validate,
+			repo:     params.Repo,
+			validate: params.Validate,
 		},
 	}
 	return service, nil
 }
 
 // NewHandler initializes a new Handler
-func NewHandler(
-	service ServiceInterface,
-	logger loggo.LoggerInterface,
-	representativeLookupService RepresentativeLookupServiceInterface,
-	emailService email.Service,
-	client ClientInterface,
-) *Handler {
+type HandlerParams struct {
+	fx.In
+
+	Service                     ServiceInterface
+	Logger                      loggo.LoggerInterface
+	RepresentativeLookupService RepresentativeLookupServiceInterface
+	EmailService                email.Service
+	Client                      ClientInterface
+}
+
+func NewHandler(params HandlerParams) *Handler {
 	return &Handler{
-		service:                     service,
-		logger:                      logger,
-		representativeLookupService: representativeLookupService,
-		emailService:                emailService,
-		client:                      client,
-		errorHandler:                shared.NewErrorHandler(logger),
+		service:                     params.Service,
+		logger:                      params.Logger,
+		representativeLookupService: params.RepresentativeLookupService,
+		emailService:                params.EmailService,
+		client:                      params.Client,
+		errorHandler:                shared.NewErrorHandler(params.Logger),
 	}
 }
 
@@ -84,18 +104,32 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 }
 
 // NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
-func NewRepresentativeLookupService(logger loggo.LoggerInterface, baseURL string) (RepresentativeLookupServiceInterface, error) {
+type RepresentativeLookupServiceParams struct {
+	fx.In
+
+	Logger  loggo.LoggerInterface
+	BaseURL string `name:"representativeLookupBaseURL"`
+}
+
+func NewRepresentativeLookupService(params RepresentativeLookupServiceParams) (RepresentativeLookupServiceInterface, error) {
 	return &RepresentativeLookupService{
-		logger:  logger,
-		baseURL: baseURL,
+		logger:  params.Logger,
+		baseURL: params.BaseURL,
 	}, nil
 }
 
 // NewClient creates a new instance of ClientInterface
-func NewClient(logger loggo.LoggerInterface, lookupService RepresentativeLookupServiceInterface) (ClientInterface, error) {
+type ClientParams struct {
+	fx.In
+
+	Logger        loggo.LoggerInterface
+	LookupService RepresentativeLookupServiceInterface
+}
+
+func NewClient(params ClientParams) (ClientInterface, error) {
 	client := &DefaultClient{
-		logger:        logger,
-		lookupService: lookupService,
+		logger:        params.Logger,
+		lookupService: params.LookupService,
 	}
 	return client, nil
 }
