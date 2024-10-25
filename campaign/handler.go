@@ -23,16 +23,6 @@ type Handler struct {
 	errorHandler                *shared.ErrorHandler
 }
 
-// DetailDTO for returning campaign details
-type DetailDTO struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	PostalCode  string `json:"postal_code"`
-	Template    string `json:"template"`
-	OwnerID     string `json:"owner_id"`
-}
-
 // CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
 	h.logger.Debug("CampaignGET: Starting")
@@ -90,11 +80,19 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	return c.Render(http.StatusOK, "campaign_create", nil)
 }
 
+type CreateCampaignParams struct {
+	Name        string `form:"name"`
+	Description string `form:"description"`
+	PostalCode  string `form:"postal_code"`
+	Template    string `form:"template"`
+	OwnerID     string // This will be set from the session
+}
+
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.logger.Debug("Handling CreateCampaign request")
-	dto := new(CreateCampaignDTO)
-	if err := c.Bind(dto); err != nil {
+	params := new(CreateCampaignParams)
+	if err := c.Bind(params); err != nil {
 		h.logger.Warn("Invalid input for campaign creation", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
@@ -105,7 +103,15 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
 
-	dto.OwnerID = ownerID
+	params.OwnerID = ownerID
+
+	dto := &CreateCampaignDTO{
+		Name:        params.Name,
+		Description: params.Description,
+		PostalCode:  params.PostalCode,
+		Template:    params.Template,
+		OwnerID:     params.OwnerID,
+	}
 
 	if err := h.service.CreateCampaign(dto); err != nil {
 		h.logger.Error("Error creating campaign", err)
@@ -116,19 +122,27 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 
+// DeleteCampaignParams for deleting a campaign
+type DeleteCampaignParams struct {
+	ID int `param:"id"`
+}
+
 // DeleteCampaign handles DELETE requests for deleting a campaign
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.logger.Debug("Handling DeleteCampaign request")
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		h.logger.Warn("Invalid campaign ID for deletion", err, "input", c.Param("id"))
+
+	params := new(DeleteCampaignParams)
+	if err := c.Bind(params); err != nil {
+		h.logger.Warn("Invalid input for campaign deletion", err, "input", c.Param("id"))
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
-	if err := h.service.DeleteCampaign(id); err != nil {
-		h.logger.Error("Error deleting campaign", err, "campaignID", id)
+
+	if err := h.service.DeleteCampaign(params.ID); err != nil {
+		h.logger.Error("Error deleting campaign", err, "campaignID", params.ID)
 		return h.errorHandler.HandleHTTPError(c, err, "Error deleting campaign", http.StatusInternalServerError)
 	}
-	h.logger.Info("Campaign deleted successfully", "campaignID", id)
+
+	h.logger.Info("Campaign deleted successfully", "campaignID", params.ID)
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 
@@ -182,9 +196,21 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaigns/"+strconv.Itoa(params.ID))
 }
 
+// SendCampaignParams for sending a campaign
+type SendCampaignParams struct {
+	ID         int    `param:"id"`
+	PostalCode string `form:"postal_code"`
+}
+
 // SendCampaign handles POST requests for sending a campaign
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.logger.Info("Handling campaign submit request")
+	params := new(SendCampaignParams)
+	if err := c.Bind(params); err != nil {
+		h.logger.Warn("Invalid input for sending campaign", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+	}
+
 	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
 		h.logger.Warn("Invalid postal code submitted", err)
@@ -192,21 +218,19 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 			"Error": "Invalid postal code",
 		})
 	}
+
 	mp, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil {
 		h.logger.Error("Error finding MP", err, "postalCode", postalCode)
 		return h.errorHandler.HandleHTTPError(c, err, "Error finding MP", http.StatusInternalServerError)
 	}
-	id, err := strconv.Atoi(c.Param("id"))
+
+	campaign, err := h.service.FetchCampaign(params.ID)
 	if err != nil {
 		h.logger.Warn("Invalid campaign ID for send", err, "input", c.Param("id"))
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
-	campaign, err := h.service.FetchCampaign(id)
-	if err != nil {
-		h.logger.Error("Error fetching campaign for send", err, "campaignID", id)
-		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
-	}
+
 	userData := extractUserData(c)
 
 	if len(mp) == 0 {
@@ -216,9 +240,13 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	representative := mp[0]
 
 	emailContent := h.service.ComposeEmail(representative, campaign, userData)
-	h.logger.Info("Email composed successfully", "campaignID", id, "representative", representative.Email)
+	h.logger.Info("Email composed successfully", "campaignID", params.ID, "representative", representative.Email)
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }
+
+//
+//
+//
 
 // RenderEmailTemplate renders the email template
 func (h *Handler) RenderEmailTemplate(c echo.Context, email, content string) error {
