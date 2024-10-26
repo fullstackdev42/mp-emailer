@@ -8,8 +8,9 @@ import (
 )
 
 type ServiceInterface interface {
-	RegisterUser(params RegisterUserServiceParams) error
-	VerifyUser(username, password string) (string, error)
+	RegisterUser(params *CreateDTO) error
+	VerifyUser(params *LoginDTO) (string, error)
+	GetUser(params *GetDTO) (*DTO, error)
 }
 
 type Service struct {
@@ -27,11 +28,11 @@ type RegisterUserServiceParams struct {
 	Password string
 }
 
-func (s *Service) RegisterUser(params RegisterUserServiceParams) error {
+func (s *Service) RegisterUser(params *CreateDTO) error {
 	s.logger.Info(fmt.Sprintf("Registering user: %s", params.Username))
 
 	// Check if user exists
-	exists, err := s.repo.UserExists(params.Username, params.Email)
+	exists, err := s.repo.UserExists(params)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error checking user existence for %s", params.Username), err)
 		return fmt.Errorf("error checking user existence: %w", err)
@@ -57,8 +58,15 @@ func (s *Service) RegisterUser(params RegisterUserServiceParams) error {
 		return fmt.Errorf("error hashing password: %w", err)
 	}
 
+	// Create a new CreateDTO with the hashed password
+	createDTO := &CreateDTO{
+		Username: params.Username,
+		Email:    params.Email,
+		Password: string(hashedPassword),
+	}
+
 	// Create the user with the hashed password
-	err = s.repo.CreateUser(params.Username, params.Email, string(hashedPassword))
+	err = s.repo.CreateUser(createDTO)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error creating user %s", params.Username), err)
 		return fmt.Errorf("error creating user: %w", err)
@@ -68,24 +76,38 @@ func (s *Service) RegisterUser(params RegisterUserServiceParams) error {
 	return nil
 }
 
-func (s *Service) VerifyUser(username, password string) (string, error) {
-	s.logger.Info(fmt.Sprintf("Verifying user: %s", username))
-	user, err := s.repo.GetUserByUsername(username)
+func (s *Service) VerifyUser(params *LoginDTO) (string, error) {
+	s.logger.Info(fmt.Sprintf("Verifying user: %s", params.Username))
+	user, err := s.repo.GetUserByUsername(params.Username)
 	if err != nil {
 		if err.Error() == "user not found" {
-			s.logger.Warn(fmt.Sprintf("User not found: %s", username))
+			s.logger.Warn(fmt.Sprintf("User not found: %s", params.Username))
 			return "", fmt.Errorf("invalid username or password")
 		}
-		s.logger.Error(fmt.Sprintf("Error getting user: %s", username), err)
+		s.logger.Error(fmt.Sprintf("Error getting user: %s", params.Username), err)
 		return "", fmt.Errorf("error verifying user: %w", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password))
 	if err != nil {
-		s.logger.Warn(fmt.Sprintf("Invalid password for user: %s", username))
+		s.logger.Warn(fmt.Sprintf("Invalid password for user: %s", params.Username))
 		return "", fmt.Errorf("invalid username or password")
 	}
 
-	s.logger.Info(fmt.Sprintf("User verified successfully: %s", username))
+	s.logger.Info(fmt.Sprintf("User verified successfully: %s", params.Username))
 	return user.ID, nil
+}
+
+func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
+	user, err := s.repo.GetUserByUsername(params.Username)
+	if err != nil {
+		return nil, err
+	}
+	return &DTO{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
 }

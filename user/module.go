@@ -2,7 +2,6 @@ package user
 
 import (
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -20,14 +19,6 @@ var Module = fx.Module("user",
 		NewHandler,
 	),
 )
-
-// NewRepository creates a new user repository
-func NewRepository(db *database.DB, logger loggo.LoggerInterface) RepositoryInterface {
-	return &Repository{
-		db:     db,
-		logger: logger,
-	}
-}
 
 // ServiceResult is the output struct for NewService
 type ServiceResult struct {

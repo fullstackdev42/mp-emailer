@@ -9,12 +9,13 @@ import (
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
+	"go.uber.org/fx"
 )
 
 // RepositoryInterface defines the methods that a user repository must implement
 type RepositoryInterface interface {
-	UserExists(username, email string) (bool, error)
-	CreateUser(username, email, passwordHash string) error
+	UserExists(params *CreateDTO) (bool, error)
+	CreateUser(params *CreateDTO) error
 	GetUserByUsername(username string) (*User, error)
 	// Add any other methods that the Repository struct implements
 }
@@ -27,18 +28,34 @@ type Repository struct {
 	logger loggo.LoggerInterface
 }
 
+// RepositoryParams defines the parameters for creating a new Repository
+type RepositoryParams struct {
+	fx.In
+
+	DB     *database.DB
+	Logger loggo.LoggerInterface
+}
+
+// NewRepository creates a new Repository instance
+func NewRepository(params RepositoryParams) RepositoryInterface {
+	return &Repository{
+		db:     params.DB,
+		logger: params.Logger,
+	}
+}
+
 // CreateUser creates a new user
-func (r *Repository) CreateUser(username, email, passwordHash string) error {
+func (r *Repository) CreateUser(params *CreateDTO) error {
 	user := &User{
 		ID:           uuid.New().String(),
-		Username:     username,
-		Email:        email,
-		PasswordHash: passwordHash,
+		Username:     params.Username,
+		Email:        params.Email,
+		PasswordHash: params.Password, // Note: Hash the password in the service layer before passing it to the repository
 	}
 
 	err := r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error creating user: %s, %s", username, email), err)
+		r.logger.Error(fmt.Sprintf("Error creating user: %s, %s", params.Username, params.Email), err)
 		return fmt.Errorf("error creating user: %w", err)
 	}
 	return nil
@@ -67,12 +84,12 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 }
 
 // UserExists checks if a user exists
-func (r *Repository) UserExists(username, email string) (bool, error) {
+func (r *Repository) UserExists(params *CreateDTO) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
-	err := r.db.SQL.QueryRow(query, username, email).Scan(&count)
+	err := r.db.SQL.QueryRow(query, params.Username, params.Email).Scan(&count)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error checking user existence: %s, %s", username, email), err)
+		r.logger.Error(fmt.Sprintf("Error checking user existence: %s, %s", params.Username, params.Email), err)
 		return false, fmt.Errorf("error checking user existence: %w", err)
 	}
 	return count > 0, nil

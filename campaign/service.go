@@ -10,32 +10,25 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// CreateCampaignDTO defines the data structure for creating a campaign
-type CreateCampaignDTO struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description" validate:"required"`
-	PostalCode  string `json:"postal_code" validate:"required"`
-	Template    string `json:"template" validate:"required"`
-	OwnerID     string `json:"owner_id" validate:"required,uuid4"`
+// Parameter objects (for internal service use)
+type GetCampaignParams struct {
+	ID int
 }
 
-type Params struct {
-	ID          int
-	Name        string
-	Description string
-	PostalCode  string
-	Template    string
-	OwnerID     string
+type ComposeEmailParams struct {
+	MP       Representative
+	Campaign *Campaign
+	UserData map[string]string
 }
 
 type ServiceInterface interface {
-	ComposeEmail(mp Representative, c *Campaign, userData map[string]string) string
-	CreateCampaign(c *CreateCampaignDTO) error
-	DeleteCampaign(id int) error
-	FetchCampaign(id int) (*Campaign, error)
+	CreateCampaign(dto *CreateCampaignDTO) error
+	UpdateCampaign(dto *UpdateCampaignDTO) error
+	GetCampaignByID(params GetCampaignParams) (*Campaign, error)
 	GetAllCampaigns() ([]Campaign, error)
-	GetCampaignByID(id int) (*Campaign, error)
-	UpdateCampaign(c *Campaign) error
+	DeleteCampaign(params DeleteCampaignParams) error
+	FetchCampaign(params GetCampaignParams) (*Campaign, error)
+	ComposeEmail(params ComposeEmailParams) string
 }
 
 type Service struct {
@@ -44,29 +37,25 @@ type Service struct {
 }
 
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) error {
-	// Validate DTO fields here
 	err := s.validate.Struct(dto)
 	if err != nil {
 		return fmt.Errorf("invalid input: %w", err)
 	}
 
-	campaign := &Campaign{
-		Name:        dto.Name,
-		Description: dto.Description,
-		PostalCode:  dto.PostalCode,
-		Template:    dto.Template,
-		OwnerID:     dto.OwnerID,
+	return s.repo.Create(dto)
+}
+
+func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
+	err := s.validate.Struct(dto)
+	if err != nil {
+		return fmt.Errorf("invalid input: %w", err)
 	}
 
-	return s.repo.Create(campaign)
+	return s.repo.Update(dto)
 }
 
-func (s *Service) UpdateCampaign(c *Campaign) error {
-	return s.repo.Update(c)
-}
-
-func (s *Service) GetCampaignByID(id int) (*Campaign, error) {
-	return s.repo.GetByID(id)
+func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
+	return s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 }
 
 func (s *Service) GetAllCampaigns() ([]Campaign, error) {
@@ -77,23 +66,23 @@ func (s *Service) GetAllCampaigns() ([]Campaign, error) {
 	return campaigns, nil
 }
 
-func (s *Service) DeleteCampaign(id int) error {
-	campaign, err := s.repo.GetByID(id)
+func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
+	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		return fmt.Errorf("failed to get campaign for deletion: %w", err)
 	}
 	if campaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
-	err = s.repo.Delete(id)
+	err = s.repo.Delete(DeleteCampaignDTO{ID: params.ID})
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
 	}
 	return nil
 }
 
-func (s *Service) FetchCampaign(id int) (*Campaign, error) {
-	campaign, err := s.repo.GetCampaign(id)
+func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
+	campaign, err := s.repo.GetCampaign(GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
@@ -103,14 +92,14 @@ func (s *Service) FetchCampaign(id int) (*Campaign, error) {
 	return campaign, nil
 }
 
-func (s *Service) ComposeEmail(mp Representative, campaign *Campaign, userData map[string]string) string {
-	emailTemplate := campaign.Template
-	for key, value := range userData {
+func (s *Service) ComposeEmail(params ComposeEmailParams) string {
+	emailTemplate := params.Campaign.Template
+	for key, value := range params.UserData {
 		placeholder := fmt.Sprintf("{{%s}}", key)
 		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
 	}
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", mp.Name)
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", mp.Email)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", params.MP.Name)
+	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", params.MP.Email)
 	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
 	return emailTemplate
 }

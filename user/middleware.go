@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -33,4 +34,15 @@ func GetOwnerIDFromSession(c echo.Context) (string, error) {
 
 	logger.Debug("GetOwnerIDFromSession: Owner ID retrieved", "ownerID", ownerID)
 	return ownerID, nil
+}
+
+// RequireAuthMiddleware middleware to require authentication
+func (h *Handler) RequireAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		sess, err := h.Store.Get(c.Request(), h.SessionName)
+		if err != nil || sess.Values["authenticated"] != true {
+			return c.Redirect(http.StatusSeeOther, "/user/login")
+		}
+		return next(c)
+	}
 }

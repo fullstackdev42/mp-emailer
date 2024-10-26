@@ -32,9 +32,8 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 	h.logger.Debug("CampaignGET: Parsed ID", "id", id)
-
-	// Fetch campaign data
-	campaign, err := h.service.FetchCampaign(id)
+	campaignParams := GetCampaignParams{ID: id} // Assuming GetCampaignParams is the correct type
+	campaign, err := h.service.FetchCampaign(campaignParams)
 	if err != nil {
 		h.logger.Error("CampaignGET: Failed to fetch campaign", err, "id", id)
 		if errors.Is(err, ErrCampaignNotFound) {
@@ -137,7 +136,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 
-	if err := h.service.DeleteCampaign(params.ID); err != nil {
+	if err := h.service.DeleteCampaign(DeleteCampaignParams{ID: params.ID}); err != nil {
 		h.logger.Error("Error deleting campaign", err, "campaignID", params.ID)
 		return h.errorHandler.HandleHTTPError(c, err, "Error deleting campaign", http.StatusInternalServerError)
 	}
@@ -154,7 +153,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		h.logger.Warn("Invalid campaign ID for edit form", err, "input", c.Param("id"))
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
-	campaign, err := h.service.FetchCampaign(id)
+	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: id})
 	if err != nil {
 		h.logger.Error("Error fetching campaign for edit", err, "campaignID", id)
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
@@ -184,7 +183,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	params.Name = c.FormValue("name")
 	params.Template = c.FormValue("template")
 
-	if err := h.service.UpdateCampaign(&Campaign{
+	if err := h.service.UpdateCampaign(&UpdateCampaignDTO{
 		ID:       params.ID,
 		Name:     params.Name,
 		Template: params.Template,
@@ -225,7 +224,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Error finding MP", http.StatusInternalServerError)
 	}
 
-	campaign, err := h.service.FetchCampaign(params.ID)
+	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: params.ID})
 	if err != nil {
 		h.logger.Warn("Invalid campaign ID for send", err, "input", c.Param("id"))
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
@@ -239,7 +238,12 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	}
 	representative := mp[0]
 
-	emailContent := h.service.ComposeEmail(representative, campaign, userData)
+	emailContent := h.service.ComposeEmail(ComposeEmailParams{
+		MP:       representative,
+		Campaign: campaign,
+		UserData: userData,
+	})
+
 	h.logger.Info("Email composed successfully", "campaignID", params.ID, "representative", representative.Email)
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
 }

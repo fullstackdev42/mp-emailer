@@ -17,8 +17,66 @@ func (_m *MockServiceInterface) EXPECT() *MockServiceInterface_Expecter {
 	return &MockServiceInterface_Expecter{mock: &_m.Mock}
 }
 
+// GetUser provides a mock function with given fields: params
+func (_m *MockServiceInterface) GetUser(params *GetDTO) (*DTO, error) {
+	ret := _m.Called(params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUser")
+	}
+
+	var r0 *DTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*GetDTO) (*DTO, error)); ok {
+		return rf(params)
+	}
+	if rf, ok := ret.Get(0).(func(*GetDTO) *DTO); ok {
+		r0 = rf(params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*DTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*GetDTO) error); ok {
+		r1 = rf(params)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockServiceInterface_GetUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUser'
+type MockServiceInterface_GetUser_Call struct {
+	*mock.Call
+}
+
+// GetUser is a helper method to define mock.On call
+//   - params *GetDTO
+func (_e *MockServiceInterface_Expecter) GetUser(params interface{}) *MockServiceInterface_GetUser_Call {
+	return &MockServiceInterface_GetUser_Call{Call: _e.mock.On("GetUser", params)}
+}
+
+func (_c *MockServiceInterface_GetUser_Call) Run(run func(params *GetDTO)) *MockServiceInterface_GetUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*GetDTO))
+	})
+	return _c
+}
+
+func (_c *MockServiceInterface_GetUser_Call) Return(_a0 *DTO, _a1 error) *MockServiceInterface_GetUser_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockServiceInterface_GetUser_Call) RunAndReturn(run func(*GetDTO) (*DTO, error)) *MockServiceInterface_GetUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RegisterUser provides a mock function with given fields: params
-func (_m *MockServiceInterface) RegisterUser(params RegisterUserParams) error {
+func (_m *MockServiceInterface) RegisterUser(params *CreateDTO) error {
 	ret := _m.Called(params)
 
 	if len(ret) == 0 {
@@ -26,7 +84,7 @@ func (_m *MockServiceInterface) RegisterUser(params RegisterUserParams) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(RegisterUserParams) error); ok {
+	if rf, ok := ret.Get(0).(func(*CreateDTO) error); ok {
 		r0 = rf(params)
 	} else {
 		r0 = ret.Error(0)
@@ -41,14 +99,14 @@ type MockServiceInterface_RegisterUser_Call struct {
 }
 
 // RegisterUser is a helper method to define mock.On call
-//   - params RegisterUserParams
+//   - params *CreateDTO
 func (_e *MockServiceInterface_Expecter) RegisterUser(params interface{}) *MockServiceInterface_RegisterUser_Call {
 	return &MockServiceInterface_RegisterUser_Call{Call: _e.mock.On("RegisterUser", params)}
 }
 
-func (_c *MockServiceInterface_RegisterUser_Call) Run(run func(params RegisterUserParams)) *MockServiceInterface_RegisterUser_Call {
+func (_c *MockServiceInterface_RegisterUser_Call) Run(run func(params *CreateDTO)) *MockServiceInterface_RegisterUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(RegisterUserParams))
+		run(args[0].(*CreateDTO))
 	})
 	return _c
 }
@@ -58,14 +116,14 @@ func (_c *MockServiceInterface_RegisterUser_Call) Return(_a0 error) *MockService
 	return _c
 }
 
-func (_c *MockServiceInterface_RegisterUser_Call) RunAndReturn(run func(RegisterUserParams) error) *MockServiceInterface_RegisterUser_Call {
+func (_c *MockServiceInterface_RegisterUser_Call) RunAndReturn(run func(*CreateDTO) error) *MockServiceInterface_RegisterUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// VerifyUser provides a mock function with given fields: username, password
-func (_m *MockServiceInterface) VerifyUser(username string, password string) (string, error) {
-	ret := _m.Called(username, password)
+// VerifyUser provides a mock function with given fields: params
+func (_m *MockServiceInterface) VerifyUser(params *LoginDTO) (string, error) {
+	ret := _m.Called(params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyUser")
@@ -73,17 +131,17 @@ func (_m *MockServiceInterface) VerifyUser(username string, password string) (st
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (string, error)); ok {
-		return rf(username, password)
+	if rf, ok := ret.Get(0).(func(*LoginDTO) (string, error)); ok {
+		return rf(params)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) string); ok {
-		r0 = rf(username, password)
+	if rf, ok := ret.Get(0).(func(*LoginDTO) string); ok {
+		r0 = rf(params)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(username, password)
+	if rf, ok := ret.Get(1).(func(*LoginDTO) error); ok {
+		r1 = rf(params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -97,15 +155,14 @@ type MockServiceInterface_VerifyUser_Call struct {
 }
 
 // VerifyUser is a helper method to define mock.On call
-//   - username string
-//   - password string
-func (_e *MockServiceInterface_Expecter) VerifyUser(username interface{}, password interface{}) *MockServiceInterface_VerifyUser_Call {
-	return &MockServiceInterface_VerifyUser_Call{Call: _e.mock.On("VerifyUser", username, password)}
+//   - params *LoginDTO
+func (_e *MockServiceInterface_Expecter) VerifyUser(params interface{}) *MockServiceInterface_VerifyUser_Call {
+	return &MockServiceInterface_VerifyUser_Call{Call: _e.mock.On("VerifyUser", params)}
 }
 
-func (_c *MockServiceInterface_VerifyUser_Call) Run(run func(username string, password string)) *MockServiceInterface_VerifyUser_Call {
+func (_c *MockServiceInterface_VerifyUser_Call) Run(run func(params *LoginDTO)) *MockServiceInterface_VerifyUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(*LoginDTO))
 	})
 	return _c
 }
@@ -115,7 +172,7 @@ func (_c *MockServiceInterface_VerifyUser_Call) Return(_a0 string, _a1 error) *M
 	return _c
 }
 
-func (_c *MockServiceInterface_VerifyUser_Call) RunAndReturn(run func(string, string) (string, error)) *MockServiceInterface_VerifyUser_Call {
+func (_c *MockServiceInterface_VerifyUser_Call) RunAndReturn(run func(*LoginDTO) (string, error)) *MockServiceInterface_VerifyUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

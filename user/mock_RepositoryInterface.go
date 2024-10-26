@@ -17,17 +17,17 @@ func (_m *MockRepositoryInterface) EXPECT() *MockRepositoryInterface_Expecter {
 	return &MockRepositoryInterface_Expecter{mock: &_m.Mock}
 }
 
-// CreateUser provides a mock function with given fields: username, email, passwordHash
-func (_m *MockRepositoryInterface) CreateUser(username string, email string, passwordHash string) error {
-	ret := _m.Called(username, email, passwordHash)
+// CreateUser provides a mock function with given fields: params
+func (_m *MockRepositoryInterface) CreateUser(params *CreateDTO) error {
+	ret := _m.Called(params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUser")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(username, email, passwordHash)
+	if rf, ok := ret.Get(0).(func(*CreateDTO) error); ok {
+		r0 = rf(params)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -41,16 +41,14 @@ type MockRepositoryInterface_CreateUser_Call struct {
 }
 
 // CreateUser is a helper method to define mock.On call
-//   - username string
-//   - email string
-//   - passwordHash string
-func (_e *MockRepositoryInterface_Expecter) CreateUser(username interface{}, email interface{}, passwordHash interface{}) *MockRepositoryInterface_CreateUser_Call {
-	return &MockRepositoryInterface_CreateUser_Call{Call: _e.mock.On("CreateUser", username, email, passwordHash)}
+//   - params *CreateDTO
+func (_e *MockRepositoryInterface_Expecter) CreateUser(params interface{}) *MockRepositoryInterface_CreateUser_Call {
+	return &MockRepositoryInterface_CreateUser_Call{Call: _e.mock.On("CreateUser", params)}
 }
 
-func (_c *MockRepositoryInterface_CreateUser_Call) Run(run func(username string, email string, passwordHash string)) *MockRepositoryInterface_CreateUser_Call {
+func (_c *MockRepositoryInterface_CreateUser_Call) Run(run func(params *CreateDTO)) *MockRepositoryInterface_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string), args[2].(string))
+		run(args[0].(*CreateDTO))
 	})
 	return _c
 }
@@ -60,7 +58,7 @@ func (_c *MockRepositoryInterface_CreateUser_Call) Return(_a0 error) *MockReposi
 	return _c
 }
 
-func (_c *MockRepositoryInterface_CreateUser_Call) RunAndReturn(run func(string, string, string) error) *MockRepositoryInterface_CreateUser_Call {
+func (_c *MockRepositoryInterface_CreateUser_Call) RunAndReturn(run func(*CreateDTO) error) *MockRepositoryInterface_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -123,9 +121,9 @@ func (_c *MockRepositoryInterface_GetUserByUsername_Call) RunAndReturn(run func(
 	return _c
 }
 
-// UserExists provides a mock function with given fields: username, email
-func (_m *MockRepositoryInterface) UserExists(username string, email string) (bool, error) {
-	ret := _m.Called(username, email)
+// UserExists provides a mock function with given fields: params
+func (_m *MockRepositoryInterface) UserExists(params *CreateDTO) (bool, error) {
+	ret := _m.Called(params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UserExists")
@@ -133,17 +131,17 @@ func (_m *MockRepositoryInterface) UserExists(username string, email string) (bo
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
-		return rf(username, email)
+	if rf, ok := ret.Get(0).(func(*CreateDTO) (bool, error)); ok {
+		return rf(params)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
-		r0 = rf(username, email)
+	if rf, ok := ret.Get(0).(func(*CreateDTO) bool); ok {
+		r0 = rf(params)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(username, email)
+	if rf, ok := ret.Get(1).(func(*CreateDTO) error); ok {
+		r1 = rf(params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -157,15 +155,14 @@ type MockRepositoryInterface_UserExists_Call struct {
 }
 
 // UserExists is a helper method to define mock.On call
-//   - username string
-//   - email string
-func (_e *MockRepositoryInterface_Expecter) UserExists(username interface{}, email interface{}) *MockRepositoryInterface_UserExists_Call {
-	return &MockRepositoryInterface_UserExists_Call{Call: _e.mock.On("UserExists", username, email)}
+//   - params *CreateDTO
+func (_e *MockRepositoryInterface_Expecter) UserExists(params interface{}) *MockRepositoryInterface_UserExists_Call {
+	return &MockRepositoryInterface_UserExists_Call{Call: _e.mock.On("UserExists", params)}
 }
 
-func (_c *MockRepositoryInterface_UserExists_Call) Run(run func(username string, email string)) *MockRepositoryInterface_UserExists_Call {
+func (_c *MockRepositoryInterface_UserExists_Call) Run(run func(params *CreateDTO)) *MockRepositoryInterface_UserExists_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(*CreateDTO))
 	})
 	return _c
 }
@@ -175,7 +172,7 @@ func (_c *MockRepositoryInterface_UserExists_Call) Return(_a0 bool, _a1 error) *
 	return _c
 }
 
-func (_c *MockRepositoryInterface_UserExists_Call) RunAndReturn(run func(string, string) (bool, error)) *MockRepositoryInterface_UserExists_Call {
+func (_c *MockRepositoryInterface_UserExists_Call) RunAndReturn(run func(*CreateDTO) (bool, error)) *MockRepositoryInterface_UserExists_Call {
 	_c.Call.Return(run)
 	return _c
 }

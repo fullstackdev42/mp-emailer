@@ -24,13 +24,6 @@ type Handler struct {
 	templateManager shared.TemplateRenderer
 }
 
-// RegisterUserParams for registering a user
-type RegisterUserParams struct {
-	Username string `form:"username"`
-	Email    string `form:"email"`
-	Password string `form:"password"`
-}
-
 // LoginUserParams for logging in a user
 type LoginUserParams struct {
 	Username string `form:"username"`
@@ -50,20 +43,13 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	}
 
 	// Parse form values
-	params := new(RegisterUserParams)
+	params := new(CreateDTO)
 	if err := c.Bind(params); err != nil {
 		h.Logger.Error("Error binding register form data", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	// Convert handler params to service params
-	serviceParams := RegisterUserServiceParams{
-		Username: params.Username,
-		Email:    params.Email,
-		Password: params.Password,
-	}
-
-	if err := h.service.RegisterUser(serviceParams); err != nil {
+	if err := h.service.RegisterUser(params); err != nil {
 		h.Logger.Error("Failed to register user", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
@@ -80,7 +66,7 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
-	params := new(LoginUserParams)
+	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
 		h.Logger.Error("Error binding login form data", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
@@ -145,22 +131,11 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 
 // GetUser handler for getting a user
 func (h *Handler) GetUser(c echo.Context) error {
-	username := c.Param("username")
-	user, err := h.repo.GetUserByUsername(username)
+	params := &GetDTO{Username: c.Param("username")}
+	user, err := h.service.GetUser(params)
 	if err != nil {
-		h.Logger.Warn("User not found", "username", username)
-		return h.templateManager.Render(c.Response(), "error", map[string]interface{}{"Message": "User not found", "Username": username}, c)
+		h.Logger.Warn("User not found", "username", params.Username)
+		return h.templateManager.Render(c.Response(), "error", map[string]interface{}{"Message": "User not found", "Username": params.Username}, c)
 	}
 	return h.templateManager.Render(c.Response(), "user_details", map[string]interface{}{"User": user}, c)
-}
-
-// RequireAuthMiddleware middleware to require authentication
-func (h *Handler) RequireAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		sess, err := h.Store.Get(c.Request(), h.SessionName)
-		if err != nil || sess.Values["authenticated"] != true {
-			return c.Redirect(http.StatusSeeOther, "/user/login")
-		}
-		return next(c)
-	}
 }
