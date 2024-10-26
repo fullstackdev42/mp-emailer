@@ -116,18 +116,8 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
-	sess, err := h.Store.Get(c.Request(), h.SessionName)
-	if err != nil {
-		h.Logger.Error("Error getting session", err)
-		return c.Redirect(http.StatusSeeOther, "/")
-	}
-
-	// Clear session values and delete cookie
-	sess.Values = make(map[interface{}]interface{})
-	sess.Options.MaxAge = -1
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		h.Logger.Error("Error saving session", err)
-		return c.Redirect(http.StatusSeeOther, "/")
+	if err := h.clearSession(c); err != nil {
+		return h.errorHandler.HandleHTTPError(c, err, "An error occurred during logout", http.StatusInternalServerError)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/")
@@ -142,4 +132,22 @@ func (h *Handler) GetUser(c echo.Context) error {
 		return h.templateManager.Render(c.Response(), "error", map[string]interface{}{"Message": "User not found", "Username": params.Username}, c)
 	}
 	return h.templateManager.Render(c.Response(), "user_details", map[string]interface{}{"User": user}, c)
+}
+
+func (h *Handler) clearSession(c echo.Context) error {
+	sess, err := h.Store.Get(c.Request(), h.SessionName)
+	if err != nil {
+		h.Logger.Error("Error getting session", err)
+		return err
+	}
+
+	// Clear session values and delete cookie
+	sess.Values = make(map[interface{}]interface{})
+	sess.Options.MaxAge = -1
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.Logger.Error("Error saving session", err)
+		return err
+	}
+
+	return nil
 }
