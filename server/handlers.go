@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -22,11 +24,7 @@ type Handler struct {
 // HandleIndex page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
 	h.Logger.Debug("Handling index request")
-	isAuthenticated := false
-	if auth, ok := c.Get("isAuthenticated").(bool); ok {
-		isAuthenticated = auth
-	}
-	h.Logger.Debug("Authentication status", "isAuthenticated", isAuthenticated)
+	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
 
 	// Fetch campaigns using the campaign service
 	campaigns, err := h.campaignService.GetAllCampaigns()
@@ -35,19 +33,10 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
 	}
 
-	pageData := shared.PageData{
-		Content:         campaigns,
-		Title:           "Home",
-		IsAuthenticated: isAuthenticated,
+	data := map[string]interface{}{
+		"Campaigns":       campaigns,
+		"IsAuthenticated": isAuthenticated,
 	}
 
-	h.Logger.Debug("Attempting to render template", "template", "home")
-	err = h.templateManager.Render(c.Response(), "home", pageData, c)
-	if err != nil {
-		h.Logger.Error("Error rendering template", err)
-		return h.errorHandler.HandleHTTPError(c, err, "Error rendering page", 500)
-	}
-
-	h.Logger.Debug("Template rendered successfully")
-	return nil
+	return c.Render(http.StatusOK, "home", data)
 }

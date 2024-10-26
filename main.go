@@ -65,6 +65,7 @@ func registerRoutes(
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
 	renderer *shared.CustomTemplateRenderer,
+	sessionStore sessions.Store,
 ) {
 	// Set the custom renderer
 	e.Renderer = renderer
@@ -73,6 +74,8 @@ func registerRoutes(
 	e.Use(middleware.Logger())
 	// Middleware for rate limiting
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+	// Add the auth middleware
+	e.Use(user.AuthMiddleware(sessionStore))
 
 	// Register server routes
 	server.RegisterRoutes(serverHandler, e)
