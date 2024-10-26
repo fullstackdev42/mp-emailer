@@ -46,11 +46,15 @@ type HandlerResult struct {
 type RepositoryParams struct {
 	fx.In
 
-	DB *database.DB
+	DB     *database.DB
+	Logger loggo.LoggerInterface
 }
 
 func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
-	return &Repository{db: params.DB}, nil
+	return &Repository{
+		db:     params.DB,
+		logger: params.Logger,
+	}, nil
 }
 
 // NewService creates a new campaign service

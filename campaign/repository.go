@@ -30,7 +30,7 @@ type Repository struct {
 
 func (r *Repository) Create(dto *CreateCampaignDTO) error {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
-	result, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.PostalCode, dto.Template, dto.OwnerID)
+	result, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating campaign: %w", err)
 	}
@@ -75,8 +75,8 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 }
 
 func (r *Repository) Update(dto *UpdateCampaignDTO) error {
-	query := "UPDATE campaigns SET name = ?, description = ?, postal_code = ?, template = ?, updated_at = NOW() WHERE id = ?"
-	_, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.PostalCode, dto.Template, dto.ID)
+	query := "UPDATE campaigns SET name = ?, description = ?, template = ?, updated_at = NOW() WHERE id = ?"
+	_, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}

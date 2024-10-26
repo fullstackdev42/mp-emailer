@@ -107,7 +107,6 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	dto := &CreateCampaignDTO{
 		Name:        params.Name,
 		Description: params.Description,
-		PostalCode:  params.PostalCode,
 		Template:    params.Template,
 		OwnerID:     params.OwnerID,
 	}
