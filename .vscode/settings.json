@@ -12,5 +12,20 @@
     "editor.quickSuggestions": {
         "strings": true
     },
-    "intelephense.environment.phpVersion": "8.2"
+    "intelephense.environment.phpVersion": "8.2",
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "db",
+            "port": 3306,
+            "driver": "MariaDB",
+            "name": "app",
+            "database": "db",
+            "username": "db"
+        }
+    ]
 }

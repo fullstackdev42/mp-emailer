@@ -35,7 +35,8 @@
 				"golang.Go",
 				"ms-azuretools.vscode-docker",
 				"jinliming2.vscode-go-template",
-				"GitHub.vscode-github-actions"
+				"GitHub.vscode-github-actions",
+				"humao.rest-client"
 			]
 		}
 	},
