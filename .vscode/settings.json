@@ -15,17 +15,20 @@
     "intelephense.environment.phpVersion": "8.2",
     "sqltools.connections": [
         {
+            "name": "MPEmailerDB",
+            "driver": "MariaDB",
+            "server": "localhost",
+            "port": 3306,
+            "database": "db",
+            "username": "db",
+            "password": "db",
+            "queryPath": "${workspaceFolder}/.vscode/sqltools",
             "mysqlOptions": {
                 "authProtocol": "default",
                 "enableSsl": "Disabled"
             },
             "previewLimit": 50,
-            "server": "db",
-            "port": 3306,
-            "driver": "MariaDB",
-            "name": "app",
-            "database": "db",
-            "username": "db"
+            "sessionFilesFolder": "${workspaceFolder}/.vscode/sqltools"
         },
         {
             "mysqlOptions": {
@@ -38,7 +41,14 @@
             "driver": "MariaDB",
             "name": "app dbRoot",
             "database": "mariadb",
-            "username": "root"
+            "username": "root",
+            "sessionFilesFolder": "${workspaceFolder}/.vscode/sqltools"
         }
-    ]
+    ],
+    "sqltools.useNodeRuntime": true,
+    "sqltools.codelens": {
+        "enable": true,
+        "runQuery": true,
+        "references": true
+    }
 }
