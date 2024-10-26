@@ -36,7 +36,9 @@
 				"ms-azuretools.vscode-docker",
 				"jinliming2.vscode-go-template",
 				"GitHub.vscode-github-actions",
-				"humao.rest-client"
+				"humao.rest-client",
+				"mtxr.sqltools-driver-mysql",
+				"mtxr.sqltools"
 			]
 		}
 	},

@@ -122,7 +122,7 @@ func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	logger.Debug("Logger initialized with DEBUG level") // Example debug log
+	logger.Debug("Logger initialized with DEBUG level")
 	return logger, nil
 }
 

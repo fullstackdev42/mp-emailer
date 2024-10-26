@@ -26,6 +26,19 @@
             "name": "app",
             "database": "db",
             "username": "db"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "db",
+            "port": 3306,
+            "driver": "MariaDB",
+            "name": "app dbRoot",
+            "database": "mariadb",
+            "username": "root"
         }
     ]
 }
