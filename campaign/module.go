@@ -30,18 +30,6 @@ var Module = fx.Module("campaign",
 	),
 )
 
-// ServiceResult is the output struct for NewService
-type ServiceResult struct {
-	fx.Out
-	Service ServiceInterface
-}
-
-// HandlerResult is the output struct for NewHandler
-type HandlerResult struct {
-	fx.Out
-	Handler *Handler
-}
-
 // NewRepository creates a new campaign repository
 type RepositoryParams struct {
 	fx.In
@@ -99,6 +87,18 @@ func NewHandler(params HandlerParams) *Handler {
 		errorHandler:                params.ErrorHandler,
 		templateRenderer:            params.TemplateRenderer,
 	}
+}
+
+// ServiceResult is the output struct for NewService
+type ServiceResult struct {
+	fx.Out
+	Service ServiceInterface
+}
+
+// HandlerResult is the output struct for NewHandler
+type HandlerResult struct {
+	fx.Out
+	Handler *Handler
 }
 
 // RegisterRoutes registers the campaign routes
