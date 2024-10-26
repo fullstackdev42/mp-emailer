@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .Title}}{{.Title}} - {{end}}MP Emailer</title>
+    <title>{{if .Data.Title}}{{.Data.Title}} - {{end}}MP Emailer</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
@@ -15,7 +15,7 @@
         <p class="text-lg mt-2">Contact Your Representative Easily</p>
     </header>
 
-    {{template "nav" .}}
+    {{template "nav" .Data}}
 
     {{.TemplateContent}}
 

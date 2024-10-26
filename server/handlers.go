@@ -1,8 +1,6 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -34,9 +32,10 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
+		"Title":           "Home",
 		"Campaigns":       campaigns,
 		"IsAuthenticated": isAuthenticated,
 	}
 
-	return c.Render(http.StatusOK, "home", data)
+	return h.templateManager.Render(c.Response(), "home", data, c)
 }
