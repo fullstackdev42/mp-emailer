@@ -118,11 +118,11 @@ func newEcho() *echo.Echo {
 
 func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 	logLevel := cfg.GetLogLevel()
-	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
+	logger, err := loggo.NewLogger(cfg.LogFile, logLevel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	logger.Debug("Logger initialized with DEBUG level")
+	logger.Debug("Logger initialized with level: %s", logLevel)
 	return logger, nil
 }
 
