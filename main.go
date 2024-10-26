@@ -49,7 +49,7 @@ func registerRoutes(
 	serverHandler *server.Handler,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
-	renderer *shared.CustomTemplateRenderer,
+	renderer shared.TemplateRenderer,
 	sessionStore sessions.Store,
 	cfg *config.Config,
 ) {
@@ -106,12 +106,9 @@ func provideTemplateFS() embed.FS {
 }
 
 // Provide a *template.Template to the fx container
-func provideTemplates() (*template.Template, error) {
-	templates, err := template.ParseGlob("web/templates/**/*.gohtml")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-	return templates, nil
+func provideTemplates() *template.Template {
+	// Load your templates here
+	return template.Must(template.ParseGlob("web/templates/**/*.gohtml"))
 }
 
 // Provide a new Echo instance

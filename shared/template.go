@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Make sure this interface is exported
 // TemplateRenderer interface
 type TemplateRenderer interface {
 	Render(w io.Writer, name string, data interface{}, c echo.Context) error
@@ -19,8 +20,9 @@ type CustomTemplateRenderer struct {
 	templates *template.Template
 }
 
+// Update the constructor to return the interface
 // NewTemplateRenderer creates a new TemplateRendererImpl
-func NewTemplateRenderer(templates *template.Template) *CustomTemplateRenderer {
+func NewTemplateRenderer(templates *template.Template) TemplateRenderer {
 	return &CustomTemplateRenderer{
 		templates: templates,
 	}
