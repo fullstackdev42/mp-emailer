@@ -25,6 +25,7 @@ type Config struct {
 	SessionName    string
 	SessionSecret  string
 	LogLevel       string
+	LogFile        string
 }
 
 // Load loads the configuration
@@ -49,6 +50,11 @@ func Load() (*Config, error) {
 		SessionName:    getEnv("SESSION_NAME", "mpe"),
 		SessionSecret:  os.Getenv("SESSION_SECRET"),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
+		LogFile:        os.Getenv("LOG_FILE"),
+	}
+
+	if config.LogFile == "" {
+		config.LogFile = "mp-emailer.log" // Default value if not set
 	}
 
 	// Validate required variables
