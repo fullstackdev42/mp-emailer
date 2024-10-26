@@ -11,5 +11,6 @@ var Module = fx.Module(
 	"shared",
 	fx.Provide(
 		NewErrorHandler,
+		NewTemplateRenderer,
 	),
 )

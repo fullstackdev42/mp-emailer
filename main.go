@@ -33,7 +33,6 @@ func main() {
 			provideTemplateFS,
 			newEcho,
 			provideTemplates,
-			shared.NewTemplateRenderer,
 		),
 		shared.Module,
 		user.Module,
@@ -42,20 +41,6 @@ func main() {
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
-}
-
-// Provide a new Echo instance
-func newEcho() *echo.Echo {
-	return echo.New()
-}
-
-// Provide a *template.Template to the fx container
-func provideTemplates() (*template.Template, error) {
-	templates, err := template.ParseGlob("web/templates/**/*.gohtml")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-	return templates, nil
 }
 
 // Central function to register routes
@@ -88,34 +73,6 @@ func registerRoutes(
 	e.Static("/static", "web/public")
 }
 
-//go:embed web/templates/**/*
-var templateFS embed.FS
-
-// Provide templateFS to the fx container
-func provideTemplateFS() embed.FS {
-	return templateFS
-}
-
-func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
-	logLevel := cfg.GetLogLevel()
-	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create logger: %w", err)
-	}
-	logger.Debug("Logger initialized with DEBUG level") // Example debug log
-	return logger, nil
-}
-
-func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
-	logger.Info("Initializing database connection")
-	dsn := cfg.DatabaseDSN()
-	return database.NewDB(dsn, logger)
-}
-
-func newSessionStore(cfg *config.Config) sessions.Store {
-	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
-}
-
 func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger loggo.LoggerInterface) {
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
@@ -139,9 +96,44 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 	})
 }
 
-// HandlerResult is the output struct for NewHandler
-type HandlerResult struct {
-	fx.Out
-	ServerHandler   *server.Handler
-	CampaignHandler *campaign.Handler
+//go:embed web/templates/**/*
+var templateFS embed.FS
+
+// Provide templateFS to the fx container
+func provideTemplateFS() embed.FS {
+	return templateFS
+}
+
+// Provide a *template.Template to the fx container
+func provideTemplates() (*template.Template, error) {
+	templates, err := template.ParseGlob("web/templates/**/*.gohtml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
+	}
+	return templates, nil
+}
+
+// Provide a new Echo instance
+func newEcho() *echo.Echo {
+	return echo.New()
+}
+
+func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
+	logLevel := cfg.GetLogLevel()
+	logger, err := loggo.NewLogger("mp-emailer.log", logLevel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+	logger.Debug("Logger initialized with DEBUG level") // Example debug log
+	return logger, nil
+}
+
+func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
+	logger.Info("Initializing database connection")
+	dsn := cfg.DatabaseDSN()
+	return database.NewDB(dsn, logger)
+}
+
+func newSessionStore(cfg *config.Config) sessions.Store {
+	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }
