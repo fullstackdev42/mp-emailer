@@ -14,7 +14,7 @@ type Config struct {
 	AppPort        string
 	DBHost         string
 	DBName         string
-	DBPass         string
+	DBPassword     string
 	DBPort         string
 	DBUser         string
 	MailgunAPIKey  string
@@ -38,7 +38,7 @@ func Load() (*Config, error) {
 		AppPort:        getEnv("APP_PORT", "8080"),
 		DBHost:         getEnv("DB_HOST", "localhost"),
 		DBName:         os.Getenv("DB_NAME"),
-		DBPass:         os.Getenv("DB_PASS"),
+		DBPassword:     os.Getenv("DB_PASSWORD"),
 		DBPort:         getEnv("DB_PORT", "3306"), // MariaDB default port
 		DBUser:         os.Getenv("DB_USER"),
 		MailgunAPIKey:  getEnv("MAILGUN_API_KEY", ""),
@@ -52,8 +52,8 @@ func Load() (*Config, error) {
 	}
 
 	// Validate required variables
-	if config.DBUser == "" || config.DBName == "" || config.DBPass == "" {
-		return nil, fmt.Errorf("DB_USER, DB_NAME, and DB_PASS must be set in the environment")
+	if config.DBUser == "" || config.DBName == "" || config.DBPassword == "" {
+		return nil, fmt.Errorf("DB_USER, DB_NAME, and DB_PASSWORD must be set in the environment")
 	}
 	if config.SessionSecret == "" {
 		return nil, fmt.Errorf("SESSION_SECRET is not set in the environment")
@@ -87,7 +87,7 @@ func (c *Config) GetLogLevel() loggo.Level {
 
 func (c *Config) DatabaseDSN() string {
 	// DSN format specific to MariaDB
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
 
 func (c *Config) IsDevelopment() bool {
