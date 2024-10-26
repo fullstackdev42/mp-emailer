@@ -75,7 +75,7 @@ func NewService(params ServiceParams) (ServiceResult, error) {
 	return service, nil
 }
 
-// NewHandler initializes a new Handler
+// HandlerParams for dependency injection
 type HandlerParams struct {
 	fx.In
 
@@ -84,8 +84,11 @@ type HandlerParams struct {
 	RepresentativeLookupService RepresentativeLookupServiceInterface
 	EmailService                email.Service
 	Client                      ClientInterface
+	ErrorHandler                *shared.ErrorHandler
+	TemplateRenderer            shared.TemplateRenderer
 }
 
+// NewHandler initializes a new Handler
 func NewHandler(params HandlerParams) *Handler {
 	return &Handler{
 		service:                     params.Service,
@@ -93,7 +96,8 @@ func NewHandler(params HandlerParams) *Handler {
 		representativeLookupService: params.RepresentativeLookupService,
 		emailService:                params.EmailService,
 		client:                      params.Client,
-		errorHandler:                shared.NewErrorHandler(params.Logger),
+		errorHandler:                params.ErrorHandler,
+		templateRenderer:            params.TemplateRenderer,
 	}
 }
 
