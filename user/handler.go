@@ -61,7 +61,11 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 // LoginGET handler for the login page
 func (h *Handler) LoginGET(c echo.Context) error {
 	h.Logger.Debug("LoginGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
-	return h.templateManager.Render(c.Response(), "login", nil, c)
+	pageData := shared.PageData{
+		Title:   "Login",
+		Content: nil,
+	}
+	return h.templateManager.Render(c.Response(), "login", pageData, c)
 }
 
 // LoginPOST handler for the login page
