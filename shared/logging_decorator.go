@@ -5,7 +5,11 @@ import (
 )
 
 // ServiceInterface is a generic interface for services to be decorated
-type ServiceInterface interface{}
+type ServiceInterface interface {
+	Info(message string, params ...interface{})
+	Warn(message string, params ...interface{})
+	Error(message string, err error, params ...interface{})
+}
 
 // LoggingServiceDecorator adds logging functionality to any ServiceInterface
 type LoggingServiceDecorator struct {

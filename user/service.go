@@ -5,19 +5,18 @@ import (
 	"time"
 
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/jonesrussell/loggo"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type ServiceInterface interface {
-	RegisterUser(params *CreateDTO) (*User, error)
-	VerifyUser(params *LoginDTO) (string, error)
+	RegisterUser(params *RegisterDTO) (*DTO, error)
+	LoginUser(params *LoginDTO) (string, error)
 	GetUser(params *GetDTO) (*DTO, error)
 }
 
 type Service struct {
 	repo   RepositoryInterface
-	logger loggo.LoggerInterface
+	logger shared.ServiceInterface
 	config *Config
 }
 
@@ -36,28 +35,14 @@ type RegisterUserServiceParams struct {
 	Password string
 }
 
-func (s *Service) RegisterUser(params *CreateDTO) (*User, error) {
+func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 	s.logger.Info(fmt.Sprintf("Registering user: %s", params.Username))
-
-	// Check if user exists
-	exists, err := s.repo.UserExists(params)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Error checking user existence for %s", params.Username), err)
-		return nil, fmt.Errorf("error checking user existence: %w", err)
-	}
-	if exists {
-		s.logger.Warn(fmt.Sprintf("User already exists: %s", params.Username))
-		return nil, fmt.Errorf("user already exists")
-	}
 
 	// Validate password length
 	if len(params.Password) > 72 {
-		s.logger.Warn(fmt.Sprintf("Password length exceeds 72 bytes for user: %s", params.Username))
+		s.logger.Warn(fmt.Sprintf("Password length exceeds 72 bytes for user: %s", params.Username), nil)
 		return nil, fmt.Errorf("password length exceeds 72 bytes")
 	}
-
-	// Log the password length for debugging (do not log the actual password for security reasons)
-	s.logger.Info(fmt.Sprintf("Password length for user %s: %d", params.Username, len(params.Password)))
 
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
@@ -66,25 +51,29 @@ func (s *Service) RegisterUser(params *CreateDTO) (*User, error) {
 		return nil, fmt.Errorf("error hashing password: %w", err)
 	}
 
-	// Create a new CreateDTO with the hashed password
-	createDTO := &CreateDTO{
+	// Create the user with the hashed password
+	user, err := s.repo.CreateUser(&CreateDTO{
 		Username: params.Username,
 		Email:    params.Email,
 		Password: string(hashedPassword),
-	}
-	// Create the user with the hashed password
-	user, err := s.repo.CreateUser(createDTO)
+	})
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error creating user %s", params.Username), err)
 		return nil, err
 	}
 
 	s.logger.Info(fmt.Sprintf("User registered successfully: %s", params.Username))
-	return user, nil
+	return &DTO{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
 }
 
-func (s *Service) VerifyUser(params *LoginDTO) (string, error) {
-	s.logger.Info(fmt.Sprintf("Verifying user: %s", params.Username))
+func (s *Service) LoginUser(params *LoginDTO) (string, error) {
+	s.logger.Info(fmt.Sprintf("Logging in user: %s", params.Username))
 	// Check if user exists and password is correct
 	user, err := s.repo.GetUserByUsername(params.Username)
 	if err != nil {

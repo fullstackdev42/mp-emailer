@@ -33,10 +33,19 @@ type UpdateDTO struct {
 
 // GetDTO represents the data for retrieving a user
 type GetDTO struct {
+	ID       string `json:"id" form:"id"`
 	Username string `json:"username" form:"username"`
 }
 
 // DeleteDTO represents the data for deleting a user
 type DeleteDTO struct {
 	ID string `json:"id" form:"id"`
+}
+
+// RegisterDTO represents the data needed for user registration
+type RegisterDTO struct {
+	Username        string `json:"username" form:"username"`
+	Email           string `json:"email" form:"email"`
+	Password        string `json:"password" form:"password"`
+	PasswordConfirm string `json:"confirm_password" form:"confirm_password"`
 }

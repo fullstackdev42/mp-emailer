@@ -52,18 +52,33 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 
 // RegisterPOST handler for the register page
 func (h *Handler) RegisterPOST(c echo.Context) error {
+	// First check if dependencies are initialized
 	if h.repo == nil || h.service == nil {
-		return h.errorHandler.HandleHTTPError(c, errors.New("repository or service is not initialized"), "Internal server error", http.StatusInternalServerError)
+		return h.errorHandler.HandleHTTPError(c,
+			errors.New("repository or service is not initialized"),
+			"Internal server error",
+			http.StatusInternalServerError)
 	}
+
 	// Parse form values
-	params := new(CreateDTO)
+	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
-		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+		return h.errorHandler.HandleHTTPError(c, err,
+			"Invalid input",
+			http.StatusBadRequest)
 	}
+
+	// Log the attempt
+	h.Logger.Info("Attempting to register user", "username", params.Username)
+
+	// Call service
 	_, err := h.service.RegisterUser(params)
 	if err != nil {
-		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
+		return h.errorHandler.HandleHTTPError(c, err,
+			"Failed to register user",
+			http.StatusInternalServerError)
 	}
+
 	// Redirect on success
 	return c.Redirect(http.StatusSeeOther, "/")
 }

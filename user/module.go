@@ -2,8 +2,6 @@ package user
 
 import (
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -20,32 +18,32 @@ var Module = fx.Module(
 	"user",
 	fx.Provide(
 		NewRepository,
-		NewService,
+		// Provide the base service with a different name to avoid confusion
+		fx.Annotated{Name: "base_service", Target: NewService},
+		// Provide the decorated service as the main ServiceInterface
+		fx.Annotated{Target: func(base ServiceInterface, logger loggo.LoggerInterface) (ServiceInterface, error) {
+			decorator := NewLoggingServiceDecorator(base, logger)
+			return decorator, nil
+		}},
 		NewHandler,
-		NewLoggingServiceDecorator, // Use the new logging decorator
 	),
 )
 
-// ServiceResult is the output struct for NewService
-type ServiceResult struct {
-	fx.Out
-	Service ServiceInterface
-}
-
 // NewService creates a new user service
-func NewService(repo RepositoryInterface, cfg *config.Config) (ServiceResult, error) {
-	expiry, err := strconv.Atoi(cfg.JWTExpiry)
-	if err != nil {
-		return ServiceResult{}, fmt.Errorf("invalid JWTExpiry: %w", err)
+func NewService(repo RepositoryInterface, logger loggo.LoggerInterface, cfg *config.Config) (*Service, error) {
+	if repo == nil {
+		return nil, fmt.Errorf("repository cannot be nil")
 	}
-	service := &Service{
-		repo: repo,
-		config: &Config{
-			JWTSecret: cfg.JWTSecret,
-			JWTExpiry: time.Duration(expiry) * time.Minute,
-		},
+	if logger == nil {
+		return nil, fmt.Errorf("logger cannot be nil")
 	}
-	return ServiceResult{Service: service}, nil
+	if cfg == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+	return &Service{
+		repo:   repo,
+		logger: logger,
+	}, nil
 }
 
 // HandlerResult is the output struct for NewHandler
@@ -58,7 +56,7 @@ type HandlerResult struct {
 func NewHandler(
 	cfg *config.Config,
 	logger loggo.LoggerInterface,
-	service ServiceInterface,
+	service ServiceInterface, // This will now receive the decorated service
 	sessions sessions.Store,
 	templateManager shared.TemplateRenderer,
 	repo RepositoryInterface,

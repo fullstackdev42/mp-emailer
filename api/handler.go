@@ -88,7 +88,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 
 // User-related handlers
 func (h *Handler) RegisterUser(c echo.Context) error {
-	dto := new(user.CreateDTO)
+	dto := new(user.RegisterDTO)
 	if err := c.Bind(dto); err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
@@ -106,7 +106,7 @@ func (h *Handler) LoginUser(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	token, err := h.userService.VerifyUser(dto)
+	token, err := h.userService.LoginUser(dto)
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid credentials", http.StatusUnauthorized)
 	}

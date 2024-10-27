@@ -14,8 +14,10 @@ type CampaignLoggingServiceDecorator struct {
 // NewCampaignLoggingServiceDecorator creates a new instance of CampaignLoggingServiceDecorator
 func NewCampaignLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) *CampaignLoggingServiceDecorator {
 	return &CampaignLoggingServiceDecorator{
-		LoggingServiceDecorator: *shared.NewLoggingServiceDecorator(service, logger),
-		service:                 service,
+		LoggingServiceDecorator: shared.LoggingServiceDecorator{
+			Logger: logger,
+		},
+		service: service,
 	}
 }
 

@@ -1,50 +1,50 @@
 package user
 
 import (
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/jonesrussell/loggo"
 )
 
-// LoggingServiceDecorator adds logging functionality to the ServiceInterface
+// LoggingServiceDecorator adds logging functionality to the User ServiceInterface
 type LoggingServiceDecorator struct {
-	shared.LoggingServiceDecorator
 	service ServiceInterface
+	logger  loggo.LoggerInterface
 }
 
 // NewLoggingServiceDecorator creates a new instance of LoggingServiceDecorator
 func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) *LoggingServiceDecorator {
 	return &LoggingServiceDecorator{
-		LoggingServiceDecorator: *shared.NewLoggingServiceDecorator(service, logger),
-		service:                 service,
+		service: service,
+		logger:  logger,
 	}
 }
 
 // Implement User-specific methods with logging
-func (d *LoggingServiceDecorator) RegisterUser(dto *CreateDTO) (*User, error) {
-	d.Logger.Info("Registering new user", "username", dto.Username)
+func (d *LoggingServiceDecorator) RegisterUser(dto *RegisterDTO) (*DTO, error) {
+	d.logger.Info("Registering new user", "username", dto.Username)
 	user, err := d.service.RegisterUser(dto)
 	if err != nil {
-		d.Logger.Error("Failed to register user", err)
+		d.logger.Error("Failed to register user", err)
 	}
 	return user, err
 }
 
-// GetUser logs the user retrieval and returns the user and error
-func (d *LoggingServiceDecorator) GetUser(dto *GetDTO) (*User, error) {
-	d.Logger.Info("Fetching user", "id", dto.Username)
-	// Convert the returned DTO to User type
-	userDTO, err := d.service.GetUser(dto)
+// LoginUser logs the login attempt and the result
+func (d *LoggingServiceDecorator) LoginUser(dto *LoginDTO) (string, error) {
+	d.logger.Info("Logging in user", "username", dto.Username)
+	token, err := d.service.LoginUser(dto)
 	if err != nil {
-		d.Logger.Error("Failed to fetch user", err)
-		return nil, err
+		d.logger.Error("Failed to login user", err)
 	}
-	// Convert DTO to User or ensure service returns User directly
-	user := &User{
-		// Map DTO fields to User fields
-		Username: userDTO.Username,
-		// ... other field mappings
+	return token, err
+}
+
+func (d *LoggingServiceDecorator) GetUser(dto *GetDTO) (*DTO, error) {
+	d.logger.Info("Fetching user", "id", dto.ID)
+	user, err := d.service.GetUser(dto)
+	if err != nil {
+		d.logger.Error("Failed to fetch user", err)
 	}
-	return user, nil
+	return user, err
 }
 
 // Continue with other methods (e.g., UpdateUser, DeleteUser, etc.)...

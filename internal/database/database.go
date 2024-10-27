@@ -58,7 +58,7 @@ func (db *DB) CreateUser(id, username, email, password string) error {
 	return nil
 }
 
-func (db *DB) VerifyUser(username, password string) (string, error) {
+func (db *DB) LoginUser(username, password string) (string, error) {
 	var storedHash, userID string
 	query := "SELECT id, password_hash FROM users WHERE username = ?"
 	err := db.SQL.QueryRow(query, username).Scan(&userID, &storedHash)

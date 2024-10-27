@@ -33,6 +33,21 @@ type ServiceInterface interface {
 	ComposeEmail(params ComposeEmailParams) string
 }
 
+// Error implements shared.ServiceInterface.
+func (s *Service) Error(message string, err error) {
+	panic("unimplemented")
+}
+
+// Info implements shared.ServiceInterface.
+func (s *Service) Info(message string) {
+	panic("unimplemented")
+}
+
+// Warn implements shared.ServiceInterface.
+func (s *Service) Warn(message string, err error) {
+	panic("unimplemented")
+}
+
 // Service implements the campaign service
 type Service struct {
 	repo     RepositoryInterface
