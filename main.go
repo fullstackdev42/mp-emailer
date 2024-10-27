@@ -116,6 +116,7 @@ func newEcho() *echo.Echo {
 	return echo.New()
 }
 
+// Provide a new logger
 func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 	logLevel := cfg.GetLogLevel()
 	logger, err := loggo.NewLogger(cfg.LogFile, logLevel)
