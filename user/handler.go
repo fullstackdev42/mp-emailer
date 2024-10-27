@@ -32,7 +32,22 @@ type LoginUserParams struct {
 
 // RegisterGET handler for the register page
 func (h *Handler) RegisterGET(c echo.Context) error {
-	return h.templateManager.Render(c.Response(), "register", nil, c)
+	h.Logger.Debug("RegisterGET handler invoked",
+		"method", c.Request().Method,
+		"uri", c.Request().RequestURI)
+
+	pageData := shared.PageData{
+		Title:   "Register",
+		Content: nil,
+	}
+
+	err := h.templateManager.Render(c.Response(), "register", pageData, c)
+	if err != nil {
+		h.Logger.Error("Failed to render register template", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Failed to render page", http.StatusInternalServerError)
+	}
+
+	return nil
 }
 
 // RegisterPOST handler for the register page
