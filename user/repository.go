@@ -15,7 +15,7 @@ import (
 // RepositoryInterface defines the methods that a user repository must implement
 type RepositoryInterface interface {
 	UserExists(params *CreateDTO) (bool, error)
-	CreateUser(params *CreateDTO) error
+	CreateUser(params *CreateDTO) (*User, error) // Updated return type
 	GetUserByUsername(username string) (*User, error)
 	// Add any other methods that the Repository struct implements
 }
@@ -45,20 +45,20 @@ func NewRepository(params RepositoryParams) RepositoryInterface {
 }
 
 // CreateUser creates a new user
-func (r *Repository) CreateUser(params *CreateDTO) error {
+func (r *Repository) CreateUser(params *CreateDTO) (*User, error) {
 	user := &User{
 		ID:           uuid.New().String(),
 		Username:     params.Username,
 		Email:        params.Email,
-		PasswordHash: params.Password, // Note: Hash the password in the service layer before passing it to the repository
+		PasswordHash: params.Password,
 	}
 
 	err := r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("Error creating user: %s, %s", params.Username, params.Email), err)
-		return fmt.Errorf("error creating user: %w", err)
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
-	return nil
+	return user, nil
 }
 
 // GetUserByUsername gets a user by username

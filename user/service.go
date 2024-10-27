@@ -10,7 +10,7 @@ import (
 )
 
 type ServiceInterface interface {
-	RegisterUser(params *CreateDTO) error
+	RegisterUser(params *CreateDTO) (*User, error)
 	VerifyUser(params *LoginDTO) (string, error)
 	GetUser(params *GetDTO) (*DTO, error)
 }
@@ -36,24 +36,24 @@ type RegisterUserServiceParams struct {
 	Password string
 }
 
-func (s *Service) RegisterUser(params *CreateDTO) error {
+func (s *Service) RegisterUser(params *CreateDTO) (*User, error) {
 	s.logger.Info(fmt.Sprintf("Registering user: %s", params.Username))
 
 	// Check if user exists
 	exists, err := s.repo.UserExists(params)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error checking user existence for %s", params.Username), err)
-		return fmt.Errorf("error checking user existence: %w", err)
+		return nil, fmt.Errorf("error checking user existence: %w", err)
 	}
 	if exists {
 		s.logger.Warn(fmt.Sprintf("User already exists: %s", params.Username))
-		return fmt.Errorf("user already exists")
+		return nil, fmt.Errorf("user already exists")
 	}
 
 	// Validate password length
 	if len(params.Password) > 72 {
 		s.logger.Warn(fmt.Sprintf("Password length exceeds 72 bytes for user: %s", params.Username))
-		return fmt.Errorf("password length exceeds 72 bytes")
+		return nil, fmt.Errorf("password length exceeds 72 bytes")
 	}
 
 	// Log the password length for debugging (do not log the actual password for security reasons)
@@ -63,7 +63,7 @@ func (s *Service) RegisterUser(params *CreateDTO) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error hashing password for user %s", params.Username), err)
-		return fmt.Errorf("error hashing password: %w", err)
+		return nil, fmt.Errorf("error hashing password: %w", err)
 	}
 
 	// Create a new CreateDTO with the hashed password
@@ -72,16 +72,15 @@ func (s *Service) RegisterUser(params *CreateDTO) error {
 		Email:    params.Email,
 		Password: string(hashedPassword),
 	}
-
 	// Create the user with the hashed password
-	err = s.repo.CreateUser(createDTO)
+	user, err := s.repo.CreateUser(createDTO)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Error creating user %s", params.Username), err)
-		return fmt.Errorf("error creating user: %w", err)
+		return nil, err
 	}
 
 	s.logger.Info(fmt.Sprintf("User registered successfully: %s", params.Username))
-	return nil
+	return user, nil
 }
 
 func (s *Service) VerifyUser(params *LoginDTO) (string, error) {

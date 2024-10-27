@@ -40,17 +40,15 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 	if h.repo == nil || h.service == nil {
 		return h.errorHandler.HandleHTTPError(c, errors.New("repository or service is not initialized"), "Internal server error", http.StatusInternalServerError)
 	}
-
 	// Parse form values
 	params := new(CreateDTO)
 	if err := c.Bind(params); err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
-
-	if err := h.service.RegisterUser(params); err != nil {
+	_, err := h.service.RegisterUser(params)
+	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
-
 	// Redirect on success
 	return c.Redirect(http.StatusSeeOther, "/")
 }

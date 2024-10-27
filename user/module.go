@@ -1,10 +1,9 @@
 package user
 
 import (
+	"fmt"
 	"strconv"
 	"time"
-
-	"fmt"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -17,11 +16,13 @@ import (
 // Module defines the user module
 //
 //nolint:gochecknoglobals
-var Module = fx.Module("user",
+var Module = fx.Module(
+	"user",
 	fx.Provide(
 		NewRepository,
 		NewService,
 		NewHandler,
+		NewLoggingServiceDecorator, // Use the new logging decorator
 	),
 )
 
@@ -32,15 +33,13 @@ type ServiceResult struct {
 }
 
 // NewService creates a new user service
-func NewService(repo RepositoryInterface, logger loggo.LoggerInterface, cfg *config.Config) (ServiceResult, error) {
+func NewService(repo RepositoryInterface, cfg *config.Config) (ServiceResult, error) {
 	expiry, err := strconv.Atoi(cfg.JWTExpiry)
 	if err != nil {
 		return ServiceResult{}, fmt.Errorf("invalid JWTExpiry: %w", err)
 	}
-
 	service := &Service{
-		repo:   repo,
-		logger: logger,
+		repo: repo,
 		config: &Config{
 			JWTSecret: cfg.JWTSecret,
 			JWTExpiry: time.Duration(expiry) * time.Minute,

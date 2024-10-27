@@ -11,48 +11,34 @@ import (
 )
 
 // Module defines the campaign module
-//
-//nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
 		NewRepository,
 		NewClient,
-		fx.Annotate(
-			NewRepresentativeLookupService,
+		fx.Annotate(NewRepresentativeLookupService,
 			fx.ParamTags(`name:"representativeLookupBaseURL"`, `name:"representativeLogger"`),
 		),
-		fx.Annotate(
-			func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) (ServiceInterface, error) {
-				serviceParams := ServiceParams{
-					Repo:     repo,
-					Validate: validate,
-				}
-				serviceResult, err := NewService(serviceParams)
-				if err != nil {
-					return nil, err
-				}
-				return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
-			},
-			fx.As(new(ServiceInterface)),
-		),
+		fx.Annotate(func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) (ServiceInterface, error) {
+			serviceParams := ServiceParams{Repo: repo, Validate: validate}
+			serviceResult, err := NewService(serviceParams)
+			if err != nil {
+				return nil, err
+			}
+			return NewCampaignLoggingServiceDecorator(serviceResult.Service, logger), nil
+		}, fx.As(new(ServiceInterface))),
 		NewHandler,
 	),
 )
 
 // NewRepository creates a new campaign repository
 func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
-	return &Repository{
-		db: params.DB,
-	}, nil
+	return &Repository{db: params.DB}, nil
 }
 
 // NewService creates a new campaign service
 func NewService(params ServiceParams) (ServiceResult, error) {
 	service := ServiceResult{
-		Service: &Service{
-			repo:     params.Repo,
-			validate: params.Validate,
-		},
+		Service: &Service{repo: params.Repo, validate: params.Validate},
 	}
 	return service, nil
 }
@@ -60,7 +46,6 @@ func NewService(params ServiceParams) (ServiceResult, error) {
 // HandlerParams for dependency injection
 type HandlerParams struct {
 	fx.In
-
 	Service                     ServiceInterface
 	Logger                      loggo.LoggerInterface
 	RepresentativeLookupService RepresentativeLookupServiceInterface

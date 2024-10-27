@@ -93,10 +93,11 @@ func (h *Handler) RegisterUser(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	if err := h.userService.RegisterUser(dto); err != nil {
+	createdUser, err := h.userService.RegisterUser(dto)
+	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error registering user", http.StatusInternalServerError)
 	}
-	return c.JSON(http.StatusCreated, dto)
+	return c.JSON(http.StatusCreated, createdUser)
 }
 
 func (h *Handler) LoginUser(c echo.Context) error {
