@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/email"
@@ -38,6 +39,7 @@ func main() {
 		user.Module,
 		campaign.Module,
 		server.Module,
+		api.Module,
 		fx.Invoke(registerRoutes, startServer),
 	)
 	app.Run()
@@ -49,6 +51,7 @@ func registerRoutes(
 	serverHandler *server.Handler,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
+	apiHandler *api.Handler,
 	renderer shared.TemplateRenderer,
 	sessionStore sessions.Store,
 	cfg *config.Config,
@@ -69,6 +72,8 @@ func registerRoutes(
 	campaign.RegisterRoutes(campaignHandler, e)
 	// Register user routes
 	user.RegisterRoutes(userHandler, e)
+	// Register API routes with JWT secret
+	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
 
 	// Serve static files from the "static" directory
 	e.Static("/static", "web/public")

@@ -2,7 +2,9 @@ package user
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/jonesrussell/loggo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,6 +18,12 @@ type ServiceInterface interface {
 type Service struct {
 	repo   RepositoryInterface
 	logger loggo.LoggerInterface
+	config *Config
+}
+
+type Config struct {
+	JWTSecret string
+	JWTExpiry time.Duration
 }
 
 // Explicitly implement the ServiceInterface
@@ -78,24 +86,29 @@ func (s *Service) RegisterUser(params *CreateDTO) error {
 
 func (s *Service) VerifyUser(params *LoginDTO) (string, error) {
 	s.logger.Info(fmt.Sprintf("Verifying user: %s", params.Username))
+	// Check if user exists and password is correct
 	user, err := s.repo.GetUserByUsername(params.Username)
 	if err != nil {
-		if err.Error() == "user not found" {
-			s.logger.Warn(fmt.Sprintf("User not found: %s", params.Username))
-			return "", fmt.Errorf("invalid username or password")
-		}
-		s.logger.Error(fmt.Sprintf("Error getting user: %s", params.Username), err)
-		return "", fmt.Errorf("error verifying user: %w", err)
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password))
-	if err != nil {
-		s.logger.Warn(fmt.Sprintf("Invalid password for user: %s", params.Username))
+		s.logger.Warn(fmt.Sprintf("Failed to find user: %s", params.Username), err)
 		return "", fmt.Errorf("invalid username or password")
 	}
 
+	// Compare the provided password with the stored hashed password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password))
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("Invalid password for user: %s", params.Username), err)
+		return "", fmt.Errorf("invalid username or password")
+	}
+
+	// Generate JWT token
+	token, err := shared.GenerateToken(params.Username, s.config.JWTSecret, s.config.JWTExpiry)
+	if err != nil {
+		s.logger.Error("Failed to generate token", err)
+		return "", fmt.Errorf("error generating token")
+	}
+
 	s.logger.Info(fmt.Sprintf("User verified successfully: %s", params.Username))
-	return user.ID, nil
+	return token, nil
 }
 
 func (s *Service) GetUser(params *GetDTO) (*DTO, error) {

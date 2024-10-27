@@ -1,6 +1,11 @@
 package user
 
 import (
+	"strconv"
+	"time"
+
+	"fmt"
+
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
@@ -27,10 +32,19 @@ type ServiceResult struct {
 }
 
 // NewService creates a new user service
-func NewService(repo RepositoryInterface, logger loggo.LoggerInterface) (ServiceResult, error) {
+func NewService(repo RepositoryInterface, logger loggo.LoggerInterface, cfg *config.Config) (ServiceResult, error) {
+	expiry, err := strconv.Atoi(cfg.JWTExpiry)
+	if err != nil {
+		return ServiceResult{}, fmt.Errorf("invalid JWTExpiry: %w", err)
+	}
+
 	service := &Service{
 		repo:   repo,
 		logger: logger,
+		config: &Config{
+			JWTSecret: cfg.JWTSecret,
+			JWTExpiry: time.Duration(expiry) * time.Minute,
+		},
 	}
 	return ServiceResult{Service: service}, nil
 }

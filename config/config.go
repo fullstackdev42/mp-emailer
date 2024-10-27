@@ -17,6 +17,10 @@ type Config struct {
 	DBPassword     string
 	DBPort         string
 	DBUser         string
+	JWTExpiry      string
+	JWTSecret      string
+	LogFile        string
+	LogLevel       string
 	MailgunAPIKey  string
 	MailgunDomain  string
 	MailpitHost    string
@@ -24,8 +28,6 @@ type Config struct {
 	MigrationsPath string
 	SessionName    string
 	SessionSecret  string
-	LogLevel       string
-	LogFile        string
 }
 
 // Load loads the configuration
@@ -42,6 +44,10 @@ func Load() (*Config, error) {
 		DBPassword:     os.Getenv("DB_PASSWORD"),
 		DBPort:         getEnv("DB_PORT", "3306"), // MariaDB default port
 		DBUser:         os.Getenv("DB_USER"),
+		JWTExpiry:      os.Getenv("JWT_EXPIRY"),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
+		LogFile:        os.Getenv("LOG_FILE"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		MailgunAPIKey:  getEnv("MAILGUN_API_KEY", ""),
 		MailgunDomain:  getEnv("MAILGUN_DOMAIN", ""),
 		MailpitHost:    getEnv("MAILPIT_HOST", "localhost"),
@@ -49,8 +55,6 @@ func Load() (*Config, error) {
 		MigrationsPath: getEnv("MIGRATIONS_PATH", "migrations"),
 		SessionName:    getEnv("SESSION_NAME", "mpe"),
 		SessionSecret:  os.Getenv("SESSION_SECRET"),
-		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		LogFile:        os.Getenv("LOG_FILE"),
 	}
 
 	if config.LogFile == "" {

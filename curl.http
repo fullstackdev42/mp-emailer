@@ -71,3 +71,59 @@ POST http://localhost:8080/representatives/lookup
 Content-Type: application/x-www-form-urlencoded
 
 postal_code=12345&type=MP
+
+### API Routes
+
+### Get all campaigns
+GET http://localhost:8080/api/campaigns
+
+### Get a specific campaign
+GET http://localhost:8080/api/campaigns/1
+
+### Create a new campaign
+POST http://localhost:8080/api/campaigns
+Content-Type: application/json
+
+{
+  "name": "API Test Campaign",
+  "description": "This is a test campaign created via API",
+  "template": "Hello \{\{name\}\}, this is your API-created campaign content.",
+  "owner_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+}
+
+### Update a campaign
+PUT http://localhost:8080/api/campaigns/1
+Content-Type: application/json
+
+{
+  "name": "Updated API Test Campaign",
+  "description": "This campaign has been updated via API",
+  "template": "Hello \{\{name\}\}, this is your updated API campaign content."
+}
+
+### Delete a campaign
+DELETE http://localhost:8080/api/campaigns/1
+
+### User Routes
+
+### Register a new user
+POST http://localhost:8080/api/users/register
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "securepassword"
+}
+
+### Login user
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "existinguser",
+  "password": "userpassword"
+}
+
+### Get user details
+GET http://localhost:8080/api/users/username
