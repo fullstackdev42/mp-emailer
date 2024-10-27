@@ -42,7 +42,6 @@ Content-Type: application/json
 {
   "name": "New Campaign",
   "description": "Campaign description",
-  "postal_code": "12345",
   "template": "Email template content"
 }
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -12,7 +13,7 @@ import (
 
 // RepositoryInterface defines the methods that a campaign repository must implement
 type RepositoryInterface interface {
-	Create(dto *CreateCampaignDTO) error
+	Create(dto *CreateCampaignDTO) (*Campaign, error)
 	GetAll() ([]Campaign, error)
 	Update(dto *UpdateCampaignDTO) error
 	Delete(dto DeleteCampaignDTO) error
@@ -28,17 +29,29 @@ type Repository struct {
 	logger loggo.LoggerInterface
 }
 
-func (r *Repository) Create(dto *CreateCampaignDTO) error {
+func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
 	result, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
 	if err != nil {
-		return fmt.Errorf("error creating campaign: %w", err)
+		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
-	_, err = result.LastInsertId()
+
+	id, err := result.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("error getting last insert ID: %w", err)
+		return nil, fmt.Errorf("error getting last insert ID: %w", err)
 	}
-	return nil
+
+	campaign := &Campaign{
+		ID:          int(id),
+		Name:        dto.Name,
+		Description: dto.Description,
+		Template:    dto.Template,
+		OwnerID:     dto.OwnerID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	return campaign, nil
 }
 
 func (r *Repository) GetAll() ([]Campaign, error) {

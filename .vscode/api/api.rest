@@ -1,55 +1,69 @@
 ### API Routes
 
+# Define variables
+@baseUrl = http://localhost:8080
+@apiVersion = v1
+
+### Login user
+# @name login
+POST {{baseUrl}}/api/user/login
+Content-Type: application/json
+
+{
+  "username": "foobar",
+  "password": "foobar123!"
+}
+
+### Store the token from the login response
+@authToken = {{login.response.body.token}}
+
+### Now use the token for subsequent requests
+
 ### Get all campaigns
-GET http://localhost:8080/api/campaigns
+GET {{baseUrl}}/api/campaign
+Authorization: Bearer {{authToken}}
 
 ### Get a specific campaign
-GET http://localhost:8080/api/campaigns/1
+GET {{baseUrl}}/api/campaign/3
+Authorization: Bearer {{authToken}}
 
 ### Create a new campaign
-POST http://localhost:8080/api/campaigns
+# @name createCampaign
+POST {{baseUrl}}/api/campaign
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "API Test Campaign",
   "description": "This is a test campaign created via API",
-  "template": "Hello \{\{name\}\}, this is your API-created campaign content.",
+  "template": "Hello {{name}}, this is your API-created campaign content.",
   "owner_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
 }
 
-### Update a campaign
-PUT http://localhost:8080/api/campaigns/1
+### Store the campaign ID from the create campaign response
+@campaignId = {{createCampaign.response.body.id}}
+
+### Now use the campaign ID for subsequent requests
+
+### Get the newly created campaign
+GET {{baseUrl}}/api/campaign/{{campaignId}}
+Authorization: Bearer {{authToken}}
+
+### Update the newly created campaign
+PUT {{baseUrl}}/api/campaign/{{campaignId}}
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "Updated API Test Campaign",
   "description": "This campaign has been updated via API",
-  "template": "Hello \{\{name\}\}, this is your updated API campaign content."
+  "template": "Hello {{name}}, this is your updated API campaign content."
 }
 
-### Delete a campaign
-DELETE http://localhost:8080/api/campaigns/1
-
-### User Routes
-
-### Register a new user
-POST http://localhost:8080/api/users/register
-Content-Type: application/json
-
-{
-  "username": "newuser",
-  "email": "newuser@example.com",
-  "password": "securepassword"
-}
-
-### Login user
-POST http://localhost:8080/api/users/login
-Content-Type: application/json
-
-{
-  "username": "existinguser",
-  "password": "userpassword"
-}
+### Delete the newly created campaign
+DELETE {{baseUrl}}/api/campaign/{{campaignId}}
+Authorization: Bearer {{authToken}}
 
 ### Get user details
-GET http://localhost:8080/api/users/username
+GET {{baseUrl}}/api/user/username
+Authorization: Bearer {{authToken}}

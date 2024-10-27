@@ -2,6 +2,7 @@ package campaign
 
 // CreateCampaignDTO represents the data structure for creating a new campaign
 type CreateCampaignDTO struct {
+	ID          int    `json:"id"`
 	Name        string `json:"name" validate:"required"`
 	Description string `json:"description" validate:"required"`
 	Template    string `json:"template" validate:"required"`

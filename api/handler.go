@@ -2,7 +2,9 @@ package api
 
 import (
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -11,11 +13,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Handler is the API handler
 type Handler struct {
 	campaignService campaign.ServiceInterface
 	userService     user.ServiceInterface
 	logger          loggo.LoggerInterface
 	errorHandler    *shared.ErrorHandler
+	jwtExpiry       int
 }
 
 func (h *Handler) GetCampaigns(c echo.Context) error {
@@ -45,10 +49,11 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	if err := h.campaignService.CreateCampaign(dto); err != nil {
+	createdCampaign, err := h.campaignService.CreateCampaign(dto)
+	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error creating campaign", http.StatusInternalServerError)
 	}
-	return c.JSON(http.StatusCreated, dto)
+	return c.JSON(http.StatusCreated, createdCampaign)
 }
 
 func (h *Handler) UpdateCampaign(c echo.Context) error {
@@ -116,4 +121,50 @@ func (h *Handler) GetUser(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching user", http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, userDetails)
+}
+
+func (h *Handler) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		authHeader := c.Request().Header.Get("Authorization")
+		h.logger.Debug("Auth header: " + authHeader)
+
+		if authHeader == "" {
+			h.logger.Warn("Missing Authorization header")
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Missing Authorization header"})
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		h.logger.Debug("Token: " + tokenString)
+
+		claims, err := shared.ValidateToken(tokenString, os.Getenv("JWT_SECRET"))
+		if err != nil {
+			h.logger.Error("Token validation error: ", err)
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+		}
+
+		if shared.IsTokenExpired(claims) {
+			h.logger.Warn("Token is expired")
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Token expired"})
+		}
+
+		h.logger.Info("Token validated successfully for user: " + claims.Username)
+		c.Set("username", claims.Username)
+		return next(c)
+	}
+}
+
+func (h *Handler) RegisterRoutes(e *echo.Echo) {
+	// Public routes
+	e.POST("/api/user/login", h.LoginUser)
+
+	// Protected routes
+	api := e.Group("/api")
+	api.Use(h.authMiddleware) // Apply the middleware to all routes in this group
+
+	api.GET("/campaign", h.GetCampaigns) // Changed from h.GetAllCampaigns
+	api.GET("/campaign/:id", h.GetCampaign)
+	api.POST("/campaign", h.CreateCampaign)
+	api.PUT("/campaign/:id", h.UpdateCampaign)
+	api.DELETE("/campaign/:id", h.DeleteCampaign)
+	api.GET("/user/:username", h.GetUser) // Changed from h.GetUserDetails
 }

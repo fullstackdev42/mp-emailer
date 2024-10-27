@@ -1,6 +1,9 @@
 package api
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
@@ -14,6 +17,7 @@ import (
 var Module = fx.Module("api",
 	fx.Provide(
 		NewHandler,
+		provideJWTExpiry,
 	),
 )
 
@@ -25,6 +29,7 @@ type HandlerParams struct {
 	UserService     user.ServiceInterface
 	Logger          loggo.LoggerInterface
 	ErrorHandler    *shared.ErrorHandler
+	JWTExpiry       int
 }
 
 // NewHandler creates a new API handler
@@ -34,5 +39,15 @@ func NewHandler(params HandlerParams) *Handler {
 		userService:     params.UserService,
 		logger:          params.Logger,
 		errorHandler:    params.ErrorHandler,
+		jwtExpiry:       params.JWTExpiry,
 	}
+}
+
+func provideJWTExpiry() (int, error) {
+	expiryStr := os.Getenv("JWT_EXPIRY")
+	expiry, err := strconv.Atoi(expiryStr)
+	if err != nil {
+		return 15, nil // Default to 15 minutes if not set or invalid
+	}
+	return expiry, nil
 }

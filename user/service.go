@@ -101,7 +101,7 @@ func (s *Service) VerifyUser(params *LoginDTO) (string, error) {
 	}
 
 	// Generate JWT token
-	token, err := shared.GenerateToken(params.Username, s.config.JWTSecret, s.config.JWTExpiry)
+	token, err := shared.GenerateToken(params.Username, s.config.JWTSecret, int(s.config.JWTExpiry.Minutes()))
 	if err != nil {
 		s.logger.Error("Failed to generate token", err)
 		return "", fmt.Errorf("error generating token")

@@ -69,7 +69,6 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 type CreateCampaignParams struct {
 	Name        string `form:"name"`
 	Description string `form:"description"`
-	PostalCode  string `form:"postal_code"`
 	Template    string `form:"template"`
 	OwnerID     string // This will be set from the session
 }
@@ -94,12 +93,13 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		Template:    params.Template,
 		OwnerID:     params.OwnerID,
 	}
-	if err := h.service.CreateCampaign(dto); err != nil {
+	campaign, err := h.service.CreateCampaign(dto)
+	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error creating campaign", http.StatusInternalServerError)
 	}
 
-	h.logger.Info("Campaign created successfully", "ownerID", ownerID)
-	return c.Redirect(http.StatusSeeOther, "/campaigns")
+	h.logger.Info("Campaign created successfully", "campaignID", campaign.ID, "ownerID", ownerID)
+	return c.Redirect(http.StatusSeeOther, "/campaign")
 }
 
 type DeleteCampaignParams struct {

@@ -22,7 +22,7 @@ type ComposeEmailParams struct {
 }
 
 type ServiceInterface interface {
-	CreateCampaign(dto *CreateCampaignDTO) error
+	CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error)
 	UpdateCampaign(dto *UpdateCampaignDTO) error
 	GetCampaignByID(params GetCampaignParams) (*Campaign, error)
 	GetAllCampaigns() ([]Campaign, error)
@@ -36,13 +36,18 @@ type Service struct {
 	validate *validator.Validate
 }
 
-func (s *Service) CreateCampaign(dto *CreateCampaignDTO) error {
+func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	err := s.validate.Struct(dto)
 	if err != nil {
-		return fmt.Errorf("invalid input: %w", err)
+		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
-	return s.repo.Create(dto)
+	campaign, err := s.repo.Create(dto)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create campaign: %w", err)
+	}
+
+	return campaign, nil
 }
 
 func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
