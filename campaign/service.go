@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jonesrussell/loggo"
 )
 
 // GetCampaignParams defines parameters for fetching a campaign
@@ -38,22 +37,17 @@ type ServiceInterface interface {
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
-	logger   loggo.LoggerInterface
 }
 
 // CreateCampaign creates a new campaign
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	err := s.validate.Struct(dto)
 	if err != nil {
-		// Log validation errors
-		s.logger.Error("Invalid input for CreateCampaign", err)
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
 	campaign, err := s.repo.Create(dto)
 	if err != nil {
-		// Log repository errors
-		s.logger.Error("Failed to create campaign in repository", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
 

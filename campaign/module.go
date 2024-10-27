@@ -42,8 +42,7 @@ var Module = fx.Options(
 // NewRepository creates a new campaign repository
 func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 	return &Repository{
-		db:     params.DB,
-		logger: params.Logger,
+		db: params.DB,
 	}, nil
 }
 

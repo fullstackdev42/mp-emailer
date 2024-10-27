@@ -8,7 +8,6 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/jonesrussell/loggo"
 )
 
 // RepositoryInterface defines the methods that a campaign repository must implement
@@ -24,27 +23,22 @@ type RepositoryInterface interface {
 // Ensure that Repository implements RepositoryInterface
 var _ RepositoryInterface = (*Repository)(nil)
 
-// Repository handles the database operations for campaigns
+// Repository handles CRUD operations for campaigns
 type Repository struct {
-	db     *database.DB
-	logger loggo.LoggerInterface
+	db *database.DB
 }
 
-// Create inserts a new campaign into the database
+// Create creates a new campaign in the database
 func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
 	result, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
 	if err != nil {
-		r.logger.Error("Error creating campaign", err)
 		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
-
 	id, err := result.LastInsertId()
 	if err != nil {
-		r.logger.Error("Error getting last insert ID", err)
 		return nil, fmt.Errorf("error getting last insert ID: %w", err)
 	}
-
 	campaign := &Campaign{
 		ID:          int(id),
 		Name:        dto.Name,
@@ -62,12 +56,12 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns"
 	rows, err := r.db.SQL.Query(query)
 	if err != nil {
-		r.logger.Error("Error querying campaigns", err)
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
 	defer func(rows *sql.Rows) {
-		if err := rows.Close(); err != nil {
-			r.logger.Error("Error closing rows", err)
+		err := rows.Close()
+		if err != nil {
+			fmt.Printf("Error closing rows: %v\n", err)
 		}
 	}(rows)
 
@@ -77,7 +71,6 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 		var createdAt, updatedAt sql.NullString
 		err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
 		if err != nil {
-			r.logger.Error("Error scanning campaign", err)
 			return nil, fmt.Errorf("error scanning campaign: %w", err)
 		}
 		c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
@@ -85,29 +78,26 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 		campaigns = append(campaigns, c)
 	}
 	if err = rows.Err(); err != nil {
-		r.logger.Error("Error iterating campaigns", err)
 		return nil, fmt.Errorf("error iterating campaigns: %w", err)
 	}
 	return campaigns, nil
 }
 
-// Update modifies an existing campaign in the database
+// Update updates an existing campaign in the database
 func (r *Repository) Update(dto *UpdateCampaignDTO) error {
 	query := "UPDATE campaigns SET name = ?, description = ?, template = ?, updated_at = NOW() WHERE id = ?"
 	_, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.ID)
 	if err != nil {
-		r.logger.Error("Error updating campaign", err)
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
 	return nil
 }
 
-// Delete removes a campaign from the database
+// Delete deletes a campaign from the database
 func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 	query := "DELETE FROM campaigns WHERE id = ?"
 	_, err := r.db.SQL.Exec(query, dto.ID)
 	if err != nil {
-		r.logger.Error("Error deleting campaign", err)
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
 	return nil
@@ -117,7 +107,6 @@ func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
 	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
 	row := r.db.SQL.QueryRow(query, dto.ID)
-
 	var c Campaign
 	var createdAt, updatedAt sql.NullString
 	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
@@ -125,7 +114,6 @@ func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
 		}
-		r.logger.Error("Error scanning campaign", err)
 		return nil, fmt.Errorf("error scanning campaign: %w", err)
 	}
 	c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
