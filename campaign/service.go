@@ -11,17 +11,19 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-// Parameter objects (for internal service use)
+// GetCampaignParams defines parameters for fetching a campaign
 type GetCampaignParams struct {
 	ID int
 }
 
+// ComposeEmailParams defines parameters for composing an email
 type ComposeEmailParams struct {
 	MP       Representative
 	Campaign *Campaign
 	UserData map[string]string
 }
 
+// ServiceInterface defines the methods of the campaign service
 type ServiceInterface interface {
 	CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error)
 	UpdateCampaign(dto *UpdateCampaignDTO) error
@@ -32,23 +34,25 @@ type ServiceInterface interface {
 	ComposeEmail(params ComposeEmailParams) string
 }
 
+// Service implements the campaign service
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
 	logger   loggo.LoggerInterface
 }
 
+// CreateCampaign creates a new campaign
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	err := s.validate.Struct(dto)
 	if err != nil {
-		// Keep this error log as it's contextual and critical
+		// Log validation errors
 		s.logger.Error("Invalid input for CreateCampaign", err)
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
 	campaign, err := s.repo.Create(dto)
 	if err != nil {
-		// This error is also important to log here
+		// Log repository errors
 		s.logger.Error("Failed to create campaign in repository", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
@@ -56,6 +60,7 @@ func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	return campaign, nil
 }
 
+// UpdateCampaign updates an existing campaign
 func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	err := s.validate.Struct(dto)
 	if err != nil {
@@ -65,10 +70,12 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	return s.repo.Update(dto)
 }
 
+// GetCampaignByID retrieves a campaign by ID
 func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
 	return s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 }
 
+// GetAllCampaigns retrieves all campaigns
 func (s *Service) GetAllCampaigns() ([]Campaign, error) {
 	campaigns, err := s.repo.GetAll()
 	if err != nil {
@@ -77,6 +84,7 @@ func (s *Service) GetAllCampaigns() ([]Campaign, error) {
 	return campaigns, nil
 }
 
+// DeleteCampaign deletes a campaign by ID
 func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
 	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 	if err != nil {
@@ -85,6 +93,7 @@ func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
 	if campaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
+
 	err = s.repo.Delete(DeleteCampaignDTO{ID: params.ID})
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
@@ -92,6 +101,7 @@ func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
 	return nil
 }
 
+// FetchCampaign retrieves a campaign by parameters
 func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
 	campaign, err := s.repo.GetCampaign(GetCampaignDTO{ID: params.ID})
 	if err != nil {
@@ -103,6 +113,7 @@ func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
 	return campaign, nil
 }
 
+// ComposeEmail composes an email using campaign data and user data
 func (s *Service) ComposeEmail(params ComposeEmailParams) string {
 	emailTemplate := params.Campaign.Template
 	for key, value := range params.UserData {

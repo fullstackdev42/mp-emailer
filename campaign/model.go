@@ -2,6 +2,7 @@ package campaign
 
 import "time"
 
+// Campaign represents an email campaign.
 type Campaign struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
@@ -13,6 +14,7 @@ type Campaign struct {
 	Tokens      []string  `json:"tokens"`
 }
 
+// Representative represents a government representative.
 type Representative struct {
 	Name              string   `json:"name"`
 	DistrictName      string   `json:"district_name"`
@@ -30,6 +32,7 @@ type Representative struct {
 	RepresentativeSet string   `json:"representative_set_name"`
 }
 
+// Office represents an office held by a representative.
 type Office struct {
 	Fax    string `json:"fax"`
 	Tel    string `json:"tel"`
@@ -37,11 +40,13 @@ type Office struct {
 	Postal string `json:"postal"`
 }
 
+// Extra contains additional information about a representative.
 type Extra struct {
 	Roles              []string `json:"roles"`
 	PreferredLanguages []string `json:"preferred_languages"`
 }
 
+// APIResponse represents a response from the API containing representatives.
 type APIResponse struct {
 	RepresentativesCentroid []Representative `json:"representatives_centroid"`
 }
