@@ -1,3 +1,10 @@
+-- @block Get all users
+-- @conn MPEmailerDB
+-- @label Get all users
+-- @group Users
+-- @name getAllUsers
+SELECT * FROM users;
+
 -- @block Verify new user registration
 -- @conn MPEmailerDB
 -- @label Check new user
