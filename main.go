@@ -32,11 +32,11 @@ func main() {
 			newLogger,
 			newDB,
 			newSessionStore,
+			provideValidator,
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
 			provideTemplateFS,
 			newEcho,
 			provideTemplates,
-			provideValidator,
 			fx.Annotated{
 				Name: "representativeLookupBaseURL",
 				Target: func(cfg *config.Config) string {

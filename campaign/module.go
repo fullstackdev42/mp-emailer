@@ -11,6 +11,8 @@ import (
 )
 
 // Module defines the campaign module
+//
+//nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
 		NewRepository,
@@ -68,19 +70,21 @@ func NewHandler(params HandlerParams) *Handler {
 	}
 }
 
-// Define the missing structs
+// ServiceParams for dependency injection
 type ServiceParams struct {
 	fx.In
 	Repo     RepositoryInterface
 	Validate *validator.Validate
 }
 
+// RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
 	DB     *database.DB
 	Logger loggo.LoggerInterface
 }
 
+// ClientParams for dependency injection
 type ClientParams struct {
 	fx.In
 	Logger        loggo.LoggerInterface

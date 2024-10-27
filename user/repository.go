@@ -9,7 +9,6 @@ import (
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
-	"go.uber.org/fx"
 )
 
 // RepositoryInterface defines the methods that a user repository must implement
@@ -26,22 +25,6 @@ var _ RepositoryInterface = (*Repository)(nil)
 type Repository struct {
 	db     *database.DB
 	logger loggo.LoggerInterface
-}
-
-// RepositoryParams defines the parameters for creating a new Repository
-type RepositoryParams struct {
-	fx.In
-
-	DB     *database.DB
-	Logger loggo.LoggerInterface
-}
-
-// NewRepository creates a new Repository instance
-func NewRepository(params RepositoryParams) RepositoryInterface {
-	return &Repository{
-		db:     params.DB,
-		logger: params.Logger,
-	}
 }
 
 // CreateUser creates a new user
