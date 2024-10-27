@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jonesrussell/loggo"
 )
 
 // Parameter objects (for internal service use)
@@ -34,16 +35,21 @@ type ServiceInterface interface {
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
+	logger   loggo.LoggerInterface
 }
 
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	err := s.validate.Struct(dto)
 	if err != nil {
+		// Keep this error log as it's contextual and critical
+		s.logger.Error("Invalid input for CreateCampaign", err)
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
 	campaign, err := s.repo.Create(dto)
 	if err != nil {
+		// This error is also important to log here
+		s.logger.Error("Failed to create campaign in repository", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
 

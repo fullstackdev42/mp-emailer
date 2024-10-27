@@ -13,31 +13,33 @@ import (
 // Module defines the campaign module
 //
 //nolint:gochecknoglobals
-var Module = fx.Module("campaign",
+var Module = fx.Options(
 	fx.Provide(
 		NewRepository,
-		NewService,
-		NewHandler,
-		NewRepresentativeLookupService,
 		NewClient,
-		fx.Annotated{
-			Name: "representativeLookupBaseURL",
-			Target: func() string {
-				return "https://represent.opennorth.ca"
+		fx.Annotate(
+			NewRepresentativeLookupService,
+			fx.ParamTags(`name:"representativeLookupBaseURL"`, `name:"representativeLogger"`),
+		),
+		fx.Annotate(
+			func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) (ServiceInterface, error) {
+				serviceParams := ServiceParams{
+					Repo:     repo,
+					Validate: validate,
+				}
+				serviceResult, err := NewService(serviceParams)
+				if err != nil {
+					return nil, err
+				}
+				return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
 			},
-		},
-		validator.New,
+			fx.As(new(ServiceInterface)),
+		),
+		NewHandler,
 	),
 )
 
 // NewRepository creates a new campaign repository
-type RepositoryParams struct {
-	fx.In
-
-	DB     *database.DB
-	Logger loggo.LoggerInterface
-}
-
 func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 	return &Repository{
 		db:     params.DB,
@@ -46,13 +48,6 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 }
 
 // NewService creates a new campaign service
-type ServiceParams struct {
-	fx.In
-
-	Repo     RepositoryInterface
-	Validate *validator.Validate
-}
-
 func NewService(params ServiceParams) (ServiceResult, error) {
 	service := ServiceResult{
 		Service: &Service{
@@ -89,6 +84,25 @@ func NewHandler(params HandlerParams) *Handler {
 	}
 }
 
+// Define the missing structs
+type ServiceParams struct {
+	fx.In
+	Repo     RepositoryInterface
+	Validate *validator.Validate
+}
+
+type RepositoryParams struct {
+	fx.In
+	DB     *database.DB
+	Logger loggo.LoggerInterface
+}
+
+type ClientParams struct {
+	fx.In
+	Logger        loggo.LoggerInterface
+	LookupService RepresentativeLookupServiceInterface
+}
+
 // ServiceResult is the output struct for NewService
 type ServiceResult struct {
 	fx.Out
@@ -112,28 +126,14 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 }
 
 // NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
-type RepresentativeLookupServiceParams struct {
-	fx.In
-
-	Logger  loggo.LoggerInterface
-	BaseURL string `name:"representativeLookupBaseURL"`
-}
-
-func NewRepresentativeLookupService(params RepresentativeLookupServiceParams) (RepresentativeLookupServiceInterface, error) {
+func NewRepresentativeLookupService(baseURL string, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
 	return &RepresentativeLookupService{
-		logger:  params.Logger,
-		baseURL: params.BaseURL,
-	}, nil
+		logger:  logger,
+		baseURL: baseURL,
+	}
 }
 
 // NewClient creates a new instance of ClientInterface
-type ClientParams struct {
-	fx.In
-
-	Logger        loggo.LoggerInterface
-	LookupService RepresentativeLookupServiceInterface
-}
-
 func NewClient(params ClientParams) (ClientInterface, error) {
 	client := &DefaultClient{
 		logger:        params.Logger,

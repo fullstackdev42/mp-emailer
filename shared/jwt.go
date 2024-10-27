@@ -29,7 +29,7 @@ func GenerateToken(username string, secret string, expirationMinutes int) (strin
 func ValidateToken(tokenString string, secret string) (*Claims, error) {
 	claims := &Claims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 

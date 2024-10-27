@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -16,6 +17,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -34,6 +36,19 @@ func main() {
 			provideTemplateFS,
 			newEcho,
 			provideTemplates,
+			provideValidator,
+			fx.Annotated{
+				Name: "representativeLookupBaseURL",
+				Target: func(cfg *config.Config) string {
+					return cfg.RepresentativeLookupBaseURL
+				},
+			},
+			fx.Annotated{
+				Name: "representativeLogger",
+				Target: func(logger loggo.LoggerInterface) loggo.LoggerInterface {
+					return logger
+				},
+			},
 		),
 		shared.Module,
 		user.Module,
@@ -61,17 +76,22 @@ func registerRoutes(
 
 	// Middleware for logging
 	e.Use(middleware.Logger())
+
 	// Middleware for rate limiting
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+
 	// Add the auth middleware
 	e.Use(user.AuthMiddleware(sessionStore, cfg))
 
 	// Register server routes
 	server.RegisterRoutes(serverHandler, e)
+
 	// Register campaign routes
 	campaign.RegisterRoutes(campaignHandler, e)
+
 	// Register user routes
 	user.RegisterRoutes(userHandler, e)
+
 	// Register API routes with JWT secret
 	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
 
@@ -135,9 +155,23 @@ func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DatabaseDSN()
-	return database.NewDB(dsn, logger)
+	var db *database.DB
+	var err error
+	for retries := 5; retries > 0; retries-- {
+		db, err = database.NewDB(dsn, logger)
+		if err == nil {
+			return db, nil
+		}
+		logger.Warn("Failed to connect to database, retrying...", "error", err)
+		time.Sleep(5 * time.Second)
+	}
+	return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
 }
 
 func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
+}
+
+func provideValidator() *validator.Validate {
+	return validator.New()
 }
