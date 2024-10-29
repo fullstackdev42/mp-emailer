@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"time"
 
@@ -34,9 +32,7 @@ func main() {
 			newSessionStore,
 			provideValidator,
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
-			provideTemplateFS,
 			newEcho,
-			provideTemplates,
 			fx.Annotated{
 				Name: "representativeLookupBaseURL",
 				Target: func(cfg *config.Config) string {
@@ -128,20 +124,6 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			return nil
 		},
 	})
-}
-
-//go:embed web/templates/**/*
-var templateFS embed.FS
-
-// Provide templateFS to the fx container
-func provideTemplateFS() embed.FS {
-	return templateFS
-}
-
-// Provide a *template.Template to the fx container
-func provideTemplates() *template.Template {
-	// Load your templates here
-	return template.Must(template.ParseGlob("web/templates/**/*.gohtml"))
 }
 
 // Provide a new Echo instance
