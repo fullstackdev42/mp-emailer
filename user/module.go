@@ -16,22 +16,42 @@ import (
 //nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
-		NewRepository,
-		fx.Annotate(func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface, cfg *config.Config) (ServiceInterface, error) {
-			serviceParams := ServiceParams{
-				Repo:     repo,
-				Validate: validate,
-				cfg:      cfg,
-			}
-			serviceResult, err := NewService(serviceParams)
-			if err != nil {
-				return nil, err
-			}
-			return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
-		}, fx.As(new(ServiceInterface))),
+		fx.Annotate(
+			NewRepository,
+			fx.As(new(RepositoryInterface)),
+		),
+		fx.Annotate(
+			func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface, cfg *config.Config) (ServiceInterface, error) {
+				serviceParams := ServiceParams{
+					Repo:     repo,
+					Validate: validate,
+					cfg:      cfg,
+				}
+				serviceResult, err := NewService(serviceParams)
+				if err != nil {
+					return nil, err
+				}
+				return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
+			},
+			fx.As(new(ServiceInterface)),
+		),
 		NewHandler,
 	),
 )
+
+// ServiceParams for dependency injection
+type ServiceParams struct {
+	fx.In
+	Repo     RepositoryInterface
+	Validate *validator.Validate
+	cfg      *config.Config
+}
+
+// ServiceResult is the output struct for NewService
+type ServiceResult struct {
+	fx.Out
+	Service ServiceInterface
+}
 
 // NewService creates a new user service
 func NewService(params ServiceParams) (ServiceResult, error) {
@@ -44,15 +64,39 @@ func NewService(params ServiceParams) (ServiceResult, error) {
 	return service, nil
 }
 
-// NewRepository creates a new user repository
-func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
-	return &Repository{db: params.DB}, nil
+// RepositoryParams for dependency injection
+type RepositoryParams struct {
+	fx.In
+	DB     *database.DB
+	Logger loggo.LoggerInterface
 }
 
-// ServiceResult is the output struct for NewService
-type ServiceResult struct {
+// RepositoryResult is the output struct for NewRepository
+type RepositoryResult struct {
 	fx.Out
-	Service ServiceInterface
+	Repository RepositoryInterface `group:"repositories"`
+}
+
+// NewRepository creates a new user repository
+func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
+	repo := &Repository{
+		db: params.DB,
+	}
+	return repo, nil
+}
+
+// HandlerParams for dependency injection
+type HandlerParams struct {
+	fx.In
+
+	Config          *config.Config
+	Logger          loggo.LoggerInterface
+	Service         ServiceInterface
+	Store           sessions.Store
+	TemplateManager *shared.CustomTemplateRenderer
+	Repo            RepositoryInterface
+	ErrorHandler    *shared.ErrorHandler
+	FlashHandler    *shared.FlashHandler
 }
 
 // HandlerResult is the output struct for NewHandler
@@ -62,34 +106,19 @@ type HandlerResult struct {
 }
 
 // NewHandler creates a new user handler
-func NewHandler(cfg *config.Config, logger loggo.LoggerInterface, service ServiceInterface, sessions sessions.Store, templateManager *shared.CustomTemplateRenderer, repo RepositoryInterface, errorHandler *shared.ErrorHandler, flashHandler *shared.FlashHandler) (HandlerResult, error) {
+func NewHandler(params HandlerParams) (HandlerResult, error) {
 	handler := &Handler{
-		service:         service,
-		Logger:          logger,
-		Store:           sessions,
-		SessionName:     cfg.SessionName,
-		Config:          cfg,
-		templateManager: *templateManager,
-		repo:            repo,
-		errorHandler:    errorHandler,
-		flashHandler:    flashHandler,
+		service:         params.Service,
+		Logger:          params.Logger,
+		Store:           params.Store,
+		SessionName:     params.Config.SessionName,
+		Config:          params.Config,
+		templateManager: *params.TemplateManager,
+		repo:            params.Repo,
+		errorHandler:    params.ErrorHandler,
+		flashHandler:    params.FlashHandler,
 	}
 	return HandlerResult{Handler: handler}, nil
-}
-
-// ServiceParams for dependency injection
-type ServiceParams struct {
-	fx.In
-	Repo     RepositoryInterface
-	Validate *validator.Validate
-	cfg      *config.Config
-}
-
-// RepositoryParams for dependency injection
-type RepositoryParams struct {
-	fx.In
-	DB     *database.DB
-	Logger loggo.LoggerInterface
 }
 
 // RegisterRoutes registers the user routes
