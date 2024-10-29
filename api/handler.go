@@ -23,7 +23,7 @@ type Handler struct {
 }
 
 func (h *Handler) GetCampaigns(c echo.Context) error {
-	campaigns, err := h.campaignService.GetAllCampaigns()
+	campaigns, err := h.campaignService.GetCampaigns()
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
@@ -162,10 +162,10 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	api := e.Group("/api")
 	api.Use(h.authMiddleware) // Apply the middleware to all routes in this group
 
-	api.GET("/campaign", h.GetCampaigns) // Changed from h.GetAllCampaigns
+	api.GET("/campaigns", h.GetCampaigns)
 	api.GET("/campaign/:id", h.GetCampaign)
 	api.POST("/campaign", h.CreateCampaign)
 	api.PUT("/campaign/:id", h.UpdateCampaign)
 	api.DELETE("/campaign/:id", h.DeleteCampaign)
-	api.GET("/user/:username", h.GetUser) // Changed from h.GetUserDetails
+	api.GET("/user/:username", h.GetUser)
 }

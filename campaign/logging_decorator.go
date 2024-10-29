@@ -46,9 +46,9 @@ func (d *LoggingServiceDecorator) GetCampaignByID(params GetCampaignParams) (*Ca
 	return campaign, err
 }
 
-func (d *LoggingServiceDecorator) GetAllCampaigns() ([]Campaign, error) {
+func (d *LoggingServiceDecorator) GetCampaigns() ([]Campaign, error) {
 	d.Logger.Info("Fetching all campaigns")
-	campaigns, err := d.service.GetAllCampaigns()
+	campaigns, err := d.service.GetCampaigns()
 	if err != nil {
 		d.Logger.Error("Failed to fetch all campaigns", err)
 	}

@@ -215,12 +215,12 @@ func (_c *MockServiceInterface_FetchCampaign_Call) RunAndReturn(run func(int) (*
 	return _c
 }
 
-// GetAllCampaigns provides a mock function with given fields:
-func (_m *MockServiceInterface) GetAllCampaigns() ([]Campaign, error) {
+// GetCampaigns provides a mock function with given fields:
+func (_m *MockServiceInterface) GetCampaigns() ([]Campaign, error) {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetAllCampaigns")
+		panic("no return value specified for GetCampaigns")
 	}
 
 	var r0 []Campaign
@@ -245,29 +245,29 @@ func (_m *MockServiceInterface) GetAllCampaigns() ([]Campaign, error) {
 	return r0, r1
 }
 
-// MockServiceInterface_GetAllCampaigns_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAllCampaigns'
-type MockServiceInterface_GetAllCampaigns_Call struct {
+// MockServiceInterface_GetCampaigns_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCampaigns'
+type MockServiceInterface_GetCampaigns_Call struct {
 	*mock.Call
 }
 
-// GetAllCampaigns is a helper method to define mock.On call
-func (_e *MockServiceInterface_Expecter) GetAllCampaigns() *MockServiceInterface_GetAllCampaigns_Call {
-	return &MockServiceInterface_GetAllCampaigns_Call{Call: _e.mock.On("GetAllCampaigns")}
+// GetCampaigns is a helper method to define mock.On call
+func (_e *MockServiceInterface_Expecter) GetCampaigns() *MockServiceInterface_GetCampaigns_Call {
+	return &MockServiceInterface_GetCampaigns_Call{Call: _e.mock.On("GetCampaigns")}
 }
 
-func (_c *MockServiceInterface_GetAllCampaigns_Call) Run(run func()) *MockServiceInterface_GetAllCampaigns_Call {
+func (_c *MockServiceInterface_GetCampaigns_Call) Run(run func()) *MockServiceInterface_GetCampaigns_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockServiceInterface_GetAllCampaigns_Call) Return(_a0 []Campaign, _a1 error) *MockServiceInterface_GetAllCampaigns_Call {
+func (_c *MockServiceInterface_GetCampaigns_Call) Return(_a0 []Campaign, _a1 error) *MockServiceInterface_GetCampaigns_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockServiceInterface_GetAllCampaigns_Call) RunAndReturn(run func() ([]Campaign, error)) *MockServiceInterface_GetAllCampaigns_Call {
+func (_c *MockServiceInterface_GetCampaigns_Call) RunAndReturn(run func() ([]Campaign, error)) *MockServiceInterface_GetCampaigns_Call {
 	_c.Call.Return(run)
 	return _c
 }

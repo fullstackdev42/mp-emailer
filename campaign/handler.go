@@ -40,10 +40,10 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	return h.renderTemplate(c, "campaign", map[string]interface{}{"Campaign": campaign})
 }
 
-// GetAllCampaigns handles GET requests for all campaigns
-func (h *Handler) GetAllCampaigns(c echo.Context) error {
-	h.logger.Debug("Handling GetAllCampaigns request")
-	campaigns, err := h.service.GetAllCampaigns()
+// GetCampaigns handles GET requests for all campaigns
+func (h *Handler) GetCampaigns(c echo.Context) error {
+	h.logger.Debug("Handling GetCampaigns request")
+	campaigns, err := h.service.GetCampaigns()
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
@@ -92,7 +92,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Error creating campaign", http.StatusInternalServerError)
 	}
 	h.logger.Info("Campaign created successfully", "campaignID", campaign.ID, "ownerID", ownerID)
-	return c.Redirect(http.StatusSeeOther, "/campaign")
+	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(campaign.ID))
 }
 
 // DeleteCampaignParams defines the parameters for deleting a campaign

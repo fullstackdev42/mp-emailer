@@ -110,7 +110,7 @@ type HandlerResult struct {
 
 // RegisterRoutes registers the campaign routes
 func RegisterRoutes(h *Handler, e *echo.Echo) {
-	e.GET("/campaign", h.GetAllCampaigns)
+	e.GET("/campaign", h.GetCampaigns)
 	e.POST("/campaign", h.CreateCampaign)
 	e.GET("/campaign/:id", h.CampaignGET)
 	e.PUT("/campaign/:id", h.EditCampaign)

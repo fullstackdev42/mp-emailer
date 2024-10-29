@@ -28,7 +28,7 @@ type ServiceInterface interface {
 	CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error)
 	UpdateCampaign(dto *UpdateCampaignDTO) error
 	GetCampaignByID(params GetCampaignParams) (*Campaign, error)
-	GetAllCampaigns() ([]Campaign, error)
+	GetCampaigns() ([]Campaign, error)
 	DeleteCampaign(params DeleteCampaignParams) error
 	FetchCampaign(params GetCampaignParams) (*Campaign, error)
 	ComposeEmail(params ComposeEmailParams) string
@@ -71,8 +71,8 @@ func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
 	return s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 }
 
-// GetAllCampaigns retrieves all campaigns
-func (s *Service) GetAllCampaigns() ([]Campaign, error) {
+// GetCampaigns retrieves all campaigns
+func (s *Service) GetCampaigns() ([]Campaign, error) {
 	campaigns, err := s.repo.GetAll()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get campaigns: %w", err)

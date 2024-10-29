@@ -25,7 +25,7 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
 
 	// Fetch campaigns using the campaign service
-	campaigns, err := h.campaignService.GetAllCampaigns()
+	campaigns, err := h.campaignService.GetCampaigns()
 	if err != nil {
 		h.Logger.Error("Error fetching campaigns", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
