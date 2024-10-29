@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
@@ -56,4 +58,13 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 	}
 	viewData["TemplateContent"] = template.HTML(content.String())
 	return t.templates.ExecuteTemplate(w, "app", viewData)
+}
+
+func (t *CustomTemplateRenderer) RenderPage(c echo.Context, template string, pageData PageData, logger loggo.LoggerInterface, errorHandler *ErrorHandler) error {
+	err := t.Render(c.Response(), template, pageData, c)
+	if err != nil {
+		logger.Error("Failed to render template", err)
+		return errorHandler.HandleHTTPError(c, err, "Failed to render page", http.StatusInternalServerError)
+	}
+	return nil
 }
