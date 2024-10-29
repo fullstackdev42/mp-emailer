@@ -27,7 +27,7 @@ type Handler struct {
 // RegisterGET handler for the register page
 func (h *Handler) RegisterGET(c echo.Context) error {
 	h.Logger.Debug("RegisterGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
-	pageData := shared.PageData{
+	pageData := shared.Data{
 		Title:   "Register",
 		Content: nil,
 	}
@@ -55,7 +55,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 // LoginGET handler for the login page
 func (h *Handler) LoginGET(c echo.Context) error {
 	h.Logger.Debug("LoginGET handler invoked", "method", c.Request().Method, "uri", c.Request().RequestURI)
-	pageData := shared.PageData{
+	pageData := shared.Data{
 		Title:   "Login",
 		Content: nil,
 	}
@@ -107,7 +107,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 	params := &GetDTO{Username: c.Param("username")}
 	user, err := h.service.GetUser(params)
 	if err != nil {
-		return h.templateManager.RenderPage(c, "error", shared.PageData{Title: "Error", Content: map[string]interface{}{"Message": "User not found", "Username": params.Username}}, h.Logger, h.errorHandler)
+		return h.templateManager.RenderPage(c, "error", shared.Data{Title: "Error", Content: map[string]interface{}{"Message": "User not found", "Username": params.Username}}, h.Logger, h.errorHandler)
 	}
-	return h.templateManager.RenderPage(c, "user_details", shared.PageData{Title: "User Details", Content: map[string]interface{}{"User": user}}, h.Logger, h.errorHandler)
+	return h.templateManager.RenderPage(c, "user_details", shared.Data{Title: "User Details", Content: map[string]interface{}{"User": user}}, h.Logger, h.errorHandler)
 }

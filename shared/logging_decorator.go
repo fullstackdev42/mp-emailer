@@ -24,3 +24,18 @@ func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInt
 		Logger:  logger,
 	}
 }
+
+func (d *LoggingServiceDecorator) Info(message string, params ...interface{}) {
+	d.Logger.Info(message, params...)
+	d.Service.Info(message, params...)
+}
+
+func (d *LoggingServiceDecorator) Warn(message string, params ...interface{}) {
+	d.Logger.Warn(message, params...)
+	d.Service.Warn(message, params...)
+}
+
+func (d *LoggingServiceDecorator) Error(message string, err error, params ...interface{}) {
+	d.Logger.Error(message, err, params...)
+	d.Service.Error(message, err, params...)
+}

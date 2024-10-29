@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .Data.Title}}{{.Data.Title}} - {{end}}MP Emailer</title>
+    <title>{{if .Title}}{{.Title}} - {{end}}MP Emailer</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
@@ -20,7 +20,7 @@
         <!-- Page Heading -->
         <header class="bg-white shadow">
             <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{if .Data.Title}}{{.Data.Title}}{{else}}MP Emailer{{end}}</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{if .Title}}{{.Title}}{{else}}MP Emailer{{end}}</h1>
             </div>
         </header>
 
@@ -48,7 +48,7 @@
                 </div>
                 {{end}}
 
-                {{if .Data.Error}}
+                {{if .Error}}
                 <div class="mb-8">
                     <div class="rounded-md bg-red-50 p-4">
                         <div class="flex">
@@ -59,7 +59,7 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm font-medium text-red-800">{{.Data.Error}}</p>
+                                <p class="text-sm font-medium text-red-800">{{.Error}}</p>
                             </div>
                         </div>
                     </div>
@@ -67,7 +67,7 @@
                 {{end}}
 
                 <!-- Page Content -->
-                {{.Data.Content}}
+                {{.Content}}
             </div>
         </main>
 

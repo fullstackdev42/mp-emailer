@@ -17,7 +17,7 @@ func NewErrorHandler(logger loggo.LoggerInterface) *ErrorHandler {
 
 func (eh *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, statusCode int) error {
 	eh.Logger.Error("Unhandled error", err, "url", c.Request().URL.String())
-	return c.Render(statusCode, "error", PageData{
+	return c.Render(statusCode, "error", Data{
 		Title:   http.StatusText(statusCode),
 		Content: map[string]string{"message": message},
 	})
