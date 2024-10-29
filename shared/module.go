@@ -7,10 +7,10 @@ import (
 // Module defines the shared module
 //
 //nolint:gochecknoglobals
-var Module = fx.Module(
-	"shared",
+var Module = fx.Options(
 	fx.Provide(
 		NewErrorHandler,
+		NewFlashHandler,
 		NewCustomTemplateRenderer,
 	),
 )
