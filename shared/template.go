@@ -58,13 +58,27 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
+	// Initialize pageData with proper authentication state
 	pageData, ok := data.(Data)
 	if !ok {
-		pageData = Data{Content: data, Title: name} // default to template name if title not specified
+		pageData = Data{
+			Content: data,
+			Title:   name, // default to template name if title not specified
+		}
 	}
 
+	// Get authentication state from context and session
+	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
+	if !isAuthenticated {
+		// Double check session if context value is false
+		isAuthenticated = session.Values["authenticated"] == true
+	}
+	pageData.IsAuthenticated = isAuthenticated
+
+	// Set other required fields
 	pageData.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
 	pageData.PageName = name
+
 	// Convert interface{} flashes to strings
 	messages := make([]string, len(flashes))
 	for i, flash := range flashes {
@@ -91,6 +105,10 @@ func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data 
 
 // RenderPage with improved error handling
 func (t *CustomTemplateRenderer) RenderPage(c echo.Context, templateName string, pageData Data, logger loggo.LoggerInterface, errorHandler *ErrorHandler) error {
+	// Ensure authentication state is set
+	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
+	pageData.IsAuthenticated = isAuthenticated
+
 	if err := t.Render(c.Response(), templateName, pageData, c); err != nil {
 		logger.Error("Failed to render template", err)
 		return errorHandler.HandleHTTPError(c, err, "Failed to render page", http.StatusInternalServerError)

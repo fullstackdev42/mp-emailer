@@ -47,11 +47,9 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
-	isAuthenticated, _ := c.Get("isAuthenticated").(bool)
 	h.logger.Debug("Rendering all campaigns", "count", len(campaigns))
 	return h.renderTemplate(c, "campaigns", map[string]interface{}{
-		"Campaigns":       campaigns,
-		"IsAuthenticated": isAuthenticated,
+		"Campaigns": campaigns,
 	})
 }
 

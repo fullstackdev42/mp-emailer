@@ -22,7 +22,6 @@ type Handler struct {
 // HandleIndex page handler
 func (h *Handler) HandleIndex(c echo.Context) error {
 	h.Logger.Debug("Handling index request")
-	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
 
 	// Fetch campaigns using the campaign service
 	campaigns, err := h.campaignService.GetCampaigns()
@@ -32,9 +31,8 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"Title":           "Home",
-		"Campaigns":       campaigns,
-		"IsAuthenticated": isAuthenticated,
+		"Title":     "Home",
+		"Campaigns": campaigns,
 	}
 
 	return h.templateManager.Render(c.Response(), "home", data, c)

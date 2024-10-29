@@ -39,8 +39,13 @@ func GetOwnerIDFromSession(c echo.Context) (string, error) {
 func AuthMiddleware(sessionStore sessions.Store, config *config.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			sess, _ := sessionStore.Get(c.Request(), config.SessionName)
-			c.Set("IsAuthenticated", sess.Values["authenticated"] == true)
+			sess, err := sessionStore.Get(c.Request(), config.SessionName)
+			if err != nil {
+				fmt.Printf("Session error: %v\n", err)
+			}
+			isAuthenticated := sess.Values["authenticated"] == true
+			c.Set("IsAuthenticated", isAuthenticated)
+
 			return next(c)
 		}
 	}
