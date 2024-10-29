@@ -62,7 +62,7 @@ type HandlerResult struct {
 }
 
 // NewHandler creates a new user handler
-func NewHandler(cfg *config.Config, logger loggo.LoggerInterface, service ServiceInterface, sessions sessions.Store, templateManager *shared.CustomTemplateRenderer, repo RepositoryInterface, errorHandler *shared.ErrorHandler) (HandlerResult, error) {
+func NewHandler(cfg *config.Config, logger loggo.LoggerInterface, service ServiceInterface, sessions sessions.Store, templateManager *shared.CustomTemplateRenderer, repo RepositoryInterface, errorHandler *shared.ErrorHandler, flashHandler *shared.FlashHandler) (HandlerResult, error) {
 	handler := &Handler{
 		service:         service,
 		Logger:          logger,
@@ -72,6 +72,7 @@ func NewHandler(cfg *config.Config, logger loggo.LoggerInterface, service Servic
 		templateManager: *templateManager,
 		repo:            repo,
 		errorHandler:    errorHandler,
+		flashHandler:    flashHandler,
 	}
 	return HandlerResult{Handler: handler}, nil
 }
@@ -93,9 +94,10 @@ type RepositoryParams struct {
 
 // RegisterRoutes registers the user routes
 func RegisterRoutes(h *Handler, e *echo.Echo) {
-	e.GET("/user/register", h.RegisterGET)
-	e.POST("/user/register", h.RegisterPOST)
-	e.GET("/user/login", h.LoginGET)
-	e.POST("/user/login", h.LoginPOST)
-	e.GET("/user/logout", h.LogoutGET)
+	userGroup := e.Group("/user")
+	userGroup.GET("/register", h.RegisterGET)
+	userGroup.POST("/register", h.RegisterPOST)
+	userGroup.GET("/login", h.LoginGET)
+	userGroup.POST("/login", h.LoginPOST)
+	userGroup.GET("/logout", h.LogoutGET)
 }

@@ -4,6 +4,8 @@ General Guidelines
 - Confirm the plan, then write code.
 - Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go 1.23 code.
 - Use taskfile.dev over makefiles and build scripts.
+- Use github.com/jonesrussell/loggo for logging.
+- Use echo/v4 for web development.
 
 Web Application Development
 - Use Echo for web application development.
@@ -15,7 +17,6 @@ Web Application Development
 - Implement input validation for form submissions and user interactions.
 - Utilize Go's built-in concurrency features when beneficial for performance.
 - Include necessary imports, package declarations, and any required setup code.
-- Implement proper logging using github.com/jonesrussell/loggo v0.3.0.
 - Consider implementing middleware for cross-cutting concerns (e.g., logging, authentication).
 - Implement rate limiting and authentication/authorization when appropriate
 - Leave NO todos, placeholders, or missing pieces in the implementation.
