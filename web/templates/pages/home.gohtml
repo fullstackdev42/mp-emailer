@@ -1,17 +1,21 @@
 {{define "home"}}
 <main class="max-w-4xl mx-auto p-8">
-    <h2 class="text-2xl font-bold mb-6">Active Campaigns</h2>
-    {{if .Data.Campaigns}}
-        {{template "campaign_list" .Data.Campaigns}}
-    {{else}}
-        <p class="text-gray-600 text-lg">No active campaigns at the moment. Check back soon!</p>
-    {{end}}
-    
+
     <section class="mt-12">
         <h2 class="text-2xl font-bold mb-4">About MP Emailer</h2>
         <p>MP Emailer is a platform designed to help citizens easily contact their Members of Parliament on important
             issues. We believe in empowering individuals to participate in the democratic process and make their voices
             heard.</p>
+    </section>
+
+    <section class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">Active Campaigns</h2>
+
+        {{if .Data.Campaigns}}
+            {{template "campaign_list" .Data.Campaigns}}
+        {{else}}
+            <p class="text-gray-600 text-lg">No active campaigns at the moment. Check back soon!</p>
+        {{end}}
     </section>
 </main>
 {{end}}
