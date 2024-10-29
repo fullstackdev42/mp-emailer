@@ -6,34 +6,47 @@ import (
 	"html/template"
 	"io"
 
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
-
-// Make sure this interface is exported
-// TemplateRenderer interface
-type TemplateRenderer interface {
-	Render(w io.Writer, name string, data interface{}, c echo.Context) error
-}
 
 // CustomTemplateRenderer is a custom renderer for Echo
 type CustomTemplateRenderer struct {
 	templates *template.Template
 }
 
-// Update the constructor to return the interface
-// NewTemplateRenderer creates a new TemplateRendererImpl
-func NewTemplateRenderer(templates *template.Template) TemplateRenderer {
-	return &CustomTemplateRenderer{
-		templates: templates,
-	}
+// NewCustomTemplateRenderer creates a new CustomTemplateRenderer
+func NewCustomTemplateRenderer(templates *template.Template) *CustomTemplateRenderer {
+	return &CustomTemplateRenderer{templates: templates}
 }
 
 // Render renders a template document
 func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	// Get the session store from the context
+	store, ok := c.Get("store").(sessions.Store)
+	if !ok {
+		return fmt.Errorf("could not get session store from context")
+	}
+
+	// Use the same session name as in the handlers
+	session, err := store.Get(c.Request(), "mpe")
+	if err != nil {
+		c.Logger().Errorf("failed to get session: %v", err)
+		return err
+	}
+
+	// Get and clear flash messages
+	flashes := session.Flashes("messages")
+	if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+		c.Logger().Errorf("failed to save session: %v", err)
+		return err
+	}
+
 	viewData := map[string]interface{}{
 		"Data":      data,
 		"RequestID": c.Response().Header().Get(echo.HeaderXRequestID),
 		"PageName":  name,
+		"Messages":  flashes,
 	}
 
 	var content bytes.Buffer
@@ -41,29 +54,6 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		c.Logger().Errorf("failed to execute template %s: %v", name, err)
 		return fmt.Errorf("failed to execute template %s: %w", name, err)
 	}
-
 	viewData["TemplateContent"] = template.HTML(content.String())
-
 	return t.templates.ExecuteTemplate(w, "app", viewData)
-}
-
-type TemplateManager struct {
-	templates *template.Template
-}
-
-func (tm *TemplateManager) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
-	viewData := make(map[string]interface{})
-	if data != nil {
-		viewData["Data"] = data
-	}
-
-	var content bytes.Buffer
-	if err := tm.templates.ExecuteTemplate(&content, name, viewData); err != nil {
-		return fmt.Errorf("failed to execute template %s: %w", name, err)
-	}
-
-	viewData["TemplateContent"] = template.HTML(content.String())
-	viewData["PageName"] = name // Add this line to pass the page name to the layout
-
-	return tm.templates.ExecuteTemplate(w, "app", viewData)
 }

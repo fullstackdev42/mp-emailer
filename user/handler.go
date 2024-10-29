@@ -1,7 +1,6 @@
 package user
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/config"
@@ -21,7 +20,7 @@ type Handler struct {
 	SessionName     string
 	Config          *config.Config
 	errorHandler    *shared.ErrorHandler
-	templateManager shared.TemplateRenderer
+	templateManager shared.CustomTemplateRenderer
 }
 
 // LoginUserParams for logging in a user
@@ -52,14 +51,6 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 
 // RegisterPOST handler for the register page
 func (h *Handler) RegisterPOST(c echo.Context) error {
-	// First check if dependencies are initialized
-	if h.repo == nil || h.service == nil {
-		return h.errorHandler.HandleHTTPError(c,
-			errors.New("repository or service is not initialized"),
-			"Internal server error",
-			http.StatusInternalServerError)
-	}
-
 	// Parse form values
 	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
@@ -79,8 +70,24 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 			http.StatusInternalServerError)
 	}
 
+	// Set success message in context
+	sess, err := h.Store.Get(c.Request(), h.SessionName)
+	if err != nil {
+		return h.errorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+	}
+
+	h.Logger.Debug("Setting flash message",
+		"session_name", h.SessionName,
+		"message", "Registration successful! Please log in.")
+
+	sess.AddFlash("Registration successful! Please log in.", "messages")
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		h.Logger.Error("Failed to save session", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+	}
+
 	// Redirect on success
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(http.StatusSeeOther, "/user/login")
 }
 
 // LoginGET handler for the login page
@@ -97,17 +104,45 @@ func (h *Handler) LoginGET(c echo.Context) error {
 func (h *Handler) LoginPOST(c echo.Context) error {
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
+		h.Logger.Error("Failed to bind login params", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
 	h.Logger.Info("Login attempt", "username", params.Username)
 	user, err := h.repo.GetUserByUsername(params.Username)
+	if err != nil {
+		h.Logger.Error("Failed to get user by username", err, "username", params.Username)
+	}
 	if err != nil || user == nil {
-		return h.templateManager.Render(c.Response(), "login", map[string]interface{}{"Error": "Invalid username or password"}, c)
+		h.Logger.Info("User not found or error occurred", "username", params.Username)
+		sess, err := h.Store.Get(c.Request(), h.SessionName)
+		if err != nil {
+			return h.errorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		}
+		sess.AddFlash("Invalid username or password", "messages")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+		}
+		return c.Redirect(http.StatusSeeOther, "/user/login")
 	}
 
+	h.Logger.Debug("Comparing passwords",
+		"username", params.Username,
+		"stored_hash_length", len(user.PasswordHash),
+		"provided_password_length", len(params.Password))
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
-		return h.templateManager.Render(c.Response(), "login", map[string]interface{}{"Error": "Invalid username or password"}, c)
+		h.Logger.Error("Password comparison failed", err,
+			"username", params.Username)
+		sess, err := h.Store.Get(c.Request(), h.SessionName)
+		if err != nil {
+			return h.errorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		}
+		sess.AddFlash("Invalid username or password", "messages")
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+		}
+		return c.Redirect(http.StatusSeeOther, "/user/login")
 	}
 
 	h.Logger.Info("Password verified", "username", params.Username)
@@ -122,6 +157,9 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	sess.Values["user_id"] = user.ID
 	sess.Values["username"] = user.Username
 	sess.Values["authenticated"] = true
+
+	// Add success flash message
+	sess.AddFlash("Successfully logged in!", "messages")
 
 	// Save the session
 	if err := sess.Save(c.Request(), c.Response()); err != nil {

@@ -44,14 +44,9 @@ func (db *DB) UserExists(username, email string) (bool, error) {
 	return count > 0, nil
 }
 
-func (db *DB) CreateUser(id, username, email, password string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("error hashing password: %w", err)
-	}
-
+func (db *DB) CreateUser(id, username, email, passwordHash string) error {
 	query := "INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)"
-	_, err = db.SQL.Exec(query, id, username, email, string(hashedPassword))
+	_, err := db.SQL.Exec(query, id, username, email, passwordHash)
 	if err != nil {
 		return fmt.Errorf("error creating user: %w", err)
 	}

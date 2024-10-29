@@ -20,7 +20,7 @@ type Handler struct {
 	emailService                email.Service
 	client                      ClientInterface
 	errorHandler                *shared.ErrorHandler
-	templateRenderer            shared.TemplateRenderer
+	templateRenderer            *shared.CustomTemplateRenderer
 }
 
 // CampaignGET handles GET requests for campaign details

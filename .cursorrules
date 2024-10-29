@@ -1,5 +1,6 @@
 General Guidelines
 - Use Uber's fx dependency injection.
+- Use github.com/gorilla/sessions for session management.
 - Confirm the plan, then write code.
 - Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go 1.23 code.
 - Use taskfile.dev over makefiles and build scripts.

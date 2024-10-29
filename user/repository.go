@@ -14,7 +14,7 @@ import (
 // RepositoryInterface defines the methods that a user repository must implement
 type RepositoryInterface interface {
 	UserExists(params *CreateDTO) (bool, error)
-	CreateUser(params *CreateDTO) (*User, error) // Updated return type
+	CreateUser(params *CreateDTO) (*User, error)
 	GetUserByUsername(username string) (*User, error)
 	// Add any other methods that the Repository struct implements
 }

@@ -23,7 +23,7 @@ var Module = fx.Module("server",
 func NewHandler(
 	logger loggo.LoggerInterface,
 	store sessions.Store,
-	tm shared.TemplateRenderer,
+	tm *shared.CustomTemplateRenderer,
 	cs campaign.ServiceInterface,
 	eh *shared.ErrorHandler,
 	es email.Service,

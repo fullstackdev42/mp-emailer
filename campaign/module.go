@@ -21,12 +21,12 @@ var Module = fx.Options(
 			fx.ParamTags(`name:"representativeLookupBaseURL"`, `name:"representativeLogger"`),
 		),
 		fx.Annotate(func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) (ServiceInterface, error) {
-			serviceParams := ServiceParams{Repo: repo, Validate: validate}
+			serviceParams := ServiceParams{Repo: repo, Validate: validate, Logger: logger}
 			serviceResult, err := NewService(serviceParams)
 			if err != nil {
 				return nil, err
 			}
-			return NewCampaignLoggingServiceDecorator(serviceResult.Service, logger), nil
+			return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
 		}, fx.As(new(ServiceInterface))),
 		NewHandler,
 	),
@@ -40,7 +40,11 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 // NewService creates a new campaign service
 func NewService(params ServiceParams) (ServiceResult, error) {
 	service := ServiceResult{
-		Service: &Service{repo: params.Repo, validate: params.Validate},
+		Service: &Service{
+			repo:     params.Repo,
+			validate: params.Validate,
+			logger:   params.Logger,
+		},
 	}
 	return service, nil
 }
@@ -54,7 +58,7 @@ type HandlerParams struct {
 	EmailService                email.Service
 	Client                      ClientInterface
 	ErrorHandler                *shared.ErrorHandler
-	TemplateRenderer            shared.TemplateRenderer
+	TemplateRenderer            *shared.CustomTemplateRenderer
 }
 
 // NewHandler initializes a new Handler
@@ -75,6 +79,7 @@ type ServiceParams struct {
 	fx.In
 	Repo     RepositoryInterface
 	Validate *validator.Validate
+	Logger   loggo.LoggerInterface
 }
 
 // RepositoryParams for dependency injection

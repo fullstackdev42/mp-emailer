@@ -67,12 +67,20 @@ func registerRoutes(
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
 	apiHandler *api.Handler,
-	renderer shared.TemplateRenderer,
+	renderer *shared.CustomTemplateRenderer,
 	sessionStore sessions.Store,
 	cfg *config.Config,
 ) {
 	// Set the custom renderer
 	e.Renderer = renderer
+
+	// Add session store to context
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("store", sessionStore)
+			return next(c)
+		}
+	})
 
 	// Middleware for logging
 	e.Use(middleware.Logger())

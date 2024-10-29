@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jonesrussell/loggo"
 )
 
 // GetCampaignParams defines parameters for fetching a campaign
@@ -31,27 +32,16 @@ type ServiceInterface interface {
 	DeleteCampaign(params DeleteCampaignParams) error
 	FetchCampaign(params GetCampaignParams) (*Campaign, error)
 	ComposeEmail(params ComposeEmailParams) string
-}
-
-// Error implements shared.ServiceInterface.
-func (s *Service) Error(message string, err error) {
-	panic("unimplemented")
-}
-
-// Info implements shared.ServiceInterface.
-func (s *Service) Info(message string) {
-	panic("unimplemented")
-}
-
-// Warn implements shared.ServiceInterface.
-func (s *Service) Warn(message string, err error) {
-	panic("unimplemented")
+	Error(message string, err error, params ...interface{})
+	Info(message string, params ...interface{})
+	Warn(message string, params ...interface{})
 }
 
 // Service implements the campaign service
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
+	logger   loggo.LoggerInterface
 }
 
 // CreateCampaign creates a new campaign
@@ -60,12 +50,10 @@ func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
-
 	campaign, err := s.repo.Create(dto)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
-
 	return campaign, nil
 }
 
@@ -75,7 +63,6 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	if err != nil {
 		return fmt.Errorf("invalid input: %w", err)
 	}
-
 	return s.repo.Update(dto)
 }
 
@@ -102,7 +89,6 @@ func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
 	if campaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
-
 	err = s.repo.Delete(DeleteCampaignDTO{ID: params.ID})
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
@@ -133,4 +119,19 @@ func (s *Service) ComposeEmail(params ComposeEmailParams) string {
 	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", params.MP.Email)
 	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
 	return emailTemplate
+}
+
+// Error implements the ServiceInterface for logging errors
+func (s *Service) Error(message string, err error, params ...interface{}) {
+	s.logger.Error(message, err, params...)
+}
+
+// Info implements the ServiceInterface for logging information
+func (s *Service) Info(message string, params ...interface{}) {
+	s.logger.Info(message, params...)
+}
+
+// Warn implements the ServiceInterface for logging warnings
+func (s *Service) Warn(message string, params ...interface{}) {
+	s.logger.Warn(message, params...)
 }
