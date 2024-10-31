@@ -12,8 +12,7 @@ import (
 )
 
 // Module defines the user module
-//
-//nolint:gochecknoglobals
+// nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
 		fx.Annotate(NewRepository,
