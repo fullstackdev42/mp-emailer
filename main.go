@@ -33,18 +33,12 @@ func main() {
 			validator.New,
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
 			echo.New,
-			fx.Annotated{
-				Name: "representativeLookupBaseURL",
-				Target: func(cfg *config.Config) string {
-					return cfg.RepresentativeLookupBaseURL
-				},
-			},
-			fx.Annotated{
-				Name: "representativeLogger",
-				Target: func(logger loggo.LoggerInterface) loggo.LoggerInterface {
-					return logger
-				},
-			},
+			fx.Annotated{Name: "representativeLookupBaseURL", Target: func(cfg *config.Config) string {
+				return cfg.RepresentativeLookupBaseURL
+			}},
+			fx.Annotated{Name: "representativeLogger", Target: func(logger loggo.LoggerInterface) loggo.LoggerInterface {
+				return logger
+			}},
 		),
 		shared.Module,
 		user.Module,
@@ -87,16 +81,10 @@ func registerRoutes(
 	// Add the auth middleware
 	e.Use(user.AuthMiddleware(sessionStore, cfg))
 
-	// Register server routes
+	// Register routes
 	server.RegisterRoutes(serverHandler, e)
-
-	// Register campaign routes
 	campaign.RegisterRoutes(campaignHandler, e)
-
-	// Register user routes
 	user.RegisterRoutes(userHandler, e)
-
-	// Register API routes with JWT secret
 	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
 
 	// Serve static files from the "static" directory
