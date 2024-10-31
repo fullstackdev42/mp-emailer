@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 )
 

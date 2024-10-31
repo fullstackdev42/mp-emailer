@@ -6,7 +6,7 @@ dir: "mocks/{{.PackageName}}"
 
 packages:
 
-  github.com/fullstackdev42/mp-emailer/internal/database:
+  github.com/fullstackdev42/mp-emailer/database:
     interfaces:
       Migrator:
 

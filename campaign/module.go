@@ -2,8 +2,8 @@ package campaign
 
 import (
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/email"
-	"github.com/fullstackdev42/mp-emailer/internal/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/go-playground/validator/v10"
 	"github.com/jonesrussell/loggo"

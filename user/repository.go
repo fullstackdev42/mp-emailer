@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/internal/database"
+	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
