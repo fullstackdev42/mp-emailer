@@ -18,46 +18,34 @@ var Module = fx.Options(
 		fx.Annotate(NewRepository,
 			fx.As(new(RepositoryInterface)),
 		),
-		fx.Annotate(func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface, cfg *config.Config) (ServiceInterface, error) {
-			serviceParams := ServiceParams{
-				Repo:     repo,
-				Validate: validate,
-				Cfg:      cfg,
-			}
-			serviceResult, err := NewService(serviceParams)
-			if err != nil {
-				return nil, err
-			}
-			// Wrapping the service with the LoggingServiceDecorator
-			return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
-		},
+		fx.Annotate(NewService,
 			fx.As(new(ServiceInterface)),
 		),
 		NewHandler,
+	),
+	// Add module-level decoration
+	fx.Decorate(
+		func(base ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
+			return NewLoggingServiceDecorator(base, logger)
+		},
 	),
 )
 
 // ServiceParams for dependency injection
 type ServiceParams struct {
+	fx.In
 	Repo     RepositoryInterface
 	Validate *validator.Validate
 	Cfg      *config.Config
 }
 
-// ServiceResult is the output struct for NewService
-type ServiceResult struct {
-	fx.Out
-	Service ServiceInterface
-}
-
 // NewService creates a new user service
-func NewService(params ServiceParams) (ServiceResult, error) {
-	service := &Service{
+func NewService(params ServiceParams) ServiceInterface {
+	return &Service{
 		repo:     params.Repo,
 		validate: params.Validate,
 		cfg:      params.Cfg,
 	}
-	return ServiceResult{Service: service}, nil
 }
 
 // RepositoryParams for dependency injection

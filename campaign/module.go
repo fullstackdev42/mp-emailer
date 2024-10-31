@@ -14,7 +14,7 @@ import (
 // Module defines the campaign module
 //
 //nolint:gochecknoglobals
-var Module = fx.Module("campaign",
+var Module = fx.Options(
 	fx.Provide(
 		// Repository
 		fx.Annotate(
@@ -23,41 +23,24 @@ var Module = fx.Module("campaign",
 		),
 		// Base service
 		fx.Annotate(
-			func(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
-				service := &Service{
-					repo:     repo,
-					validate: validate,
-				}
-				return service
-			},
-			fx.As(new(ServiceInterface)),
-			fx.ResultTags(`group:"campaign_services"`),
-		),
-		// Logging decorator
-		fx.Annotate(
-			func(params struct {
-				fx.In
-				Services []ServiceInterface `group:"campaign_services"`
-				Logger   loggo.LoggerInterface
-			}) ServiceInterface {
-				baseService := params.Services[0]
-				return NewLoggingServiceDecorator(baseService, params.Logger)
-			},
+			NewService,
 			fx.As(new(ServiceInterface)),
 		),
 		fx.Annotate(
-			func(logger loggo.LoggerInterface, cfg *config.Config) RepresentativeLookupServiceInterface {
-				return NewRepresentativeLookupService(cfg.RepresentativeLookupBaseURL, logger)
-			},
+			NewRepresentativeLookupService,
 			fx.As(new(RepresentativeLookupServiceInterface)),
 		),
 		fx.Annotate(
-			func(params ClientParams) (ClientInterface, error) {
-				return NewClient(params)
-			},
+			NewClient,
 			fx.As(new(ClientInterface)),
 		),
 		NewHandler,
+	),
+	// Add module-level decoration
+	fx.Decorate(
+		func(base ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
+			return NewLoggingServiceDecorator(base, logger)
+		},
 	),
 )
 
@@ -108,11 +91,19 @@ func NewHandler(params HandlerParams) (HandlerResult, error) {
 	return HandlerResult{Handler: handler}, nil
 }
 
+// NewService creates a new campaign service
+func NewService(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
+	return &Service{
+		repo:     repo,
+		validate: validate,
+	}
+}
+
 // NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
-func NewRepresentativeLookupService(baseURL string, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
+func NewRepresentativeLookupService(cfg *config.Config, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
 	return &RepresentativeLookupService{
 		logger:  logger,
-		baseURL: baseURL,
+		baseURL: cfg.RepresentativeLookupBaseURL,
 	}
 }
 
