@@ -39,6 +39,13 @@ func main() {
 			fx.Annotated{Name: "representativeLogger", Target: func(logger loggo.LoggerInterface) loggo.LoggerInterface {
 				return logger
 			}},
+			fx.Annotate(
+				func(logger loggo.LoggerInterface) shared.ErrorHandlerInterface {
+					baseHandler := shared.NewErrorHandler()
+					return shared.NewLoggingErrorHandlerDecorator(baseHandler, logger)
+				},
+				fx.As(new(shared.ErrorHandlerInterface)),
+			),
 		),
 		shared.Module,
 		user.Module,
@@ -47,6 +54,7 @@ func main() {
 		api.Module,
 		fx.Invoke(registerRoutes, startServer),
 	)
+
 	app.Run()
 }
 

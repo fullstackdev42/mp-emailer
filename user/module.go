@@ -22,7 +22,7 @@ var Module = fx.Options(
 			serviceParams := ServiceParams{
 				Repo:     repo,
 				Validate: validate,
-				cfg:      cfg,
+				Cfg:      cfg,
 			}
 			serviceResult, err := NewService(serviceParams)
 			if err != nil {
@@ -39,10 +39,9 @@ var Module = fx.Options(
 
 // ServiceParams for dependency injection
 type ServiceParams struct {
-	fx.In
 	Repo     RepositoryInterface
 	Validate *validator.Validate
-	cfg      *config.Config
+	Cfg      *config.Config
 }
 
 // ServiceResult is the output struct for NewService
@@ -56,6 +55,7 @@ func NewService(params ServiceParams) (ServiceResult, error) {
 	service := &Service{
 		repo:     params.Repo,
 		validate: params.Validate,
+		cfg:      params.Cfg,
 	}
 	return ServiceResult{Service: service}, nil
 }
@@ -85,12 +85,11 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 type HandlerParams struct {
 	fx.In
 	Config          *config.Config
-	Logger          loggo.LoggerInterface
 	Service         ServiceInterface
 	Store           sessions.Store
 	TemplateManager *shared.CustomTemplateRenderer
 	Repo            RepositoryInterface
-	ErrorHandler    *shared.ErrorHandler
+	ErrorHandler    shared.ErrorHandlerInterface
 	FlashHandler    *shared.FlashHandler
 }
 
@@ -104,7 +103,6 @@ type HandlerResult struct {
 func NewHandler(params HandlerParams) (HandlerResult, error) {
 	handler := &Handler{
 		service:         params.Service,
-		Logger:          params.Logger,
 		Store:           params.Store,
 		SessionName:     params.Config.SessionName,
 		Config:          params.Config,

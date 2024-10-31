@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
 
@@ -104,13 +103,12 @@ func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data 
 }
 
 // RenderPage with improved error handling
-func (t *CustomTemplateRenderer) RenderPage(c echo.Context, templateName string, pageData Data, logger loggo.LoggerInterface, errorHandler *ErrorHandler) error {
+func (t *CustomTemplateRenderer) RenderPage(c echo.Context, templateName string, pageData Data, errorHandler ErrorHandlerInterface) error {
 	// Ensure authentication state is set
 	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
 	pageData.IsAuthenticated = isAuthenticated
 
 	if err := t.Render(c.Response(), templateName, pageData, c); err != nil {
-		logger.Error("Failed to render template", err)
 		return errorHandler.HandleHTTPError(c, err, "Failed to render page", http.StatusInternalServerError)
 	}
 	return nil
