@@ -30,9 +30,9 @@ func main() {
 			newLogger,
 			newDB,
 			newSessionStore,
-			provideValidator,
+			validator.New,
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
-			newEcho,
+			echo.New,
 			fx.Annotated{
 				Name: "representativeLookupBaseURL",
 				Target: func(cfg *config.Config) string {
@@ -107,7 +107,6 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			go func() {
-				logger.Debug("Server starting")
 				logger.Info(fmt.Sprintf("Starting server on :%s", config.AppPort))
 				if err := e.Start(":" + config.AppPort); !errors.Is(err, http.ErrServerClosed) {
 					logger.Error("Error starting server", err)
@@ -116,7 +115,7 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logger.Debug("Server shutting down")
+			logger.Info("Server shutting down")
 			if err := e.Shutdown(ctx); err != nil {
 				logger.Error("Error shutting down server", err)
 				return err
@@ -124,11 +123,6 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			return nil
 		},
 	})
-}
-
-// Provide a new Echo instance
-func newEcho() *echo.Echo {
-	return echo.New()
 }
 
 // Provide a new logger
@@ -160,8 +154,4 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, erro
 
 func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
-}
-
-func provideValidator() *validator.Validate {
-	return validator.New()
 }

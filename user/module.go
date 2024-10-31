@@ -16,23 +16,22 @@ import (
 //nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
-		fx.Annotate(
-			NewRepository,
+		fx.Annotate(NewRepository,
 			fx.As(new(RepositoryInterface)),
 		),
-		fx.Annotate(
-			func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface, cfg *config.Config) (ServiceInterface, error) {
-				serviceParams := ServiceParams{
-					Repo:     repo,
-					Validate: validate,
-					cfg:      cfg,
-				}
-				serviceResult, err := NewService(serviceParams)
-				if err != nil {
-					return nil, err
-				}
-				return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
-			},
+		fx.Annotate(func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface, cfg *config.Config) (ServiceInterface, error) {
+			serviceParams := ServiceParams{
+				Repo:     repo,
+				Validate: validate,
+				cfg:      cfg,
+			}
+			serviceResult, err := NewService(serviceParams)
+			if err != nil {
+				return nil, err
+			}
+			// Wrapping the service with the LoggingServiceDecorator
+			return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
+		},
 			fx.As(new(ServiceInterface)),
 		),
 		NewHandler,
@@ -55,13 +54,11 @@ type ServiceResult struct {
 
 // NewService creates a new user service
 func NewService(params ServiceParams) (ServiceResult, error) {
-	service := ServiceResult{
-		Service: &Service{
-			repo:     params.Repo,
-			validate: params.Validate,
-		},
+	service := &Service{
+		repo:     params.Repo,
+		validate: params.Validate,
 	}
-	return service, nil
+	return ServiceResult{Service: service}, nil
 }
 
 // RepositoryParams for dependency injection
@@ -88,7 +85,6 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 // HandlerParams for dependency injection
 type HandlerParams struct {
 	fx.In
-
 	Config          *config.Config
 	Logger          loggo.LoggerInterface
 	Service         ServiceInterface
