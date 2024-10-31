@@ -27,8 +27,10 @@ func main() {
 	app := fx.New(
 		fx.Provide(
 			config.Load,
-			newLogger,
-			newDB,
+			fx.Annotate(
+				newDB,
+				fx.As(new(database.Interface)),
+			),
 			newSessionStore,
 			validator.New,
 			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
@@ -134,15 +136,16 @@ func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 }
 
 // Provide a new database connection
-func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
+func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DatabaseDSN()
-	var db *database.DB
 	var err error
 	for retries := 5; retries > 0; retries-- {
-		db, err = database.NewDB(dsn, logger)
+		baseDB, err := database.NewDB(dsn, logger)
 		if err == nil {
-			return db, nil
+			// Wrap the base DB with the logging decorator
+			decorated := database.NewLoggingDBDecorator(baseDB, logger)
+			return decorated, nil
 		}
 		logger.Warn("Failed to connect to database, retrying...", "error", err)
 		time.Sleep(5 * time.Second)

@@ -54,7 +54,7 @@ var Module = fx.Options(
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     *database.DB
+	DB     database.Interface
 	Logger loggo.LoggerInterface
 }
 

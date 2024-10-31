@@ -22,7 +22,7 @@ type RepositoryInterface interface {
 var _ RepositoryInterface = (*Repository)(nil)
 
 type Repository struct {
-	db     *database.DB
+	db     database.Interface
 	logger loggo.LoggerInterface
 }
 
@@ -46,7 +46,7 @@ func (r *Repository) CreateUser(params *CreateDTO) (*User, error) {
 // GetUserByUsername gets a user by username
 func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	query := `SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = ?`
-	row := r.db.SQL.QueryRow(query, username)
+	row := r.db.QueryRow(query, username)
 
 	var user User
 	var createdAt, updatedAt sql.NullString
@@ -69,7 +69,7 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 func (r *Repository) UserExists(params *CreateDTO) (bool, error) {
 	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
 	var count int
-	err := r.db.SQL.QueryRow(query, params.Username, params.Email).Scan(&count)
+	err := r.db.QueryRow(query, params.Username, params.Email).Scan(&count)
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("Error checking user existence: %s, %s", params.Username, params.Email), err)
 		return false, fmt.Errorf("error checking user existence: %w", err)

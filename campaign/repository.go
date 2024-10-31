@@ -25,13 +25,13 @@ var _ RepositoryInterface = (*Repository)(nil)
 
 // Repository handles CRUD operations for campaigns
 type Repository struct {
-	db *database.DB
+	db database.Interface
 }
 
 // Create creates a new campaign in the database
 func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
-	result, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
+	result, err := r.db.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
 	if err != nil {
 		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
@@ -54,7 +54,7 @@ func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 // GetAll retrieves all campaigns from the database
 func (r *Repository) GetAll() ([]Campaign, error) {
 	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns"
-	rows, err := r.db.SQL.Query(query)
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
@@ -86,7 +86,7 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 // Update updates an existing campaign in the database
 func (r *Repository) Update(dto *UpdateCampaignDTO) error {
 	query := "UPDATE campaigns SET name = ?, description = ?, template = ?, updated_at = NOW() WHERE id = ?"
-	_, err := r.db.SQL.Exec(query, dto.Name, dto.Description, dto.Template, dto.ID)
+	_, err := r.db.Exec(query, dto.Name, dto.Description, dto.Template, dto.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
@@ -96,7 +96,7 @@ func (r *Repository) Update(dto *UpdateCampaignDTO) error {
 // Delete deletes a campaign from the database
 func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 	query := "DELETE FROM campaigns WHERE id = ?"
-	_, err := r.db.SQL.Exec(query, dto.ID)
+	_, err := r.db.Exec(query, dto.ID)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
@@ -106,7 +106,7 @@ func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 // GetByID retrieves a campaign by its ID
 func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
 	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
-	row := r.db.SQL.QueryRow(query, dto.ID)
+	row := r.db.QueryRow(query, dto.ID)
 	var c Campaign
 	var createdAt, updatedAt sql.NullString
 	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)

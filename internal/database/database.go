@@ -11,12 +11,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Interface defines the contract for database operations
+type Interface interface {
+	UserExists(username, email string) (bool, error)
+	CreateUser(id, username, email, passwordHash string) error
+	LoginUser(username, password string) (string, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
 type DB struct {
 	SQL    *sql.DB
 	logger loggo.LoggerInterface
 }
 
-func NewDB(dsn string, logger loggo.LoggerInterface) (*DB, error) {
+func NewDB(dsn string, logger loggo.LoggerInterface) (Interface, error) {
 	logger.Debug("Attempting to connect to database with DSN: " + dsn)
 
 	db, err := sql.Open("mysql", dsn)
@@ -67,4 +77,16 @@ func (db *DB) LoginUser(username, password string) (string, error) {
 		return "", fmt.Errorf("invalid username or password")
 	}
 	return userID, nil
+}
+
+func (db *DB) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return db.SQL.Exec(query, args...)
+}
+
+func (db *DB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return db.SQL.Query(query, args...)
+}
+
+func (db *DB) QueryRow(query string, args ...interface{}) *sql.Row {
+	return db.SQL.QueryRow(query, args...)
 }

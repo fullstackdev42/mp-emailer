@@ -63,7 +63,7 @@ func NewService(params ServiceParams) (ServiceResult, error) {
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     *database.DB
+	DB     database.Interface
 	Logger loggo.LoggerInterface
 }
 
