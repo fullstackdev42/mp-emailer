@@ -14,22 +14,30 @@ import (
 //
 //nolint:gochecknoglobals
 var Module = fx.Module("server",
+	// Provide the base handler
 	fx.Provide(
-		NewHandler,
+		fx.Annotate(
+			NewHandler,
+			fx.As(new(HandlerInterface)),
+		),
+	),
+	// Decorate at module level
+	fx.Decorate(
+		func(base HandlerInterface, logger loggo.LoggerInterface) HandlerInterface {
+			return NewLoggingHandlerDecorator(base, logger)
+		},
 	),
 )
 
 // NewHandler initializes a new Handler with the necessary dependencies
 func NewHandler(
-	logger loggo.LoggerInterface,
 	store sessions.Store,
 	tm *shared.CustomTemplateRenderer,
 	cs campaign.ServiceInterface,
 	eh *shared.ErrorHandler,
 	es email.Service,
-) *Handler {
+) HandlerInterface {
 	return &Handler{
-		Logger:          logger,
 		Store:           store,
 		templateManager: tm,
 		campaignService: cs,
@@ -39,6 +47,6 @@ func NewHandler(
 }
 
 // RegisterRoutes registers the server routes
-func RegisterRoutes(h *Handler, e *echo.Echo) {
+func RegisterRoutes(h HandlerInterface, e *echo.Echo) {
 	e.GET("/", h.HandleIndex)
 }

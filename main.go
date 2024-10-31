@@ -27,6 +27,13 @@ func main() {
 	app := fx.New(
 		fx.Provide(
 			config.Load,
+			func() (loggo.LoggerInterface, error) {
+				logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelDebug)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create logger: %w", err)
+				}
+				return logger, nil
+			},
 			fx.Annotate(
 				newDB,
 				fx.As(new(database.Interface)),
@@ -38,9 +45,6 @@ func main() {
 			fx.Annotated{Name: "representativeLookupBaseURL", Target: func(cfg *config.Config) string {
 				return cfg.RepresentativeLookupBaseURL
 			}},
-			fx.Annotated{Name: "representativeLogger", Target: func(logger loggo.LoggerInterface) loggo.LoggerInterface {
-				return logger
-			}},
 			fx.Annotate(
 				func(logger loggo.LoggerInterface) shared.ErrorHandlerInterface {
 					baseHandler := shared.NewErrorHandler()
@@ -50,8 +54,8 @@ func main() {
 			),
 		),
 		shared.Module,
-		user.Module,
 		campaign.Module,
+		user.Module,
 		server.Module,
 		api.Module,
 		fx.Invoke(registerRoutes, startServer),
@@ -63,7 +67,7 @@ func main() {
 // Central function to register routes
 func registerRoutes(
 	e *echo.Echo,
-	serverHandler *server.Handler,
+	serverHandler server.HandlerInterface,
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
 	apiHandler *api.Handler,
@@ -122,17 +126,6 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			return nil
 		},
 	})
-}
-
-// Provide a new logger
-func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
-	logLevel := cfg.GetLogLevel()
-	logger, err := loggo.NewLogger(cfg.LogFile, logLevel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create logger: %w", err)
-	}
-	logger.Debug("Logger initialized with level: %s", logLevel)
-	return logger, nil
 }
 
 // Provide a new database connection

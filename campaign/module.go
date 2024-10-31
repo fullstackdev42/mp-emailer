@@ -14,24 +14,34 @@ import (
 // Module defines the campaign module
 //
 //nolint:gochecknoglobals
-var Module = fx.Options(
+var Module = fx.Module("campaign",
 	fx.Provide(
+		// Repository
 		fx.Annotate(
 			NewRepository,
 			fx.As(new(RepositoryInterface)),
 		),
+		// Base service
 		fx.Annotate(
-			func(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) (ServiceInterface, error) {
-				serviceParams := ServiceParams{
-					Repo:     repo,
-					Validate: validate,
-					Logger:   logger,
+			func(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
+				service := &Service{
+					repo:     repo,
+					validate: validate,
 				}
-				serviceResult, err := NewService(serviceParams)
-				if err != nil {
-					return nil, err
-				}
-				return NewLoggingServiceDecorator(serviceResult.Service, logger), nil
+				return service
+			},
+			fx.As(new(ServiceInterface)),
+			fx.ResultTags(`group:"campaign_services"`),
+		),
+		// Logging decorator
+		fx.Annotate(
+			func(params struct {
+				fx.In
+				Services []ServiceInterface `group:"campaign_services"`
+				Logger   loggo.LoggerInterface
+			}) ServiceInterface {
+				baseService := params.Services[0]
+				return NewLoggingServiceDecorator(baseService, params.Logger)
 			},
 			fx.As(new(ServiceInterface)),
 		),
@@ -58,44 +68,12 @@ type RepositoryParams struct {
 	Logger loggo.LoggerInterface
 }
 
-// RepositoryResult is the output struct for NewRepository
-type RepositoryResult struct {
-	fx.Out
-	Repository RepositoryInterface `group:"repositories"`
-}
-
 // NewRepository creates a new campaign repository
 func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 	repo := &Repository{
 		db: params.DB,
 	}
 	return repo, nil
-}
-
-// ServiceParams for dependency injection
-type ServiceParams struct {
-	fx.In
-	Repo     RepositoryInterface
-	Validate *validator.Validate
-	Logger   loggo.LoggerInterface
-}
-
-// ServiceResult is the output struct for NewService
-type ServiceResult struct {
-	fx.Out
-	Service ServiceInterface
-}
-
-// NewService creates a new campaign service
-func NewService(params ServiceParams) (ServiceResult, error) {
-	service := ServiceResult{
-		Service: &Service{
-			repo:     params.Repo,
-			validate: params.Validate,
-			logger:   params.Logger,
-		},
-	}
-	return service, nil
 }
 
 // HandlerParams for dependency injection
@@ -164,4 +142,11 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 	campaignGroup.PUT("/:id", h.EditCampaign)
 	campaignGroup.DELETE("/:id", h.DeleteCampaign)
 	campaignGroup.POST("/:id/send", h.SendCampaign)
+}
+
+func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
+	return &LoggingServiceDecorator{
+		LoggingServiceDecorator: *shared.NewLoggingServiceDecorator(service, logger),
+		service:                 service,
+	}
 }

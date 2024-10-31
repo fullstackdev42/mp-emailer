@@ -2,21 +2,12 @@ package campaign
 
 import (
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/jonesrussell/loggo"
 )
 
 // LoggingServiceDecorator adds logging functionality to the Campaign ServiceInterface
 type LoggingServiceDecorator struct {
 	shared.LoggingServiceDecorator
 	service ServiceInterface
-}
-
-// NewLoggingServiceDecorator creates a new instance of LoggingServiceDecorator
-func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) *LoggingServiceDecorator {
-	return &LoggingServiceDecorator{
-		LoggingServiceDecorator: *shared.NewLoggingServiceDecorator(service, logger),
-		service:                 service,
-	}
 }
 
 func (d *LoggingServiceDecorator) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
