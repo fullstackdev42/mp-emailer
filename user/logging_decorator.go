@@ -38,6 +38,7 @@ func (d *LoggingServiceDecorator) LoginUser(dto *LoginDTO) (string, error) {
 	return token, err
 }
 
+// GetUser fetches a user by their ID
 func (d *LoggingServiceDecorator) GetUser(dto *GetDTO) (*DTO, error) {
 	d.logger.Info("Fetching user", "id", dto.ID)
 	user, err := d.service.GetUser(dto)
@@ -46,5 +47,3 @@ func (d *LoggingServiceDecorator) GetUser(dto *GetDTO) (*DTO, error) {
 	}
 	return user, err
 }
-
-// Continue with other methods (e.g., UpdateUser, DeleteUser, etc.)...

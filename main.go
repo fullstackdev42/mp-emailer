@@ -91,6 +91,7 @@ func registerRoutes(
 	e.Static("/static", "web/public")
 }
 
+// Start the server
 func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger loggo.LoggerInterface) {
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
@@ -124,6 +125,7 @@ func newLogger(cfg *config.Config) (loggo.LoggerInterface, error) {
 	return logger, nil
 }
 
+// Provide a new database connection
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DatabaseDSN()
@@ -140,6 +142,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (*database.DB, erro
 	return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
 }
 
+// Provide a new session store
 func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }

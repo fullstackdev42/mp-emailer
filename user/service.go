@@ -10,18 +10,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// ServiceInterface is the interface for the UserService
 type ServiceInterface interface {
 	RegisterUser(params *RegisterDTO) (*DTO, error)
 	LoginUser(params *LoginDTO) (string, error)
 	GetUser(params *GetDTO) (*DTO, error)
 }
 
+// Service is the implementation of the UserServiceInterface
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
 	cfg      *config.Config
 }
 
+// Config is the configuration for the UserService
 type Config struct {
 	JWTSecret string
 	JWTExpiry time.Duration
@@ -73,6 +76,7 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 	}, nil
 }
 
+// LoginUser logs in a user and returns a JWT token
 func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 	// Check if user exists and password is correct
 	user, err := s.repo.GetUserByUsername(params.Username)
@@ -98,6 +102,7 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 	return token, nil
 }
 
+// GetUser retrieves a user by their username
 func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
 	user, err := s.repo.GetUserByUsername(params.Username)
 	if err != nil {

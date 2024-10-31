@@ -32,6 +32,7 @@ func (id ID) Value() (driver.Value, error) {
 	return uuid.UUID(id).MarshalBinary()
 }
 
+// User is the model for a user
 type User struct {
 	ID           string    `json:"id" gorm:"primaryKey;type:char(36)"`
 	Username     string    `json:"username" gorm:"uniqueIndex;not null"`
@@ -41,6 +42,7 @@ type User struct {
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
+// IsValid checks if the user is valid
 func (u *User) IsValid() bool {
 	return u.Username != "" && u.Email != "" && u.PasswordHash != ""
 }
