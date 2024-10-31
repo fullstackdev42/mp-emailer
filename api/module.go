@@ -11,16 +11,6 @@ import (
 	"go.uber.org/fx"
 )
 
-// Module is the API module
-//
-//nolint:gochecknoglobals
-var Module = fx.Module("api",
-	fx.Provide(
-		NewHandler,
-		provideJWTExpiry,
-	),
-)
-
 // HandlerParams are the parameters for the API handler
 type HandlerParams struct {
 	fx.In
@@ -31,6 +21,21 @@ type HandlerParams struct {
 	ErrorHandler    *shared.ErrorHandler
 	JWTExpiry       int
 }
+
+// Module is the API module
+//
+//nolint:gochecknoglobals
+var Module = fx.Options(
+	fx.Provide(
+		NewHandler,
+		provideJWTExpiry,
+	),
+	fx.Decorate(
+		func(base *Handler, logger loggo.LoggerInterface) *Handler {
+			return NewLoggingHandlerDecorator(base, logger)
+		},
+	),
+)
 
 // NewHandler creates a new API handler
 func NewHandler(params HandlerParams) *Handler {
