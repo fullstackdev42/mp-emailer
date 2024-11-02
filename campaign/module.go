@@ -136,8 +136,5 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 }
 
 func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
-	return &LoggingServiceDecorator{
-		LoggingServiceDecorator: *shared.NewLoggingServiceDecorator(service, logger),
-		service:                 service,
-	}
+	return NewLoggingDecorator(service, logger)
 }
