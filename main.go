@@ -5,17 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
@@ -25,35 +21,7 @@ import (
 
 func main() {
 	app := fx.New(
-		fx.Provide(
-			config.Load,
-			func() (loggo.LoggerInterface, error) {
-				logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelDebug)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create logger: %w", err)
-				}
-				return logger, nil
-			},
-			fx.Annotate(
-				newDB,
-				fx.As(new(database.Interface)),
-			),
-			newSessionStore,
-			validator.New,
-			func() email.Service { return email.NewMailpitEmailService("test@test.com", "test", nil) },
-			echo.New,
-			fx.Annotated{Name: "representativeLookupBaseURL", Target: func(cfg *config.Config) string {
-				return cfg.RepresentativeLookupBaseURL
-			}},
-			fx.Annotate(
-				func(logger loggo.LoggerInterface) shared.ErrorHandlerInterface {
-					baseHandler := shared.NewErrorHandler()
-					return shared.NewLoggingErrorHandlerDecorator(baseHandler, logger)
-				},
-				fx.As(new(shared.ErrorHandlerInterface)),
-			),
-		),
-		shared.Module,
+		shared.App,
 		campaign.Module,
 		user.Module,
 		server.Module,
@@ -126,27 +94,4 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 			return nil
 		},
 	})
-}
-
-// Provide a new database connection
-func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
-	logger.Info("Initializing database connection")
-	dsn := cfg.DatabaseDSN()
-	var err error
-	for retries := 5; retries > 0; retries-- {
-		baseDB, err := database.NewDB(dsn, logger)
-		if err == nil {
-			// Wrap the base DB with the logging decorator
-			decorated := database.NewLoggingDBDecorator(baseDB, logger)
-			return decorated, nil
-		}
-		logger.Warn("Failed to connect to database, retrying...", "error", err)
-		time.Sleep(5 * time.Second)
-	}
-	return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
-}
-
-// Provide a new session store
-func newSessionStore(cfg *config.Config) sessions.Store {
-	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }

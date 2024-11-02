@@ -26,7 +26,7 @@ var Module = fx.Options(
 	// Add module-level decoration
 	fx.Decorate(
 		func(base ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
-			return NewLoggingServiceDecorator(base, logger)
+			return NewLoggingDecorator(base, logger)
 		},
 	),
 )

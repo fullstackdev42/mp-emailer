@@ -10,11 +10,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ServiceInterface is the interface for the UserService
+// ServiceInterface defines the interface for user services
 type ServiceInterface interface {
+	shared.LoggableService
+	GetUser(params *GetDTO) (*DTO, error)
 	RegisterUser(params *RegisterDTO) (*DTO, error)
 	LoginUser(params *LoginDTO) (string, error)
-	GetUser(params *GetDTO) (*DTO, error)
 }
 
 // Service is the implementation of the UserServiceInterface
@@ -115,4 +116,17 @@ func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}, nil
+}
+
+// Add these methods to implement LoggableService
+func (s *Service) Info(_ string, _ ...interface{}) {
+	// Empty implementation as logging is handled by the decorator
+}
+
+func (s *Service) Warn(_ string, _ ...interface{}) {
+	// Empty implementation as logging is handled by the decorator
+}
+
+func (s *Service) Error(_ string, _ error, _ ...interface{}) {
+	// Empty implementation as logging is handled by the decorator
 }

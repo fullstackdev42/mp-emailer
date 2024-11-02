@@ -28,3 +28,15 @@ func ApplyRoutes(e *echo.Echo, routes []Route) {
 		e.Add(route.Method, route.Pattern, route.Handler, route.Middleware...)
 	}
 }
+
+// RegisterRoutes registers all server routes
+func RegisterRoutes(handler HandlerInterface, e *echo.Echo) {
+	// Create routes
+	routes := []Route{
+		NewRoute("GET", "/", handler.HandleIndex),
+		// Add more routes as needed
+	}
+
+	// Apply routes
+	ApplyRoutes(e, routes)
+}

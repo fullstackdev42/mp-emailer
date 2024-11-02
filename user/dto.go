@@ -11,8 +11,8 @@ type CreateDTO struct {
 
 // LoginDTO represents the data needed for user login
 type LoginDTO struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // DTO represents the user data returned to the client
