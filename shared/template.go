@@ -17,19 +17,10 @@ type Data struct {
 	Content         interface{}
 	Error           string
 	Messages        []string
-	Campaigns       []CampaignData
-	RequestID       string
 	PageName        string
+	RequestID       string
 	CSRFToken       interface{}
 	CurrentPath     string
-}
-
-// CampaignData represents the data structure for campaigns
-type CampaignData interface {
-	GetID() int
-	GetName() string
-	GetDescription() string
-	GetTemplate() string
 }
 
 // CustomTemplateRenderer is a custom renderer for Echo
@@ -57,12 +48,17 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
-	// Initialize pageData with proper authentication state
-	pageData, ok := data.(Data)
-	if !ok {
+	// If data is a map, convert it to our Data structure
+	var pageData Data
+	if m, ok := data.(map[string]interface{}); ok {
+		pageData = Data{
+			Title:    m["Title"].(string),
+			PageName: m["PageName"].(string),
+			Content:  m, // Store the entire map as Content
+		}
+	} else {
 		pageData = Data{
 			Content: data,
-			Title:   name, // default to template name if title not specified
 		}
 	}
 

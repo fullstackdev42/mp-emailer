@@ -1,27 +1,27 @@
 {{define "campaign"}}
 <main class="max-w-4xl mx-auto p-8">
-    <h1 class="text-3xl font-bold mb-2" id="campaign-name">{{.Campaign.Name}}</h1>
+    <h1 class="text-3xl font-bold mb-2" id="campaign-name">{{.Content.Campaign.Name}}</h1>
     <p class="mb-6 text-sm text-gray-600">
-        <time datetime="{{.Campaign.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
-            Last updated: {{.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
+        <time datetime="{{.Content.Campaign.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+            Last updated: {{.Content.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
         </time>
     </p>
 
-    {{template "campaign_send_form" .}}
+    {{template "campaign_send_form" .Content.Campaign}}
     
     <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
         <h2 id="template-preview" class="sr-only">Template Preview</h2>
-        <div id="editor">{{.Campaign.Template}}</div>
+        <div id="editor">{{safeHTML .Content.Campaign.Template}}</div>
     </div>
 
     <h2 class="text-2xl font-bold mb-4" id="actions-heading">Actions:</h2>
     <div class="flex flex-wrap gap-4 mb-6" aria-labelledby="actions-heading">
-        <a href="/campaigns/{{.Campaign.ID}}/edit"
+        <a href="/campaigns/{{.Content.Campaign.ID}}/edit"
             class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
             aria-label="Edit Campaign">
             Edit Campaign
         </a>
-        <form action="/campaigns/{{.Campaign.ID}}/delete" method="POST" class="inline-block">
+        <form action="/campaigns/{{.Content.Campaign.ID}}/delete" method="POST" class="inline-block">
             <button type="submit"
                 class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300"
                 aria-label="Delete Campaign">

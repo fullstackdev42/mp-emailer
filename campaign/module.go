@@ -61,6 +61,7 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 
 // HandlerParams for dependency injection
 type HandlerParams struct {
+	shared.BaseHandlerParams
 	fx.In
 	Service                     ServiceInterface
 	Logger                      loggo.LoggerInterface
@@ -75,20 +76,6 @@ type HandlerParams struct {
 type HandlerResult struct {
 	fx.Out
 	Handler *Handler
-}
-
-// NewHandler initializes a new Handler
-func NewHandler(params HandlerParams) (HandlerResult, error) {
-	handler := &Handler{
-		service:                     params.Service,
-		logger:                      params.Logger,
-		representativeLookupService: params.RepresentativeLookupService,
-		emailService:                params.EmailService,
-		client:                      params.Client,
-		errorHandler:                params.ErrorHandler,
-		templateRenderer:            params.TemplateRenderer,
-	}
-	return HandlerResult{Handler: handler}, nil
 }
 
 // NewService creates a new campaign service

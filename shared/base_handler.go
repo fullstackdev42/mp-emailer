@@ -1,9 +1,12 @@
 package shared
 
 import (
+	"net/http"
+
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -11,24 +14,36 @@ import (
 type BaseHandlerParams struct {
 	fx.In
 
-	Store        sessions.Store
-	Logger       loggo.LoggerInterface
-	ErrorHandler ErrorHandlerInterface
-	Config       *config.Config
+	Store            sessions.Store
+	Logger           loggo.LoggerInterface
+	ErrorHandler     ErrorHandlerInterface
+	Config           *config.Config
+	TemplateRenderer *CustomTemplateRenderer
 }
 
 type BaseHandler struct {
-	Store        sessions.Store
-	Logger       loggo.LoggerInterface
-	ErrorHandler ErrorHandlerInterface
-	Config       *config.Config
+	Store            sessions.Store
+	Logger           loggo.LoggerInterface
+	ErrorHandler     ErrorHandlerInterface
+	Config           *config.Config
+	TemplateRenderer *CustomTemplateRenderer
 }
 
 func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 	return BaseHandler{
-		Store:        params.Store,
-		Logger:       params.Logger,
-		ErrorHandler: params.ErrorHandler,
-		Config:       params.Config,
+		Store:            params.Store,
+		Logger:           params.Logger,
+		ErrorHandler:     params.ErrorHandler,
+		Config:           params.Config,
+		TemplateRenderer: params.TemplateRenderer,
 	}
+}
+
+// Common rendering method that can be used by all handlers
+func (h *BaseHandler) RenderTemplate(c echo.Context, name string, data interface{}) error {
+	if err := h.TemplateRenderer.Render(c.Response().Writer, name, data, c); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to render "+name, http.StatusInternalServerError)
+	}
+	h.Logger.Debug(name + " template rendered successfully")
+	return nil
 }

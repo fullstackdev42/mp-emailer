@@ -50,7 +50,6 @@ var App = fx.Options(
 		},
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
-		// FlashHandler provider
 		NewFlashHandler,
 	),
 	ErrorModule,

@@ -1,10 +1,17 @@
 {{define "email"}}
 <main class="max-w-4xl mx-auto p-8">
-    <h1 class="text-3xl font-bold mb-4">Email to Member of Parliament</h1>
-    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <p class="mb-4"><strong>To:</strong> {{.Data.Email}}</p>
-        <div class="border-t pt-4">
-            <div class="whitespace-pre-wrap">{{.Data.Content}}</div> <!-- Ensure this is not escaped -->
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <div class="mb-4">
+            <strong>To:</strong> {{.Content.Email}}
+        </div>
+        <div class="prose max-w-none">
+            {{.Content.Content}}
+        </div>
+        <div class="mt-6">
+            <a href="mailto:{{.Content.Email}}?subject=Campaign&body={{.Content.RawContent}}"
+                class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">
+                Open in Email Client
+            </a>
         </div>
     </div>
 </main>

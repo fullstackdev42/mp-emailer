@@ -1,7 +1,7 @@
 {{define "campaign_send_form"}}
 <div class="bg-white shadow-md rounded-lg p-6 mb-6">
     <h2 class="text-xl font-bold mb-4">Send Campaign Email</h2>
-    <form action="/campaigns/{{.Campaign.ID}}/send" method="POST" class="space-y-4">
+    <form action="/campaign/{{.ID}}/send" method="POST" class="space-y-4">
         <div class="flex space-x-4">
             <div class="flex-1">
                 <label for="first_name" class="block text-sm font-medium text-gray-700">First Name:</label>
