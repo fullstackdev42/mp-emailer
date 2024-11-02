@@ -63,30 +63,41 @@ func (h *Handler) LoginGET(c echo.Context) error {
 func (h *Handler) LoginPOST(c echo.Context) error {
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
+		h.service.Error("Login binding error", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
 	user, err := h.repo.GetUserByUsername(params.Username)
 	if err != nil || user == nil {
+		h.service.Info("Login failed - user not found", "username", params.Username)
 		return h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
+		h.service.Info("Login failed - invalid password", "username", params.Username)
 		return h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password")
 	}
 
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
 	if err != nil {
+		h.service.Error("Session error", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
 	}
 	sess.Values["user_id"] = user.ID
 	sess.Values["username"] = user.Username
 	sess.Values["authenticated"] = true
 
-	if err := h.flashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
+	if err := sess.Save(c.Request(), c.Response().Writer); err != nil {
+		h.service.Error("Session save error", err)
 		return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
 	}
 
+	if err := h.flashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
+		h.service.Error("Flash message error", err)
+		return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+	}
+
+	h.service.Info("Login successful", "username", user.Username)
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
