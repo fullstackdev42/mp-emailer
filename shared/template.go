@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"net/http"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
@@ -26,8 +25,7 @@ type Data struct {
 
 // TemplateRendererInterface defines the interface for template rendering
 type TemplateRendererInterface interface {
-	Render(w io.Writer, name string, data interface{}, c echo.Context) error
-	RenderPage(c echo.Context, templateName string, pageData Data, errorHandler ErrorHandlerInterface) error
+	echo.Renderer
 }
 
 // CustomTemplateRenderer is a custom renderer for Echo
@@ -47,6 +45,7 @@ func NewCustomTemplateRenderer(t *template.Template, store sessions.Store) Templ
 	}
 }
 
+// Render method implements echo.Renderer and handles rendering templates
 func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	session, err := t.store.Get(c.Request(), "mpe")
 	if err != nil {
@@ -110,16 +109,4 @@ func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data 
 	data.Content = template.HTML(content.String())
 
 	return t.templates.ExecuteTemplate(w, "app", data)
-}
-
-// RenderPage with improved error handling
-func (t *CustomTemplateRenderer) RenderPage(c echo.Context, templateName string, pageData Data, errorHandler ErrorHandlerInterface) error {
-	// Ensure authentication state is set
-	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
-	pageData.IsAuthenticated = isAuthenticated
-
-	if err := t.Render(c.Response(), templateName, pageData, c); err != nil {
-		return errorHandler.HandleHTTPError(c, err, "Failed to render page", http.StatusInternalServerError)
-	}
-	return nil
 }

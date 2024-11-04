@@ -141,15 +141,24 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Debug("Rendering all campaigns", "count", len(campaigns))
-	return h.renderTemplate(c, "campaigns", &TemplateData{
-		Campaigns: campaigns,
-	})
+	data := shared.Data{
+		Title:    "All Campaigns",
+		PageName: "campaigns",
+		Content: map[string]interface{}{
+			"Campaigns": campaigns,
+		},
+	}
+	return h.TemplateRenderer.Render(c.Response().Writer, "campaigns", data, c)
 }
 
 // CreateCampaignForm handles GET requests for the campaign creation form
 func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	h.Logger.Debug("Handling CreateCampaignForm request")
-	return h.renderTemplate(c, "campaign_create", nil)
+	return h.TemplateRenderer.Render(c.Response().Writer, "campaign_create", shared.Data{
+		Title:    "Create Campaign",
+		PageName: "campaign_create",
+		Content:  nil,
+	}, c)
 }
 
 // CreateCampaignParams defines the parameters for creating a campaign
@@ -215,7 +224,11 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	return h.renderTemplate(c, "campaign_edit", &TemplateData{Campaign: campaign})
+	return h.TemplateRenderer.Render(c.Response().Writer, "campaign_edit", shared.Data{
+		Title:    "Edit Campaign",
+		PageName: "campaign_edit",
+		Content:  &TemplateData{Campaign: campaign},
+	}, c)
 }
 
 // EditParams defines the parameters for editing a campaign
@@ -307,15 +320,6 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email string, content stri
 	return c.Render(http.StatusOK, "email", data)
 }
 
-// renderTemplate renders the specified template with strongly typed data
-func (h *Handler) renderTemplate(c echo.Context, name string, data *TemplateData) error {
-	if err := h.TemplateRenderer.Render(c.Response().Writer, name, data, c); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to render "+name, http.StatusInternalServerError)
-	}
-	h.Logger.Debug(name + " template rendered successfully")
-	return nil
-}
-
 // HandleRepresentativeLookup handles POST requests for fetching representatives
 func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	h.Logger.Debug("Handling representative lookup request")
@@ -329,7 +333,11 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	filters := map[string]string{"type": representativeType}
 	filteredRepresentatives := h.representativeLookupService.FilterRepresentatives(representatives, filters)
 	h.Logger.Info("Representatives lookup successful", "count", len(filteredRepresentatives), "postalCode", postalCode, "type", representativeType)
-	return h.renderTemplate(c, "representatives", &TemplateData{
-		Representatives: filteredRepresentatives,
-	})
+	return h.TemplateRenderer.Render(c.Response().Writer, "representatives", shared.Data{
+		Title:    "Representatives",
+		PageName: "representatives",
+		Content: &TemplateData{
+			Representatives: filteredRepresentatives,
+		},
+	}, c)
 }

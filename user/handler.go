@@ -34,18 +34,32 @@ type Handler struct {
 
 // RegisterGET handler for the register page
 func (h *Handler) RegisterGET(c echo.Context) error {
-	pageData := shared.Data{
-		Title:   "Register",
-		Content: nil,
+	data := &shared.Data{
+		Title:    "Register",
+		PageName: "register",
+		Content: &RegisterDTO{
+			Username: "",
+			Email:    "",
+		},
 	}
-	return h.templateManager.RenderPage(c, "register", pageData, h.errorHandler)
+	return h.templateManager.Render(c.Response().Writer, "register", data, c)
 }
 
-// RegisterPOST handler for the register page
+// RegisterPOST handles POST requests to register a new user
 func (h *Handler) RegisterPOST(c echo.Context) error {
 	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
-		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+		data := &shared.Data{
+			Title:    "Register",
+			PageName: "register",
+			Content: &RegisterDTO{
+				Username:        params.Username,
+				Email:           params.Email,
+				Password:        params.Password,
+				PasswordConfirm: params.PasswordConfirm,
+			},
+		}
+		return h.templateManager.Render(c.Response().Writer, "register", data, c)
 	}
 
 	_, err := h.service.RegisterUser(params)
@@ -66,7 +80,7 @@ func (h *Handler) LoginGET(c echo.Context) error {
 		Title:   "Login",
 		Content: nil,
 	}
-	return h.templateManager.RenderPage(c, "login", pageData, h.errorHandler)
+	return h.templateManager.Render(c.Response().Writer, "login", pageData, c)
 }
 
 // LoginPOST handler for the login page
@@ -117,21 +131,4 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 		return err
 	}
 	return c.Redirect(http.StatusSeeOther, "/")
-}
-
-// GetUser handler for getting a user
-func (h *Handler) GetUser(c echo.Context) error {
-	params := &GetDTO{Username: c.Param("username")}
-	user, err := h.service.GetUser(params)
-	if err != nil {
-		return h.templateManager.RenderPage(c, "error", shared.Data{
-			Title:   "Error",
-			Content: map[string]interface{}{"Message": "User not found", "Username": params.Username},
-		}, h.errorHandler)
-	}
-
-	return h.templateManager.RenderPage(c, "user_details", shared.Data{
-		Title:   "User Details",
-		Content: map[string]interface{}{"User": user},
-	}, h.errorHandler)
 }

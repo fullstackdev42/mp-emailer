@@ -19,18 +19,19 @@ func NewErrorHandler() *ErrorHandler {
 }
 
 // HandleHTTPError handles HTTP errors consistently
-func (h *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, status int) error {
-	data := Data{
-		Title: "Error",
+func (h *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, code int) error {
+	data := &Data{
+		Title:      "Error",
+		PageName:   "error",
+		StatusCode: code,
+		Error:      message,
 		Content: map[string]interface{}{
 			"error":   err.Error(),
 			"message": message,
 		},
-		StatusCode: status,
-		PageName:   "error",
 	}
 
-	return c.Render(status, "error", data)
+	return c.Render(code, "error", data)
 }
 
 // LoggingErrorHandlerDecorator adds logging functionality to the ErrorHandlerInterface
