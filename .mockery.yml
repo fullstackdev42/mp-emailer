@@ -6,15 +6,15 @@ dir: "mocks/{{.PackageName}}"
 
 packages:
 
-  github.com/fullstackdev42/mp-emailer/database:
-    interfaces:
-      Migrator:
+  # github.com/fullstackdev42/mp-emailer/database:
+  #   interfaces:
+  #     Migrator:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
       SMTPClient:
       MailgunClient:
 
-  github.com/fullstackdev42/mp-emailer/server:
-    interfaces:
-      TemplateRenderer:
+  # github.com/fullstackdev42/mp-emailer/server:
+  #   interfaces:
+  #     TemplateRenderer:
