@@ -67,7 +67,7 @@ type HandlerParams struct {
 	EmailService                email.Service
 	Client                      ClientInterface
 	ErrorHandler                *shared.ErrorHandler
-	TemplateRenderer            *shared.CustomTemplateRenderer
+	TemplateRenderer            shared.TemplateRendererInterface
 }
 
 // HandlerResult is the output struct for NewHandler

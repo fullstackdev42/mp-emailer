@@ -42,7 +42,7 @@ func registerRoutes(
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
 	apiHandler *api.Handler,
-	renderer *shared.CustomTemplateRenderer,
+	renderer shared.TemplateRendererInterface,
 	sessionStore sessions.Store,
 	cfg *config.Config,
 ) {

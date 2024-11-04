@@ -34,18 +34,18 @@ var App = fx.Options(
 			newDB,
 			fx.As(new(database.Interface)),
 		),
-		// Echo instance provider
 		echo.New,
 		newSessionStore,
-		// Validator provider
 		validator.New,
-		ProvideTemplates,
-		// Email service provider
+		fx.Annotate(
+			ProvideTemplates,
+			fx.As(new(TemplateRendererInterface)),
+		),
 		func() email.Service {
 			return email.NewMailpitEmailService(
-				"test@test.com", // Default sender
-				"test",          // Default sender name
-				nil,             // Use default client config
+				"test@test.com",
+				"test",
+				nil,
 			)
 		},
 		NewBaseHandler,
@@ -89,7 +89,7 @@ func newSessionStore(cfg *config.Config) sessions.Store {
 }
 
 // ProvideTemplates creates and configures the template renderer
-func ProvideTemplates(store sessions.Store) (*CustomTemplateRenderer, error) {
+func ProvideTemplates(store sessions.Store) (TemplateRendererInterface, error) {
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"hasPrefix": strings.HasPrefix,
 		"safeHTML":  func(s string) template.HTML { return template.HTML(s) },

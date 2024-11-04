@@ -75,7 +75,7 @@ type HandlerParams struct {
 	Config          *config.Config
 	Service         ServiceInterface
 	Store           sessions.Store
-	TemplateManager *shared.CustomTemplateRenderer
+	TemplateManager shared.TemplateRendererInterface
 	Repo            RepositoryInterface
 	ErrorHandler    shared.ErrorHandlerInterface
 	FlashHandler    *shared.FlashHandler
@@ -94,7 +94,7 @@ func NewHandler(params HandlerParams) (HandlerResult, error) {
 		Store:           params.Store,
 		SessionName:     params.Config.SessionName,
 		Config:          params.Config,
-		templateManager: *params.TemplateManager,
+		templateManager: params.TemplateManager,
 		repo:            params.Repo,
 		errorHandler:    params.ErrorHandler,
 		flashHandler:    params.FlashHandler,

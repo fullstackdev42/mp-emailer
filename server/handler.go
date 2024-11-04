@@ -13,7 +13,7 @@ import (
 // Handler struct
 type Handler struct {
 	Store           sessions.Store
-	templateManager *shared.CustomTemplateRenderer
+	templateManager shared.TemplateRendererInterface
 	campaignService campaign.ServiceInterface
 	errorHandler    *shared.ErrorHandler
 	EmailService    email.Service
@@ -30,7 +30,7 @@ type HandlerInterface interface {
 type HandlerParams struct {
 	fx.In
 	Store           sessions.Store
-	TemplateManager *shared.CustomTemplateRenderer
+	TemplateManager shared.TemplateRendererInterface
 	CampaignService campaign.ServiceInterface
 	ErrorHandler    *shared.ErrorHandler
 	EmailService    email.Service

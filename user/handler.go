@@ -18,7 +18,7 @@ type Handler struct {
 	Store           sessions.Store
 	SessionName     string
 	Config          *config.Config
-	templateManager shared.CustomTemplateRenderer
+	templateManager shared.TemplateRendererInterface
 	repo            RepositoryInterface
 }
 

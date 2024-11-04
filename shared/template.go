@@ -35,10 +35,13 @@ type CustomTemplateRenderer struct {
 	store     sessions.Store
 }
 
-// NewCustomTemplateRenderer creates a new CustomTemplateRenderer
-func NewCustomTemplateRenderer(templates *template.Template, store sessions.Store) *CustomTemplateRenderer {
+// Ensure CustomTemplateRenderer implements TemplateRendererInterface
+var _ TemplateRendererInterface = (*CustomTemplateRenderer)(nil)
+
+// NewCustomTemplateRenderer creates a new template renderer
+func NewCustomTemplateRenderer(t *template.Template, store sessions.Store) TemplateRendererInterface {
 	return &CustomTemplateRenderer{
-		templates: templates,
+		templates: t,
 		store:     store,
 	}
 }
@@ -54,18 +57,23 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
-	// If data is a map, convert it to our Data structure
-	var pageData Data
+	// Create a new pageData with safe defaults
+	pageData := Data{
+		Title:    "MP Emailer", // Default title
+		PageName: name,
+		Content:  data, // Store the original data as Content
+	}
+
+	// If data is a map, try to extract known fields
 	if m, ok := data.(map[string]interface{}); ok {
-		pageData = Data{
-			Title:    m["Title"].(string),
-			PageName: m["PageName"].(string),
-			Content:  m, // Store the entire map as Content
+		// Safely extract title and page name if they exist
+		if title, ok := m["Title"].(string); ok {
+			pageData.Title = title
 		}
-	} else {
-		pageData = Data{
-			Content: data,
+		if pageName, ok := m["PageName"].(string); ok {
+			pageData.PageName = pageName
 		}
+		pageData.Content = m // Store the entire map as Content
 	}
 
 	// Get authentication state from context and session
@@ -78,7 +86,6 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 
 	// Set other required fields
 	pageData.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
-	pageData.PageName = name
 
 	// Convert interface{} flashes to strings
 	messages := make([]string, len(flashes))
