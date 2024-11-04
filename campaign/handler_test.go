@@ -159,9 +159,10 @@ func TestGetCampaigns(t *testing.T) {
 			name: "successful campaigns fetch",
 			setupMocks: func(s *handlerTestSuite) {
 				campaigns := []campaign.Campaign{{ID: 1, Name: "Test Campaign"}}
-				s.mockLogger.EXPECT().Debug("Handling GetCampaigns request")
-				s.mockLogger.EXPECT().Debug("Rendering all campaigns", "count", 1)
-				s.mockLogger.EXPECT().Debug("campaigns template rendered successfully")
+
+				s.mockLogger.EXPECT().Debug("GetCampaigns: Starting")
+				s.mockLogger.EXPECT().Debug("GetCampaigns: Campaigns fetched", "count", 1)
+				s.mockLogger.EXPECT().Debug("GetCampaigns: Template rendered successfully")
 
 				s.mockService.EXPECT().GetCampaigns().Return(campaigns, nil)
 				s.mockTemplateRenderer.EXPECT().Render(

@@ -37,12 +37,13 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 	data := &shared.Data{
 		Title:    "Register",
 		PageName: "register",
-		Content: &RegisterDTO{
+		Form: shared.FormData{
 			Username: "",
 			Email:    "",
 		},
 	}
-	return h.templateManager.Render(c.Response().Writer, "register", data, c)
+
+	return c.Render(http.StatusOK, "register", data)
 }
 
 // RegisterPOST handles POST requests to register a new user
@@ -52,11 +53,11 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		data := &shared.Data{
 			Title:    "Register",
 			PageName: "register",
-			Content: &RegisterDTO{
-				Username:        params.Username,
-				Email:           params.Email,
-				Password:        params.Password,
-				PasswordConfirm: params.PasswordConfirm,
+			Content: map[string]interface{}{
+				"Username":        params.Username,
+				"Email":           params.Email,
+				"Password":        params.Password,
+				"PasswordConfirm": params.PasswordConfirm,
 			},
 		}
 		return h.templateManager.Render(c.Response().Writer, "register", data, c)

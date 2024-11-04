@@ -10,17 +10,25 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type FormData struct {
+	Username        string
+	Email           string
+	Password        string
+	ConfirmPassword string
+}
+
 type Data struct {
-	IsAuthenticated bool
-	Title           string
 	Content         interface{}
+	CSRFToken       interface{}
+	CurrentPath     string
 	Error           string
+	Form            FormData
+	IsAuthenticated bool
 	Messages        []string
 	PageName        string
 	RequestID       string
-	CSRFToken       interface{}
-	CurrentPath     string
 	StatusCode      int
+	Title           string
 }
 
 // TemplateRendererInterface defines the interface for template rendering
@@ -57,37 +65,29 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
-	// Create a new pageData with safe defaults
-	pageData := Data{
-		Title:    "MP Emailer", // Default title
-		PageName: name,
-		Content:  data, // Store the original data as Content
+	var pageData *Data
+	switch d := data.(type) {
+	case Data:
+		pageData = &d
+	case *Data:
+		pageData = d
+	default:
+		// If data is not of type Data, create new Data struct with content
+		pageData = &Data{
+			Title:    "MP Emailer",
+			PageName: name,
+			Content:  data.(map[string]interface{}),
+		}
 	}
 
-	// If data is a map, try to extract known fields
-	if m, ok := data.(map[string]interface{}); ok {
-		// Safely extract title and page name if they exist
-		if title, ok := m["Title"].(string); ok {
-			pageData.Title = title
-		}
-		if pageName, ok := m["PageName"].(string); ok {
-			pageData.PageName = pageName
-		}
-		pageData.Content = m // Store the entire map as Content
-	}
-
-	// Get authentication state from context and session
+	// Set other required fields
 	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
 	if !isAuthenticated {
-		// Double check session if context value is false
 		isAuthenticated = session.Values["authenticated"] == true
 	}
 	pageData.IsAuthenticated = isAuthenticated
-
-	// Set other required fields
 	pageData.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
 
-	// Convert interface{} flashes to strings
 	messages := make([]string, len(flashes))
 	for i, flash := range flashes {
 		messages[i] = fmt.Sprint(flash)
@@ -99,14 +99,18 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 	return t.executeTemplate(w, name, pageData)
 }
 
-func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data Data) error {
-	var content bytes.Buffer
-	if err := t.templates.ExecuteTemplate(&content, name, data); err != nil {
+func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data *Data) error {
+	// First render the content into the .Content field
+	var contentBuffer bytes.Buffer
+	if err := t.templates.ExecuteTemplate(&contentBuffer, "content", data); err != nil {
+		return fmt.Errorf("failed to execute content template: %w", err)
+	}
+	data.Content = template.HTML(contentBuffer.String())
+
+	// Then render the full page with the layout
+	if err := t.templates.ExecuteTemplate(w, "app", data); err != nil {
 		fmt.Printf("Debug - Template Error: %v\nData: %+v\n", err, data)
 		return fmt.Errorf("failed to execute template %s: %w", name, err)
 	}
-
-	data.Content = template.HTML(content.String())
-
-	return t.templates.ExecuteTemplate(w, "app", data)
+	return nil
 }

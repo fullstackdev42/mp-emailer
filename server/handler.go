@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -71,10 +73,11 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
 	}
 
-	data := map[string]interface{}{
-		"Title":     "Home",
-		"Campaigns": campaigns,
-	}
-
-	return h.templateManager.Render(c.Response(), "home", data, c)
+	return c.Render(http.StatusOK, "home", &shared.Data{
+		Title:    "Home",
+		PageName: "home",
+		Content: map[string]interface{}{
+			"Campaigns": campaigns,
+		},
+	})
 }
