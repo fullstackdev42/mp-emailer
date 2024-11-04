@@ -19,25 +19,13 @@ func NewService(repo RepositoryInterface, validate *validator.Validate) ServiceI
 	}
 }
 
-// GetCampaignParams defines parameters for fetching a campaign
-type GetCampaignParams struct {
-	ID int
-}
-
-// ComposeEmailParams defines parameters for composing an email
-type ComposeEmailParams struct {
-	MP       Representative
-	Campaign *Campaign
-	UserData map[string]string
-}
-
 // ServiceInterface defines the methods of the campaign service
 type ServiceInterface interface {
 	CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error)
 	UpdateCampaign(dto *UpdateCampaignDTO) error
 	GetCampaignByID(params GetCampaignParams) (*Campaign, error)
 	GetCampaigns() ([]Campaign, error)
-	DeleteCampaign(params DeleteCampaignParams) error
+	DeleteCampaign(params DeleteCampaignDTO) error
 	FetchCampaign(params GetCampaignParams) (*Campaign, error)
 	ComposeEmail(params ComposeEmailParams) string
 	Error(message string, err error, params ...interface{})
@@ -51,6 +39,9 @@ type Service struct {
 	validate *validator.Validate
 	logger   loggo.LoggerInterface
 }
+
+// Ensure Service implements ServiceInterface
+var _ ServiceInterface = &Service{}
 
 // CreateCampaign creates a new campaign
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
@@ -72,6 +63,11 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 		return fmt.Errorf("invalid input: %w", err)
 	}
 	return s.repo.Update(dto)
+}
+
+// GetCampaignParams defines parameters for fetching a campaign
+type GetCampaignParams struct {
+	ID int
 }
 
 // GetCampaignByID retrieves a campaign by ID
@@ -96,15 +92,18 @@ func (s *Service) GetCampaigns() ([]Campaign, error) {
 }
 
 // DeleteCampaign deletes a campaign by ID
-func (s *Service) DeleteCampaign(params DeleteCampaignParams) error {
-	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
+	// Convert DeleteCampaignDTO to GetCampaignDTO
+	getCampaignDTO := GetCampaignDTO(params)
+
+	campaign, err := s.repo.GetByID(getCampaignDTO)
 	if err != nil {
 		return fmt.Errorf("failed to get campaign for deletion: %w", err)
 	}
 	if campaign == nil {
 		return fmt.Errorf("campaign not found")
 	}
-	err = s.repo.Delete(DeleteCampaignDTO{ID: params.ID})
+	err = s.repo.Delete(params)
 	if err != nil {
 		return fmt.Errorf("failed to delete campaign: %w", err)
 	}
@@ -121,6 +120,13 @@ func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
 		return nil, fmt.Errorf("failed to fetch campaign: %w", err)
 	}
 	return campaign, nil
+}
+
+// ComposeEmailParams defines parameters for composing an email
+type ComposeEmailParams struct {
+	MP       Representative
+	Campaign *Campaign
+	UserData map[string]string
 }
 
 // ComposeEmail composes an email using campaign data and user data

@@ -5,13 +5,55 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
+
+// RegisterRoutes registers the campaign routes
+func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config) {
+	// Public routes (no authentication required)
+	e.GET("/campaigns", h.GetCampaigns)
+	e.GET("/campaign/:id", h.CampaignGET)
+	e.POST("/campaign/:id/send", h.SendCampaign)
+
+	// Protected routes (require authentication)
+	protected := e.Group("/campaign")
+	protected.Use(AuthMiddleware(cfg))
+	protected.GET("/new", h.CreateCampaignForm)
+	protected.POST("", h.CreateCampaign)
+	protected.PUT("/:id", h.EditCampaign)
+	protected.DELETE("/:id", h.DeleteCampaign)
+}
+
+// Custom middleware for protected routes
+func AuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			session := getSession(c, cfg)
+			if session == nil || session.Values["user_id"] == nil {
+				// Store the original requested URL in the session
+				if session != nil {
+					session.Values["redirect_after_login"] = c.Request().URL.String()
+					_ = session.Save(c.Request(), c.Response().Writer)
+				}
+				return c.Redirect(http.StatusSeeOther, "/user/login")
+			}
+			return next(c)
+		}
+	}
+}
+
+func getSession(c echo.Context, cfg *config.Config) *sessions.Session {
+	store := c.Get("store").(sessions.Store)
+	session, _ := store.Get(c.Request(), cfg.SessionName)
+	return session
+}
 
 type Handler struct {
 	shared.BaseHandler
@@ -144,20 +186,15 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(campaign.ID))
 }
 
-// DeleteCampaignParams defines the parameters for deleting a campaign
-type DeleteCampaignParams struct {
-	ID int `param:"id"`
-}
-
 // DeleteCampaign handles DELETE requests for deleting a campaign
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling DeleteCampaign request")
-	params := new(DeleteCampaignParams)
+	params := new(DeleteCampaignDTO)
 	if err := c.Bind(params); err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	if err := h.service.DeleteCampaign(DeleteCampaignParams{ID: params.ID}); err != nil {
+	if err := h.service.DeleteCampaign(DeleteCampaignDTO{ID: params.ID}); err != nil {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}

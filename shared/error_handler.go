@@ -1,8 +1,6 @@
 package shared
 
 import (
-	"net/http"
-
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
@@ -20,15 +18,19 @@ func NewErrorHandler() *ErrorHandler {
 	return &ErrorHandler{}
 }
 
-// HandleHTTPError handles HTTP errors by rendering an error page
-func (eh *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, statusCode int) error {
-	return c.Render(statusCode, "error", Data{
-		Title: http.StatusText(statusCode),
-		Content: map[string]string{
-			"message": message,
+// HandleHTTPError handles HTTP errors consistently
+func (h *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string, status int) error {
+	data := Data{
+		Title: "Error",
+		Content: map[string]interface{}{
 			"error":   err.Error(),
+			"message": message,
 		},
-	})
+		StatusCode: status,
+		PageName:   "error",
+	}
+
+	return c.Render(status, "error", data)
 }
 
 // LoggingErrorHandlerDecorator adds logging functionality to the ErrorHandlerInterface

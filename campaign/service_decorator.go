@@ -66,7 +66,7 @@ func (d *LoggingDecorator) GetCampaigns() ([]Campaign, error) {
 	return campaigns, err
 }
 
-func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignParams) error {
+func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignDTO) error {
 	d.logger.Info("Deleting campaign", "params", params)
 	err := d.service.DeleteCampaign(params)
 	if err != nil {

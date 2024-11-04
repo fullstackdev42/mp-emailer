@@ -36,6 +36,7 @@ func main() {
 
 // registerRoutes centralizes all route registration for the application
 // It takes in all necessary handlers and services via dependency injection
+// registerRoutes centralizes all route registration for the application
 func registerRoutes(
 	e *echo.Echo,
 	serverHandler server.HandlerInterface,
@@ -45,12 +46,13 @@ func registerRoutes(
 	renderer shared.TemplateRendererInterface,
 	sessionStore sessions.Store,
 	cfg *config.Config,
+	logger loggo.LoggerInterface,
 ) {
 	// Set custom template renderer for HTML responses
 	e.Renderer = renderer
 
 	// Register middleware and route handlers separately for better organization
-	registerMiddlewares(e, sessionStore, cfg)
+	registerMiddlewares(e, sessionStore, logger)
 	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg)
 
 	// Serve static files from web/public directory
@@ -58,8 +60,15 @@ func registerRoutes(
 }
 
 // registerMiddlewares configures all middleware for the application
-// This includes session management, logging, rate limiting, and authentication
-func registerMiddlewares(e *echo.Echo, sessionStore sessions.Store, cfg *config.Config) {
+func registerMiddlewares(e *echo.Echo, sessionStore sessions.Store, logger loggo.LoggerInterface) {
+	// Add logger middleware first
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("logger", logger)
+			return next(c)
+		}
+	})
+
 	// Make session store available in all route handlers via context
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -73,13 +82,9 @@ func registerMiddlewares(e *echo.Echo, sessionStore sessions.Store, cfg *config.
 
 	// Implement rate limiting
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
-
-	// Auth middleware
-	e.Use(user.AuthMiddleware(sessionStore, cfg))
 }
 
 // registerHandlers configures all route handlers for the application
-// It takes in all necessary handlers and services via dependency injection
 func registerHandlers(
 	e *echo.Echo,
 	serverHandler server.HandlerInterface,
@@ -89,7 +94,7 @@ func registerHandlers(
 	cfg *config.Config,
 ) {
 	server.RegisterRoutes(serverHandler, e)
-	campaign.RegisterRoutes(campaignHandler, e)
+	campaign.RegisterRoutes(campaignHandler, e, cfg)
 	user.RegisterRoutes(userHandler, e)
 	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
 }

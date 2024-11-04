@@ -125,7 +125,7 @@ func (_c *MockServiceInterface_CreateCampaign_Call) RunAndReturn(run func(*campa
 }
 
 // DeleteCampaign provides a mock function with given fields: params
-func (_m *MockServiceInterface) DeleteCampaign(params campaign.DeleteCampaignParams) error {
+func (_m *MockServiceInterface) DeleteCampaign(params campaign.DeleteCampaignDTO) error {
 	ret := _m.Called(params)
 
 	if len(ret) == 0 {
@@ -133,7 +133,7 @@ func (_m *MockServiceInterface) DeleteCampaign(params campaign.DeleteCampaignPar
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(campaign.DeleteCampaignParams) error); ok {
+	if rf, ok := ret.Get(0).(func(campaign.DeleteCampaignDTO) error); ok {
 		r0 = rf(params)
 	} else {
 		r0 = ret.Error(0)
@@ -148,14 +148,14 @@ type MockServiceInterface_DeleteCampaign_Call struct {
 }
 
 // DeleteCampaign is a helper method to define mock.On call
-//   - params campaign.DeleteCampaignParams
+//   - params campaign.DeleteCampaignDTO
 func (_e *MockServiceInterface_Expecter) DeleteCampaign(params interface{}) *MockServiceInterface_DeleteCampaign_Call {
 	return &MockServiceInterface_DeleteCampaign_Call{Call: _e.mock.On("DeleteCampaign", params)}
 }
 
-func (_c *MockServiceInterface_DeleteCampaign_Call) Run(run func(params campaign.DeleteCampaignParams)) *MockServiceInterface_DeleteCampaign_Call {
+func (_c *MockServiceInterface_DeleteCampaign_Call) Run(run func(params campaign.DeleteCampaignDTO)) *MockServiceInterface_DeleteCampaign_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(campaign.DeleteCampaignParams))
+		run(args[0].(campaign.DeleteCampaignDTO))
 	})
 	return _c
 }
@@ -165,7 +165,7 @@ func (_c *MockServiceInterface_DeleteCampaign_Call) Return(_a0 error) *MockServi
 	return _c
 }
 
-func (_c *MockServiceInterface_DeleteCampaign_Call) RunAndReturn(run func(campaign.DeleteCampaignParams) error) *MockServiceInterface_DeleteCampaign_Call {
+func (_c *MockServiceInterface_DeleteCampaign_Call) RunAndReturn(run func(campaign.DeleteCampaignDTO) error) *MockServiceInterface_DeleteCampaign_Call {
 	_c.Call.Return(run)
 	return _c
 }

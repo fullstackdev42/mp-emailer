@@ -7,7 +7,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -100,14 +99,4 @@ func NewHandler(params HandlerParams) (HandlerResult, error) {
 		flashHandler:    params.FlashHandler,
 	}
 	return HandlerResult{Handler: handler}, nil
-}
-
-// RegisterRoutes registers the user routes
-func RegisterRoutes(h *Handler, e *echo.Echo) {
-	userGroup := e.Group("/user")
-	userGroup.GET("/register", h.RegisterGET)
-	userGroup.POST("/register", h.RegisterPOST)
-	userGroup.GET("/login", h.LoginGET)
-	userGroup.POST("/login", h.LoginPOST)
-	userGroup.GET("/logout", h.LogoutGET)
 }

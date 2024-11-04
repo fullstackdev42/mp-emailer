@@ -3,8 +3,6 @@ package user
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
@@ -33,20 +31,4 @@ func GetOwnerIDFromSession(c echo.Context) (string, error) {
 
 	logger.Debug("GetOwnerIDFromSession: Owner ID retrieved", "ownerID", ownerID)
 	return ownerID, nil
-}
-
-// AuthMiddleware middleware to set the authenticated flag in the context
-func AuthMiddleware(sessionStore sessions.Store, config *config.Config) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			sess, err := sessionStore.Get(c.Request(), config.SessionName)
-			if err != nil {
-				fmt.Printf("Session error: %v\n", err)
-			}
-			isAuthenticated := sess.Values["authenticated"] == true
-			c.Set("IsAuthenticated", isAuthenticated)
-
-			return next(c)
-		}
-	}
 }

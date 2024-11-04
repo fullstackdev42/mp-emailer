@@ -3,7 +3,6 @@ package campaign
 import (
 	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/jonesrussell/loggo"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -69,18 +68,6 @@ func NewClient(params ClientParams) (ClientInterface, error) {
 		lookupService: params.LookupService,
 	}
 	return client, nil
-}
-
-// RegisterRoutes registers the campaign routes
-func RegisterRoutes(h *Handler, e *echo.Echo) {
-	e.GET("/campaigns", h.GetCampaigns)
-
-	campaignGroup := e.Group("/campaign")
-	campaignGroup.POST("", h.CreateCampaign)
-	campaignGroup.GET("/:id", h.CampaignGET)
-	campaignGroup.PUT("/:id", h.EditCampaign)
-	campaignGroup.DELETE("/:id", h.DeleteCampaign)
-	campaignGroup.POST("/:id/send", h.SendCampaign)
 }
 
 func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {

@@ -21,6 +21,7 @@ type Data struct {
 	RequestID       string
 	CSRFToken       interface{}
 	CurrentPath     string
+	StatusCode      int
 }
 
 // TemplateRendererInterface defines the interface for template rendering

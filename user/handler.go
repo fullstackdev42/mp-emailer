@@ -10,6 +10,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// RegisterRoutes registers the user routes
+func RegisterRoutes(h *Handler, e *echo.Echo) {
+	userGroup := e.Group("/user")
+	userGroup.GET("/register", h.RegisterGET)
+	userGroup.POST("/register", h.RegisterPOST)
+	userGroup.GET("/login", h.LoginGET)
+	userGroup.POST("/login", h.LoginPOST)
+	userGroup.GET("/logout", h.LogoutGET)
+}
+
 // Handler for user routes
 type Handler struct {
 	service         ServiceInterface

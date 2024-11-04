@@ -80,7 +80,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 
-	if err := h.campaignService.DeleteCampaign(campaign.DeleteCampaignParams{ID: id}); err != nil {
+	if err := h.campaignService.DeleteCampaign(campaign.DeleteCampaignDTO{ID: id}); err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error deleting campaign", http.StatusInternalServerError)
 	}
 	return c.NoContent(http.StatusNoContent)
