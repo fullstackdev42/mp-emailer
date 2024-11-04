@@ -1,23 +1,44 @@
-# Testing Plan
+# TODO
 
-## Priority Areas
+## Campaigns
 
-### 1. Core Business Logic
+### Observations and Suggestions
+
+1. **Error Handling**
+   - While your error handling is good, you might want to standardize the errors you're returning. For example, instead of always wrapping errors with `fmt.Errorf`, consider using custom error types or constants for common errors like `ErrCampaignNotFound`.
+
+2. **Closing Rows**
+   - It's good to see you're closing rows properly, but a `defer` statement for closing rows should ideally follow immediately after checking for errors from `db.Query`.
+
+3. **SQL Injection**
+   - You seem to be using parameterized queries, which is excellent for preventing SQL injection attacks. Just make sure any dynamic SQL you write in the future follows this practice.
+
+4. **Time Parsing**
+   - You use `shared.ParseDateTime`, which is fine as long as you handle potential parsing errors appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
+
+5. **QueryRow Error Handling**
+   - In `GetByID`, if the campaign isn't found, you’re returning `ErrCampaignNotFound`. This is a good practice and ensures that clients can handle missing records gracefully.
+
+## Testing Plan
+
+### Priority Areas
+
+#### 1. Core Business Logic
 - [ ] Campaign utils and handlers
 - [ ] User authentication and management
 - [ ] Email sending functionality
 
-### 2. Infrastructure
+#### 2. Infrastructure
 - [ ] Database operations
 - [ ] Configuration loading
 - [ ] Template rendering
 
-### 3. Integration
+#### 3. Integration
 - [ ] API endpoints
 - [ ] Form handling
 - [ ] Session management
 
-## Test Files to Create
+### Test Files to Create
 
 ```plaintext
 tests/
@@ -41,86 +62,86 @@ tests/
     └── session_test.go
 ```
 
-## Package Testing Requirements
+### Package Testing Requirements
 
-### Campaign Package
+#### Campaign Package
 - [ ] Expand existing tests in `campaign/utils_test.go`
 - [ ] Test campaign handlers
 - [ ] Test campaign repository methods
 - [ ] Test campaign service layer
 - [ ] Test representative lookup service
 
-### User Package
+#### User Package
 - [ ] User authentication
 - [ ] User registration
 - [ ] Password hashing/validation
 - [ ] User repository methods
 
-### Email Package
+#### Email Package
 - [ ] Email template rendering
 - [ ] Email sending failures
 - [ ] Rate limiting
 - [ ] Email validation
 
-### Database Package
+#### Database Package
 - [ ] Database connection handling
 - [ ] Query methods
 - [ ] Transaction handling
 - [ ] Error scenarios
 
-### Config Package
+#### Config Package
 - [ ] Environment variable loading
 - [ ] Default values
 - [ ] Configuration validation
 - [ ] Error handling
 
-### Shared Package
+#### Shared Package
 - [ ] Template rendering
 - [ ] Custom functions
 - [ ] Session management
 - [ ] Error handling
 
-## Testing Guidelines
+### Testing Guidelines
 
-### 1. Table-Driven Tests
+#### 1. Table-Driven Tests
 - [ ] Use table-driven tests for comprehensive coverage
 - [ ] Include edge cases and boundary conditions
 - [ ] Test both valid and invalid inputs
 
-### 2. Mocking
+#### 2. Mocking
 - [ ] Use testify/mock for external dependencies
 - [ ] Create mock implementations of interfaces
 - [ ] Test interaction between components
 
-### 3. Error Handling
+#### 3. Error Handling
 - [ ] Test error conditions
 - [ ] Verify error messages
 - [ ] Test error propagation
 
-### 4. Integration Testing
+#### 4. Integration Testing
 - [ ] Test critical user flows
 - [ ] Test API endpoints
 - [ ] Test database interactions
 
-### 5. Test Coverage
+#### 5. Test Coverage
 - [ ] Aim for 80% code coverage in critical packages
 - [ ] Use `go test -cover` to measure coverage
 - [ ] Identify and test edge cases
 
-### 6. Best Practices
+#### 6. Best Practices
 - [ ] Write clear test descriptions
 - [ ] Use test helpers for common operations
 - [ ] Keep tests maintainable and readable
 - [ ] Follow Go testing conventions
 
-## Notes
+### Notes
 - Use `testify/assert` for assertions
 - Avoid global state in tests
 - Use test fixtures where appropriate
 - Document complex test scenarios
 - Consider adding benchmarks for performance-critical code
 
-## Resources
+### Resources
 - Go testing documentation
 - Testify documentation
 - Echo framework testing guide
