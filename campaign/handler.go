@@ -8,7 +8,9 @@ import (
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 type Handler struct {
@@ -17,6 +19,26 @@ type Handler struct {
 	representativeLookupService RepresentativeLookupServiceInterface
 	emailService                email.Service
 	client                      ClientInterface
+	mapError                    func(error) (int, string)
+}
+
+// HandlerParams for dependency injection
+type HandlerParams struct {
+	shared.BaseHandlerParams
+	fx.In
+	Service                     ServiceInterface
+	Logger                      loggo.LoggerInterface
+	RepresentativeLookupService RepresentativeLookupServiceInterface
+	EmailService                email.Service
+	Client                      ClientInterface
+	ErrorHandler                *shared.ErrorHandler
+	TemplateRenderer            shared.TemplateRendererInterface
+}
+
+// HandlerResult is the output struct for NewHandler
+type HandlerResult struct {
+	fx.Out
+	Handler *Handler
 }
 
 // NewHandler initializes a new Handler
@@ -27,6 +49,7 @@ func NewHandler(params HandlerParams) (HandlerResult, error) {
 		representativeLookupService: params.RepresentativeLookupService,
 		emailService:                params.EmailService,
 		client:                      params.Client,
+		mapError:                    mapErrorToHTTPStatus,
 	}
 	return HandlerResult{Handler: handler}, nil
 }
@@ -46,13 +69,15 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	h.Logger.Debug("CampaignGET: Starting")
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidCampaignID)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Debug("CampaignGET: Parsed ID", "id", id)
 	campaignParams := GetCampaignParams{ID: id}
 	campaign, err := h.service.FetchCampaign(campaignParams)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to fetch campaign", http.StatusInternalServerError)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
 
@@ -70,7 +95,8 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 	h.Logger.Debug("Handling GetCampaigns request")
 	campaigns, err := h.service.GetCampaigns()
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Debug("Rendering all campaigns", "count", len(campaigns))
 	return h.renderTemplate(c, "campaigns", &TemplateData{
@@ -128,10 +154,12 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling DeleteCampaign request")
 	params := new(DeleteCampaignParams)
 	if err := c.Bind(params); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidCampaignID)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	if err := h.service.DeleteCampaign(DeleteCampaignParams{ID: params.ID}); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error deleting campaign", http.StatusInternalServerError)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Info("Campaign deleted successfully", "campaignID", params.ID)
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
@@ -142,11 +170,13 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaignForm request")
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidCampaignID)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: id})
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	return h.renderTemplate(c, "campaign_edit", &TemplateData{Campaign: campaign})
 }
@@ -165,7 +195,8 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	var err error
 	params.ID, err = strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidCampaignID)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	params.Name = c.FormValue("name")
 	params.Template = c.FormValue("template")
@@ -174,7 +205,8 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		Name:     params.Name,
 		Template: params.Template,
 	}); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error updating campaign", http.StatusInternalServerError)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	h.Logger.Info("Campaign updated successfully", "campaignID", params.ID)
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(params.ID))
@@ -191,19 +223,23 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	h.Logger.Info("Handling campaign submit request")
 	params := new(SendCampaignParams)
 	if err := c.Bind(params); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidCampaignData)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid postal code", http.StatusBadRequest)
+		status, msg := h.mapError(ErrInvalidPostalCode)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	mp, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil || len(mp) == 0 {
-		return h.ErrorHandler.HandleHTTPError(c, err, "No representatives found", http.StatusNotFound)
+		status, msg := h.mapError(ErrNoRepresentatives)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: params.ID})
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 	userData := extractUserData(c)
 	representative := mp[0]

@@ -76,7 +76,14 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 
 // GetCampaignByID retrieves a campaign by ID
 func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
-	return s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+	if err != nil {
+		if errors.Is(err, ErrCampaignNotFound) {
+			return nil, err // Pass through standard errors
+		}
+		return nil, fmt.Errorf("failed to get campaign with ID %d: %w", params.ID, err)
+	}
+	return campaign, nil
 }
 
 // GetCampaigns retrieves all campaigns

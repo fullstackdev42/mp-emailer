@@ -109,7 +109,7 @@ func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
 		}
-		return nil, fmt.Errorf("error scanning campaign: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseOperation, err)
 	}
 	c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
 	c.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)

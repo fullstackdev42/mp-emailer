@@ -7,9 +7,6 @@
 1. **Error Handling**
    - Standardize the errors returned. For example, instead of always wrapping errors with `fmt.Errorf`, consider using custom error types or constants for common errors like `ErrCampaignNotFound`.
 
-2. **Closing Rows**
-   - Close rows properly. A `defer` statement for closing rows should ideally follow immediately after checking for errors from `db.Query`.
-
 3. **Time Parsing**
    - Using `shared.ParseDateTime`, which is fine as long as potential parsing errors are handled appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
 

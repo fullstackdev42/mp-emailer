@@ -2,8 +2,6 @@ package campaign
 
 import (
 	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/email"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -55,25 +53,6 @@ func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
 		db: params.DB,
 	}
 	return repo, nil
-}
-
-// HandlerParams for dependency injection
-type HandlerParams struct {
-	shared.BaseHandlerParams
-	fx.In
-	Service                     ServiceInterface
-	Logger                      loggo.LoggerInterface
-	RepresentativeLookupService RepresentativeLookupServiceInterface
-	EmailService                email.Service
-	Client                      ClientInterface
-	ErrorHandler                *shared.ErrorHandler
-	TemplateRenderer            shared.TemplateRendererInterface
-}
-
-// HandlerResult is the output struct for NewHandler
-type HandlerResult struct {
-	fx.Out
-	Handler *Handler
 }
 
 // ClientParams for dependency injection
