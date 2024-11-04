@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
 )
 
@@ -20,6 +21,14 @@ type RepresentativeLookupServiceInterface interface {
 type RepresentativeLookupService struct {
 	logger  loggo.LoggerInterface
 	baseURL string
+}
+
+// NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
+func NewRepresentativeLookupService(cfg *config.Config, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
+	return &RepresentativeLookupService{
+		logger:  logger,
+		baseURL: cfg.RepresentativeLookupBaseURL,
+	}
 }
 
 func (s *RepresentativeLookupService) FetchRepresentatives(postalCode string) ([]Representative, error) {

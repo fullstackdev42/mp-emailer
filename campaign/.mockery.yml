@@ -1,9 +1,9 @@
 with-expecter: true
-inpackage: true
+inpackage: false
 filename: "mock_{{.InterfaceName}}.go"
-dir: "."
+dir: "../mocks/campaign"
 mockname: "Mock{{.InterfaceName}}"
-outpkg: "{{.PackageName}}"
+outpkg: "mocks"
 
 packages:
   github.com/fullstackdev42/mp-emailer/campaign:

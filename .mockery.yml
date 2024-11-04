@@ -12,6 +12,7 @@ packages:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
+      Service:
       SMTPClient:
       MailgunClient:
 

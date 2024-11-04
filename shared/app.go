@@ -17,7 +17,7 @@ import (
 	"go.uber.org/fx"
 )
 
-// App provides the application modules
+// App provides the shared application modules
 //
 //nolint:gochecknoglobals
 var App = fx.Options(
@@ -59,18 +59,28 @@ var App = fx.Options(
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DatabaseDSN()
+
+	db, err := connectToDB(dsn, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
+	}
+
+	// Wrap the base DB with the logging decorator
+	decorated := database.NewLoggingDBDecorator(db, logger)
+	return decorated, nil
+}
+
+func connectToDB(dsn string, logger loggo.LoggerInterface) (database.Interface, error) {
 	var err error
 	for retries := 5; retries > 0; retries-- {
-		baseDB, err := database.NewDB(dsn, logger)
+		db, err := database.NewDB(dsn, logger)
 		if err == nil {
-			// Wrap the base DB with the logging decorator
-			decorated := database.NewLoggingDBDecorator(baseDB, logger)
-			return decorated, nil
+			return db, nil
 		}
 		logger.Warn("Failed to connect to database, retrying...", "error", err)
 		time.Sleep(5 * time.Second)
 	}
-	return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
+	return nil, err
 }
 
 // Provide a new session store

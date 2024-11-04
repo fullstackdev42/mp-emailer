@@ -11,6 +11,14 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
+// NewService creates a new campaign service
+func NewService(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
+	return &Service{
+		repo:     repo,
+		validate: validate,
+	}
+}
+
 // GetCampaignParams defines parameters for fetching a campaign
 type GetCampaignParams struct {
 	ID int

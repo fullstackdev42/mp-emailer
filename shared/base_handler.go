@@ -18,7 +18,7 @@ type BaseHandlerParams struct {
 	Logger           loggo.LoggerInterface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
-	TemplateRenderer *CustomTemplateRenderer
+	TemplateRenderer TemplateRendererInterface
 }
 
 type BaseHandler struct {
@@ -26,7 +26,7 @@ type BaseHandler struct {
 	Logger           loggo.LoggerInterface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
-	TemplateRenderer *CustomTemplateRenderer
+	TemplateRenderer TemplateRendererInterface
 }
 
 func NewBaseHandler(params BaseHandlerParams) BaseHandler {

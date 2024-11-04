@@ -1,11 +1,9 @@
 package campaign
 
 import (
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/go-playground/validator/v10"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -76,22 +74,6 @@ type HandlerParams struct {
 type HandlerResult struct {
 	fx.Out
 	Handler *Handler
-}
-
-// NewService creates a new campaign service
-func NewService(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
-	return &Service{
-		repo:     repo,
-		validate: validate,
-	}
-}
-
-// NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
-func NewRepresentativeLookupService(cfg *config.Config, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
-	return &RepresentativeLookupService{
-		logger:  logger,
-		baseURL: cfg.RepresentativeLookupBaseURL,
-	}
 }
 
 // ClientParams for dependency injection

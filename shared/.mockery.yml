@@ -1,0 +1,12 @@
+with-expecter: true
+inpackage: false
+filename: "mock_{{.InterfaceName}}.go"
+dir: "../mocks/shared"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "shared"
+
+packages:
+  github.com/fullstackdev42/mp-emailer/shared:
+    interfaces:
+      ErrorHandlerInterface:
+      TemplateRendererInterface:

@@ -20,6 +20,8 @@ import (
 )
 
 func main() {
+	// Initialize application using uber/fx dependency injection
+	// Modules are composed together to form the complete application
 	app := fx.New(
 		shared.App,
 		campaign.Module,

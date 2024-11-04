@@ -23,6 +23,12 @@ type Data struct {
 	CurrentPath     string
 }
 
+// TemplateRendererInterface defines the interface for template rendering
+type TemplateRendererInterface interface {
+	Render(w io.Writer, name string, data interface{}, c echo.Context) error
+	RenderPage(c echo.Context, templateName string, pageData Data, errorHandler ErrorHandlerInterface) error
+}
+
 // CustomTemplateRenderer is a custom renderer for Echo
 type CustomTemplateRenderer struct {
 	templates *template.Template
