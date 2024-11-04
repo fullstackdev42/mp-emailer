@@ -58,12 +58,7 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			fmt.Printf("Error closing rows: %v\n", err)
-		}
-	}(rows)
+	defer rows.Close()
 
 	var campaigns []Campaign
 	for rows.Next() {

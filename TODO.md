@@ -5,19 +5,13 @@
 ### Observations and Suggestions
 
 1. **Error Handling**
-   - While your error handling is good, you might want to standardize the errors you're returning. For example, instead of always wrapping errors with `fmt.Errorf`, consider using custom error types or constants for common errors like `ErrCampaignNotFound`.
+   - Standardize the errors returned. For example, instead of always wrapping errors with `fmt.Errorf`, consider using custom error types or constants for common errors like `ErrCampaignNotFound`.
 
 2. **Closing Rows**
-   - It's good to see you're closing rows properly, but a `defer` statement for closing rows should ideally follow immediately after checking for errors from `db.Query`.
+   - Close rows properly. A `defer` statement for closing rows should ideally follow immediately after checking for errors from `db.Query`.
 
-3. **SQL Injection**
-   - You seem to be using parameterized queries, which is excellent for preventing SQL injection attacks. Just make sure any dynamic SQL you write in the future follows this practice.
-
-4. **Time Parsing**
-   - You use `shared.ParseDateTime`, which is fine as long as you handle potential parsing errors appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
-
-5. **QueryRow Error Handling**
-   - In `GetByID`, if the campaign isn't found, you’re returning `ErrCampaignNotFound`. This is a good practice and ensures that clients can handle missing records gracefully.
+3. **Time Parsing**
+   - Using `shared.ParseDateTime`, which is fine as long as potential parsing errors are handled appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
 
 ## Testing Plan
 
