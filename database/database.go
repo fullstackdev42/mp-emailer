@@ -23,7 +23,7 @@ type Interface interface {
 
 type DB struct {
 	SQL    *sql.DB
-	logger loggo.LoggerInterface
+	Logger loggo.LoggerInterface
 }
 
 func NewDB(dsn string, logger loggo.LoggerInterface) (Interface, error) {
@@ -41,7 +41,7 @@ func NewDB(dsn string, logger loggo.LoggerInterface) (Interface, error) {
 
 	logger.Info("Successfully connected to database")
 
-	return &DB{SQL: db, logger: logger}, nil
+	return &DB{SQL: db, Logger: logger}, nil
 }
 
 func (db *DB) UserExists(username, email string) (bool, error) {
