@@ -23,8 +23,8 @@ import (
 var App = fx.Options(
 	fx.Provide(
 		config.Load,
-		func() (loggo.LoggerInterface, error) {
-			logger, err := loggo.NewLogger("mp-emailer.log", loggo.LevelDebug)
+		func(cfg *config.Config) (loggo.LoggerInterface, error) {
+			logger, err := loggo.NewLogger(cfg.LogFile, cfg.GetLogLevel())
 			if err != nil {
 				return nil, fmt.Errorf("failed to create logger: %w", err)
 			}
