@@ -1,5 +1,111 @@
 # TODO
 
+## main.go
+
+### Middleware Registration: 
+
+The middleware for setting the logger and session store could be combined into a single middleware for efficiency, or ideally, these should be set up in a way that they're part of the initial Echo setup or through a custom middleware group.
+
+
+### Config Handling: 
+
+You're passing config.Config around quite a bit. Consider if this configuration could be injected into structs once rather than passed around, especially for route handlers.
+
+### Error Handling in Middleware: 
+
+The rate limiter middleware doesn't handle the error case. You might want to add error handling there or ensure the middleware knows how to handle rate limit exceedances.
+
+### Session Store: 
+
+There's no error handling when setting the session store in the middleware. This should be checked to ensure the session store can actually be accessed:
+
+```go
+e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+    return func(c echo.Context) error {
+        if sessionStore != nil {
+            c.Set("store", sessionStore)
+        } else {
+            return errors.New("session store not available")
+        }
+        return next(c)
+    }
+})
+```
+
+### Server Start and Stop: 
+
+The server starts in a goroutine, which is good for non-blocking start. However, you might want to add some form of timeout for graceful shutdown to prevent indefinite waits.
+
+```go
+OnStop: func(ctx context.Context) error {
+    shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+    defer cancel()
+    return e.Shutdown(shutdownCtx)
+},
+```
+
+### Type Assertions: 
+
+When using context.Context to retrieve values set by middleware, remember that value retrieval can return nil. In your handlers, ensure you handle this scenario properly.
+
+
+## shared/app.go
+
+### Session Secret Management:
+
+Hardcoding the session secret in newSessionStore might not be ideal. Consider loading this from configuration or environment variables:
+
+```go
+func newSessionStore(cfg *config.Config) sessions.Store {
+    return sessions.NewCookieStore([]byte(cfg.SessionSecret))
+}
+```
+
+### Database Connection Attempts:
+
+The retry logic in connectToDB could benefit from exponential backoff instead of a fixed retry interval. This makes it more resilient to network issues:
+
+```go
+for retries := 5; retries > 0; retries-- {
+    db, err := database.NewDB(dsn, logger)
+    if err == nil {
+        return db, nil
+    }
+    sleepDuration := time.Duration(5 * (6 - retries)) * time.Second // Exponential backoff
+    logger.Warn("Failed to connect to database, retrying...", "error", err, "retry in", sleepDuration)
+    time.Sleep(sleepDuration)
+}
+```
+
+### Template Loading:
+
+The ProvideTemplates function doesn't handle errors in a very descriptive way. Perhaps adding more context about which template caused the error would be helpful:
+
+```go
+tmpl, err := tmpl.ParseFiles(templates...)
+if err != nil {
+    return nil, fmt.Errorf("failed to parse one or more templates: %w", err)
+}
+```
+
+### Environment Specific Configuration:
+
+If email.NewMailpitEmailService is for development or testing, consider making this environment-dependent or configurable.
+
+### Testing Considerations:
+While there's no test code here, the design does facilitate testing by providing functions for creating instances. However, the use of real database connections and file system operations in ProvideTemplates might complicate testing. Mocking these would be necessary.
+
+### Redundancy in Logger Creation:
+
+There's a possibility of creating multiple loggers if config.Load is called multiple times. Ensure this doesn't happen or that there's a mechanism to reuse or ensure a singleton logger.
+
+### Additional Observations:
+
+The code includes a custom logging decorator for the database, which is good for tracking database operations. Ensure that this decorator does not overly affect performance, especially in high-throughput scenarios.
+
+The use of ** in the filepath pattern for template glob might not be supported in all file systems or Go versions. It's generally safer to use * for recursive matches if supported, or ensure your Go version supports it.
+Make sure config.SessionSecret is secure and not hardcoded or exposed in any way in production.
+
 ## Campaigns
 
 ### Observations and Suggestions
