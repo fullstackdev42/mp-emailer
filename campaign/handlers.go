@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
@@ -67,27 +68,73 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
-	h.Logger.Debug("Handling CreateCampaign request")
-	params := new(CreateCampaignParams)
-	if err := c.Bind(params); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
-	}
-	ownerID, err := user.GetOwnerIDFromSession(c)
+	h.Logger.Debug("CreateCampaign: Starting")
+
+	userID, err := GetUserIDFromSession(c, h.Config.SessionName)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
+		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
+		status, msg := h.mapError(ErrUnauthorizedAccess)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	params.OwnerID = ownerID
+
+	params := &CreateCampaignParams{
+		Name:        strings.TrimSpace(c.FormValue("name")),
+		Description: strings.TrimSpace(c.FormValue("description")),
+		Template:    strings.TrimSpace(c.FormValue("template")),
+		OwnerID:     userID,
+	}
+
+	// Enhanced validation with specific error messages
+	var validationErrors []string
+	if params.Name == "" {
+		validationErrors = append(validationErrors, "Name is required")
+	}
+	if params.Description == "" {
+		validationErrors = append(validationErrors, "Description is required")
+	}
+	if params.Template == "" {
+		validationErrors = append(validationErrors, "Template is required")
+	}
+
+	if len(validationErrors) > 0 {
+		h.Logger.Error("CreateCampaign: Validation failed", nil,
+			"errors", strings.Join(validationErrors, ", "),
+			"name", params.Name,
+			"description", params.Description)
+
+		// Return to form with error messages
+		return c.Render(http.StatusBadRequest, "campaign_create", shared.Data{
+			Title:    "Create Campaign",
+			PageName: "campaign_create",
+			Content: map[string]interface{}{
+				"Errors":     validationErrors,
+				"FormValues": params, // Preserve form values
+			},
+		})
+	}
+
+	h.Logger.Debug("CreateCampaign: Creating campaign", "ownerID", userID)
+
 	dto := &CreateCampaignDTO{
 		Name:        params.Name,
 		Description: params.Description,
 		Template:    params.Template,
 		OwnerID:     params.OwnerID,
 	}
+
 	campaign, err := h.service.CreateCampaign(dto)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error creating campaign", http.StatusInternalServerError)
+		h.Logger.Error("CreateCampaign: Failed to create campaign", err,
+			"ownerID", userID,
+			"name", params.Name)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Info("Campaign created successfully", "campaignID", campaign.ID, "ownerID", ownerID)
+
+	h.Logger.Info("CreateCampaign: Campaign created successfully",
+		"campaignID", campaign.ID,
+		"ownerID", userID)
+
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(campaign.ID))
 }
 

@@ -3,17 +3,23 @@ package campaign
 import (
 	"errors"
 	"net/http"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // Standard campaign errors
 var (
 	ErrCampaignNotFound    = errors.New("campaign not found")
 	ErrInvalidCampaignID   = errors.New("invalid campaign ID")
-	ErrUnauthorizedAccess  = errors.New("unauthorized access")
 	ErrInvalidCampaignData = errors.New("invalid campaign data")
-	ErrDatabaseOperation   = errors.New("database operation failed")
-	ErrInvalidPostalCode   = errors.New("invalid postal code")
-	ErrNoRepresentatives   = errors.New("no representatives found")
+
+	ErrUnauthorizedAccess = errors.New("unauthorized access")
+	ErrSessionInvalid     = errors.New("invalid session")
+	ErrUserNotFound       = errors.New("user not found in session")
+
+	ErrDatabaseOperation = errors.New("database operation failed")
+	ErrInvalidPostalCode = errors.New("invalid postal code")
+	ErrNoRepresentatives = errors.New("no representatives found")
 )
 
 // mapErrorToHTTPStatus maps domain errors to HTTP status codes and messages
@@ -33,6 +39,8 @@ func mapErrorToHTTPStatus(err error) (int, string) {
 		return http.StatusNotFound, "No representatives found"
 	case errors.Is(err, ErrDatabaseOperation):
 		return http.StatusInternalServerError, "Internal server error"
+	case errors.Is(err, validator.ValidationErrors{}):
+		return http.StatusBadRequest, "Invalid input: Missing required fields"
 	default:
 		return http.StatusInternalServerError, "Internal server error"
 	}

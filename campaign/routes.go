@@ -14,7 +14,7 @@ func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config) {
 
 	// Protected routes (require authentication)
 	protected := e.Group("/campaign")
-	protected.Use(AuthMiddleware(cfg))
+	protected.Use(ValidateSession(cfg.SessionName))
 	protected.GET("/new", h.CreateCampaignForm)
 	protected.POST("", h.CreateCampaign)
 	protected.GET("/:id/edit", h.EditCampaignForm)
