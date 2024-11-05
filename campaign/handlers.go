@@ -52,17 +52,17 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 			"Campaigns": campaigns,
 		},
 	}
-	return h.TemplateRenderer.Render(c.Response().Writer, "campaigns", data, c)
+	return c.Render(http.StatusOK, "campaigns", data)
 }
 
 // CreateCampaignForm handles GET requests for the campaign creation form
 func (h *Handler) CreateCampaignForm(c echo.Context) error {
 	h.Logger.Debug("Handling CreateCampaignForm request")
-	return h.TemplateRenderer.Render(c.Response().Writer, "campaign_create", shared.Data{
+	return c.Render(http.StatusOK, "campaign_create", shared.Data{
 		Title:    "Create Campaign",
 		PageName: "campaign_create",
 		Content:  nil,
-	}, c)
+	})
 }
 
 // CreateCampaign handles POST requests for creating a new campaign
@@ -220,11 +220,11 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	filters := map[string]string{"type": representativeType}
 	filteredRepresentatives := h.representativeLookupService.FilterRepresentatives(representatives, filters)
 	h.Logger.Info("Representatives lookup successful", "count", len(filteredRepresentatives), "postalCode", postalCode, "type", representativeType)
-	return h.TemplateRenderer.Render(c.Response().Writer, "representatives", shared.Data{
+	return c.Render(http.StatusOK, "representatives", shared.Data{
 		Title:    "Representatives",
 		PageName: "representatives",
 		Content: map[string]interface{}{
 			"Representatives": filteredRepresentatives,
 		},
-	}, c)
+	})
 }
