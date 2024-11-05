@@ -118,8 +118,16 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 
 	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: id})
 	if err != nil {
+		if err == ErrCampaignNotFound {
+			return h.ErrorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
+		}
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	ownerID, err := user.GetOwnerIDFromSession(c)
+	if err != nil || campaign.OwnerID != ownerID {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
 
 	return c.Render(http.StatusOK, "campaign_edit", shared.Data{

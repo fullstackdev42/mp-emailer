@@ -17,6 +17,7 @@ func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config) {
 	protected.Use(AuthMiddleware(cfg))
 	protected.GET("/new", h.CreateCampaignForm)
 	protected.POST("", h.CreateCampaign)
+	protected.GET("/:id/edit", h.EditCampaignForm)
 	protected.PUT("/:id", h.EditCampaign)
 	protected.DELETE("/:id", h.DeleteCampaign)
 }
