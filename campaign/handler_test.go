@@ -160,15 +160,30 @@ func TestGetCampaigns(t *testing.T) {
 			setupMocks: func(s *handlerTestSuite) {
 				campaigns := []campaign.Campaign{{ID: 1, Name: "Test Campaign"}}
 
-				s.mockLogger.EXPECT().Debug("GetCampaigns: Starting")
-				s.mockLogger.EXPECT().Debug("GetCampaigns: Campaigns fetched", "count", 1)
-				s.mockLogger.EXPECT().Debug("GetCampaigns: Template rendered successfully")
+				s.mockLogger.EXPECT().Debug("Handling GetCampaigns request")
+				s.mockLogger.EXPECT().Debug("Rendering all campaigns", "count", 1)
 
 				s.mockService.EXPECT().GetCampaigns().Return(campaigns, nil)
+
+				// Update template renderer mock to match shared.Data structure
 				s.mockTemplateRenderer.EXPECT().Render(
 					mock.Anything,
 					"campaigns",
-					mock.Anything,
+					mock.MatchedBy(func(data shared.Data) bool {
+						content, ok := data.Content.(map[string]interface{})
+						if !ok {
+							return false
+						}
+						campaignsData, ok := content["Campaigns"].([]campaign.Campaign)
+						if !ok {
+							return false
+						}
+						return len(campaignsData) == 1 &&
+							campaignsData[0].ID == 1 &&
+							campaignsData[0].Name == "Test Campaign" &&
+							data.Title == "All Campaigns" &&
+							data.PageName == "campaigns"
+					}),
 					mock.Anything,
 				).Return(nil)
 			},
