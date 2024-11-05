@@ -102,7 +102,7 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 func (t *CustomTemplateRenderer) executeTemplate(w io.Writer, name string, data *Data) error {
 	// First render the content into the .Content field
 	var contentBuffer bytes.Buffer
-	if err := t.templates.ExecuteTemplate(&contentBuffer, "content", data); err != nil {
+	if err := t.templates.ExecuteTemplate(&contentBuffer, name, data); err != nil {
 		return fmt.Errorf("failed to execute content template: %w", err)
 	}
 	data.Content = template.HTML(contentBuffer.String())
