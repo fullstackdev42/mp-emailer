@@ -2,6 +2,8 @@ package campaign_test
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +17,32 @@ import (
 func setupTest() (*campaign.Service, *mocksCampaign.MockRepositoryInterface) {
 	mockRepo := new(mocksCampaign.MockRepositoryInterface)
 	validate := validator.New()
+
+	// Register the UUID validator
+	err := validate.RegisterValidation("uuid4", func(fl validator.FieldLevel) bool {
+		// Simple UUID4 format check
+		uuid := fl.Field().String()
+		if len(uuid) != 36 {
+			return false
+		}
+		// Check for UUID4 format: 8-4-4-4-12 characters
+		parts := strings.Split(uuid, "-")
+		if len(parts) != 5 {
+			return false
+		}
+		lengths := []int{8, 4, 4, 4, 12}
+		for i, part := range parts {
+			if len(part) != lengths[i] {
+				return false
+			}
+		}
+		return true
+	})
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to register uuid4 validator: %v", err))
+	}
+
 	service := campaign.NewService(mockRepo, validate)
 	return service.(*campaign.Service), mockRepo
 }
@@ -49,8 +77,12 @@ func TestCreateCampaign(t *testing.T) {
 					UpdatedAt:   now,
 					Tokens:      []string{},
 				}
-				mockRepo.On("Create", mock.AnythingOfType("*campaign.CreateCampaignDTO")).
-					Return(expectedCampaign, nil)
+				mockRepo.On("Create", &campaign.CreateCampaignDTO{
+					Name:        "Test Campaign",
+					Description: "Test Description",
+					Template:    "Test Template",
+					OwnerID:     "123e4567-e89b-12d3-a456-426614174000",
+				}).Return(expectedCampaign, nil)
 			},
 			want: &campaign.Campaign{
 				ID:          1,
@@ -93,6 +125,9 @@ func TestCreateCampaign(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockRepo.ExpectedCalls = nil
+			mockRepo.Calls = nil
+
 			tt.mock()
 			got, err := service.CreateCampaign(tt.input)
 			if tt.wantErr {
@@ -101,6 +136,7 @@ func TestCreateCampaign(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+			mockRepo.AssertExpectations(t)
 		})
 	}
 }
