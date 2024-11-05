@@ -131,9 +131,11 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 	})
 }
 
-// EditCampaign handles POST requests for updating a campaign
+// EditCampaign handles PUT/POST requests for updating a campaign
 func (h *Handler) EditCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaign request")
+
+	// Get campaign ID from URL parameter
 	params := EditParams{}
 	var err error
 	params.ID, err = strconv.Atoi(c.Param("id"))
@@ -141,8 +143,12 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
+	// Get form values
 	params.Name = c.FormValue("name")
 	params.Template = c.FormValue("template")
+
+	// Update campaign
 	if err := h.service.UpdateCampaign(&UpdateCampaignDTO{
 		ID:       params.ID,
 		Name:     params.Name,
@@ -151,7 +157,23 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
+	// Add success flash message
+	session, err := h.Store.Get(c.Request(), "mpe")
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
+	}
+
+	session.AddFlash("Campaign updated successfully", "messages")
+	if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+		h.Logger.Error("Failed to save session", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
+	}
+
 	h.Logger.Info("Campaign updated successfully", "campaignID", params.ID)
+
+	// Redirect to campaign details page
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(params.ID))
 }
 

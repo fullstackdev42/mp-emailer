@@ -82,6 +82,9 @@ func registerMiddlewares(e *echo.Echo, sessionStore sessions.Store, logger loggo
 
 	// Implement rate limiting
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+
+	// In your server setup
+	e.Use(shared.MethodOverride())
 }
 
 // registerHandlers configures all route handlers for the application
