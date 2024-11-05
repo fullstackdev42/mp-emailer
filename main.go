@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/fullstackdev42/mp-emailer/api"
@@ -107,7 +106,7 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger lo
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			go func() {
-				logger.Info(fmt.Sprintf("Starting server on :%s", config.AppPort))
+				logger.Info("Starting server on port " + config.AppPort)
 				if err := e.Start(":" + config.AppPort); !errors.Is(err, http.ErrServerClosed) {
 					logger.Error("Error starting server", err)
 				}
