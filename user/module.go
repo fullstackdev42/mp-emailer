@@ -3,11 +3,9 @@ package user
 import (
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
-	"gorm.io/gorm"
 )
 
 // Module defines the user module
@@ -29,44 +27,6 @@ var Module = fx.Options(
 		},
 	),
 )
-
-// ServiceParams for dependency injection
-type ServiceParams struct {
-	fx.In
-	Repo     RepositoryInterface
-	Validate *validator.Validate
-	Cfg      *config.Config
-}
-
-// NewService creates a new user service
-func NewService(params ServiceParams) ServiceInterface {
-	return &Service{
-		repo:     params.Repo,
-		validate: params.Validate,
-		cfg:      params.Cfg,
-	}
-}
-
-// RepositoryParams for dependency injection
-type RepositoryParams struct {
-	fx.In
-	DB     *gorm.DB
-	Logger loggo.LoggerInterface
-}
-
-// RepositoryResult is the output struct for NewRepository
-type RepositoryResult struct {
-	fx.Out
-	Repository RepositoryInterface `group:"repositories"`
-}
-
-// NewRepository creates a new user repository
-func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
-	repo := &Repository{
-		db: params.DB,
-	}
-	return repo, nil
-}
 
 // HandlerParams for dependency injection
 type HandlerParams struct {

@@ -1,142 +1,61 @@
 package database
 
 import (
-	"database/sql"
-	"time"
-
 	"github.com/jonesrussell/loggo"
+	"gorm.io/gorm"
 )
 
-// Decorator interface defines methods that can be decorated
-type Decorator interface {
-	Interface
-}
-
-// LoggingDBDecorator adds logging functionality to database operations
+// LoggingDBDecorator is a decorator for logging database operations
 type LoggingDBDecorator struct {
-	db     Interface
-	logger loggo.LoggerInterface
+	DB     Interface
+	Logger loggo.LoggerInterface
 }
 
-// NewLoggingDBDecorator creates a new logging decorator for database operations
-func NewLoggingDBDecorator(db Interface, logger loggo.LoggerInterface) Decorator {
+// NewLoggingDBDecorator creates a new LoggingDBDecorator
+func NewLoggingDBDecorator(db Interface, logger loggo.LoggerInterface) *LoggingDBDecorator {
 	return &LoggingDBDecorator{
-		db:     db,
-		logger: logger,
+		DB:     db,
+		Logger: logger,
 	}
 }
 
-// UserExists decorates the database UserExists method with logging
-func (d *LoggingDBDecorator) UserExists(username, email string) (bool, error) {
-	start := time.Now()
-	d.logger.Debug("Checking if user exists",
-		"username", username,
-		"email", email,
-	)
-
-	exists, err := d.db.UserExists(username, email)
-
-	d.logger.Debug("UserExists completed",
-		"username", username,
-		"email", email,
-		"exists", exists,
-		"duration", time.Since(start),
-		"error", err,
-	)
-
+func (d *LoggingDBDecorator) Exists(model interface{}, query string, args ...interface{}) (bool, error) {
+	d.Logger.Debug("Checking existence", "model", model, "query", query, "args", args)
+	exists, err := d.DB.Exists(model, query, args...)
+	if err != nil {
+		d.Logger.Error("Error checking existence", err, "model", model, "query", query, "args", args)
+	}
 	return exists, err
 }
 
-// CreateUser decorates the database CreateUser method with logging
-func (d *LoggingDBDecorator) CreateUser(id, username, email, passwordHash string) error {
-	start := time.Now()
-	d.logger.Debug("Creating new user",
-		"id", id,
-		"username", username,
-		"email", email,
-	)
-
-	err := d.db.CreateUser(id, username, email, passwordHash)
-
-	d.logger.Debug("CreateUser completed",
-		"id", id,
-		"username", username,
-		"email", email,
-		"duration", time.Since(start),
-		"error", err,
-	)
-
+func (d *LoggingDBDecorator) Create(model interface{}) error {
+	d.Logger.Debug("Creating model", "model", model)
+	err := d.DB.Create(model)
+	if err != nil {
+		d.Logger.Error("Error creating model", err, "model", model)
+	}
 	return err
 }
 
-// LoginUser decorates the database LoginUser method with logging
-func (d *LoggingDBDecorator) LoginUser(username, password string) (string, error) {
-	start := time.Now()
-	d.logger.Debug("Attempting user login",
-		"username", username,
-	)
-
-	userID, err := d.db.LoginUser(username, password)
-
-	d.logger.Debug("LoginUser completed",
-		"username", username,
-		"success", err == nil,
-		"duration", time.Since(start),
-		"error", err,
-	)
-
-	return userID, err
+func (d *LoggingDBDecorator) FindOne(model interface{}, query string, args ...interface{}) error {
+	d.Logger.Debug("Finding one", "model", model, "query", query, "args", args)
+	err := d.DB.FindOne(model, query, args...)
+	if err != nil {
+		d.Logger.Error("Error finding one", err, "model", model, "query", query, "args", args)
+	}
+	return err
 }
 
-// Exec decorates the database Exec method with logging
-func (d *LoggingDBDecorator) Exec(query string, args ...interface{}) (sql.Result, error) {
-	start := time.Now()
-	d.logger.Debug("Executing SQL query",
-		"query", query,
-		"args", args,
-	)
-
-	result, err := d.db.Exec(query, args...)
-
-	d.logger.Debug("Exec completed",
-		"duration", time.Since(start),
-		"error", err,
-	)
-
-	return result, err
+func (d *LoggingDBDecorator) Exec(query string, args ...interface{}) error {
+	d.Logger.Debug("Executing query", "query", query, "args", args)
+	err := d.DB.Exec(query, args...)
+	if err != nil {
+		d.Logger.Error("Error executing query", err, "query", query, "args", args)
+	}
+	return err
 }
 
-// Query decorates the database Query method with logging
-func (d *LoggingDBDecorator) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	start := time.Now()
-	d.logger.Debug("Executing SQL query",
-		"query", query,
-		"args", args,
-	)
-
-	rows, err := d.db.Query(query, args...)
-
-	d.logger.Debug("Query completed",
-		"duration", time.Since(start),
-		"error", err,
-	)
-
-	return rows, err
-}
-
-// QueryRow decorates the database QueryRow method with logging
-func (d *LoggingDBDecorator) QueryRow(query string, args ...interface{}) *sql.Row {
-	start := time.Now()
-	d.logger.Debug("Executing SQL query row",
-		"query", query,
-		"args", args,
-	)
-
-	row := d.db.QueryRow(query, args...)
-
-	d.logger.Debug("QueryRow completed",
-		"duration", time.Since(start),
-	)
-
-	return row
+func (d *LoggingDBDecorator) Query(query string, args ...interface{}) *gorm.DB {
+	d.Logger.Debug("Querying", "query", query, "args", args)
+	return d.DB.Query(query, args...)
 }

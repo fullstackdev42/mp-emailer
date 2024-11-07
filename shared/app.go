@@ -15,6 +15,8 @@ import (
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 // App provides the shared application modules
@@ -68,9 +70,12 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 func connectToDB(dsn string, logger loggo.LoggerInterface) (database.Interface, error) {
 	var err error
 	for retries := 5; retries > 0; retries-- {
-		db, err := database.NewDB(dsn, logger)
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err == nil {
-			return db, nil
+			sqlDB, _ := db.DB()
+			if err = sqlDB.Ping(); err == nil {
+				return &database.DB{GormDB: db}, nil
+			}
 		}
 		logger.Warn("Failed to connect to database, retrying...", "error", err)
 		time.Sleep(5 * time.Second)
