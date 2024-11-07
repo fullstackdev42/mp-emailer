@@ -11,23 +11,27 @@ import (
 )
 
 func TestMailgunEmailService_SendEmail(t *testing.T) {
-	MockMailgunClient := new(mocksEmail.MockMailgunClient)
+	mockMailgun := new(mocksEmail.MockMailgunClient)
+	mockLogger := mocks.NewMockLoggerInterface(t)
+
+	// Set up logger expectations
+	mockLogger.On("Debug", "Email sent successfully", "messageId", "").Return()
 
 	service := &MailgunEmailService{
 		domain: "example.com",
 		apiKey: "key",
-		client: MockMailgunClient,
-		logger: mocks.NewMockLoggerInterface(t),
+		client: mockMailgun,
+		logger: mockLogger,
 	}
 
 	message := &mailgun.Message{}
 
-	// Update this line to pass the 'to' string directly
-	MockMailgunClient.On("NewMessage", "no-reply@example.com", "Subject", "Body", "test@example.com").Return(message)
-	MockMailgunClient.On("Send", mock.Anything, message).Return("", "", nil)
+	mockMailgun.On("NewMessage", "no-reply@example.com", "Subject", "Body", "test@example.com").Return(message)
+	mockMailgun.On("Send", mock.Anything, message).Return("", "", nil)
 
 	err := service.SendEmail("test@example.com", "Subject", "Body", false)
 
 	assert.NoError(t, err)
-	MockMailgunClient.AssertExpectations(t)
+	mockMailgun.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
 }

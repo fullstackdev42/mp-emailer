@@ -1,28 +1,45 @@
 package email
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMailpitEmailService_SendEmail(t *testing.T) {
+	// Create mocks
+	mockLogger := new(mocks.MockLoggerInterface)
 	mockSMTP := new(mocksEmail.MockSMTPClient)
-	service := &MailpitEmailService{
-		host:       "localhost",
-		port:       "1025",
-		smtpClient: mockSMTP,
-	}
 
-	addr := fmt.Sprintf("%s:%s", service.host, service.port)
-	message := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", "test@example.com", "Subject", "Body"))
+	// Set up logger expectations
+	mockLogger.On("Debug", "HTML Body content", "body", "Test Body").Return()
+	mockLogger.On("Debug", "Full message", "message", mock.AnythingOfType("string")).Return()
 
-	mockSMTP.On("SendMail", addr, nil, "no-reply@example.com", []string{"test@example.com"}, message).Return(nil)
+	// Set up SMTP client expectations
+	mockSMTP.On("SendMail",
+		"localhost:1025",
+		mock.Anything,
+		"test@example.com",
+		[]string{"recipient@example.com"},
+		mock.AnythingOfType("[]uint8"),
+	).Return(nil)
 
-	err := service.SendEmail("test@example.com", "Subject", "Body", false)
+	// Create service with mocks
+	service := NewMailpitEmailService(
+		"localhost",
+		"1025",
+		mockSMTP,
+		mockLogger,
+		"test@example.com",
+	)
+
+	// Test sending HTML email
+	err := service.SendEmail("recipient@example.com", "Test Subject", "Test Body", true)
 
 	assert.NoError(t, err)
+	mockLogger.AssertExpectations(t)
 	mockSMTP.AssertExpectations(t)
 }
