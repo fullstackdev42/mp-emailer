@@ -2,12 +2,12 @@ package user
 
 import (
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 // Module defines the user module
@@ -50,7 +50,7 @@ func NewService(params ServiceParams) ServiceInterface {
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     database.Interface
+	DB     *gorm.DB
 	Logger loggo.LoggerInterface
 }
 

@@ -1,14 +1,10 @@
 package user
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
-	"github.com/jonesrussell/loggo"
+	"gorm.io/gorm"
 )
 
 // RepositoryInterface defines the methods that a user repository must implement
@@ -22,11 +18,9 @@ type RepositoryInterface interface {
 var _ RepositoryInterface = (*Repository)(nil)
 
 type Repository struct {
-	db     database.Interface
-	logger loggo.LoggerInterface
+	db *gorm.DB
 }
 
-// CreateUser creates a new user
 func (r *Repository) CreateUser(params *CreateDTO) (*User, error) {
 	user := &User{
 		ID:           uuid.New().String(),
@@ -35,44 +29,30 @@ func (r *Repository) CreateUser(params *CreateDTO) (*User, error) {
 		PasswordHash: params.Password,
 	}
 
-	err := r.db.CreateUser(user.ID, user.Username, user.Email, user.PasswordHash)
-	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error creating user: %s, %s", params.Username, params.Email), err)
+	if err := r.db.Create(user).Error; err != nil {
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 	return user, nil
 }
 
-// GetUserByUsername gets a user by username
-func (r *Repository) GetUserByUsername(username string) (*User, error) {
-	query := `SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = ?`
-	row := r.db.QueryRow(query, username)
-
-	var user User
-	var createdAt, updatedAt sql.NullString
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &createdAt, &updatedAt)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("user not found")
-		}
-		r.logger.Error(fmt.Sprintf("Error getting user by username: %s", username), err)
-		return nil, fmt.Errorf("error getting user: %w", err)
-	}
-
-	user.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
-	user.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
-
-	return &user, nil
-}
-
-// UserExists checks if a user exists
 func (r *Repository) UserExists(params *CreateDTO) (bool, error) {
-	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
-	var count int
-	err := r.db.QueryRow(query, params.Username, params.Email).Scan(&count)
+	var count int64
+	err := r.db.Model(&User{}).
+		Where("username = ? OR email = ?", params.Username, params.Email).
+		Count(&count).Error
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error checking user existence: %s, %s", params.Username, params.Email), err)
 		return false, fmt.Errorf("error checking user existence: %w", err)
 	}
 	return count > 0, nil
+}
+
+func (r *Repository) GetUserByUsername(username string) (*User, error) {
+	var user User
+	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("error querying user: %w", err)
+	}
+	return &user, nil
 }

@@ -1,17 +1,22 @@
 package campaign
 
-import "time"
+import (
+	"time"
+
+	"github.com/fullstackdev42/mp-emailer/user"
+)
 
 // Campaign represents an email campaign.
 type Campaign struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Template    string    `json:"template"`
-	OwnerID     string    `json:"owner_id"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Tokens      []string  `json:"tokens"`
+	ID          int       `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name        string    `gorm:"type:varchar(255);not null" json:"name"`
+	Description string    `gorm:"type:text;not null" json:"description"`
+	Template    string    `gorm:"type:text;not null" json:"template"`
+	OwnerID     string    `gorm:"type:char(36);not null" json:"owner_id"`
+	Owner       user.User `gorm:"foreignKey:OwnerID" json:"-"`
+	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	Tokens      []string  `gorm:"-" json:"tokens"`
 }
 
 // Representative represents a government representative.

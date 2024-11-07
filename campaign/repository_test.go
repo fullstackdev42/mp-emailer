@@ -6,45 +6,47 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type RepositoryTestSuite struct {
 	suite.Suite
 	mock       sqlmock.Sqlmock
-	db         database.Interface
+	db         *gorm.DB
 	repo       *Repository
 	mockLogger *mocks.MockLoggerInterface
 }
 
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
-	sqlDB, mock, err := sqlmock.New()
+	// Use an in-memory SQLite database for testing
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(s.T(), err)
 
-	s.mock = mock
 	s.mockLogger = new(mocks.MockLoggerInterface)
 
 	// Setup expected logger calls
 	s.mockLogger.On("Debug", "Connecting to database", []interface{}{}).Return(nil)
 
-	// Create a new DB instance directly
-	db := &database.DB{
-		SQL:    sqlDB,
-		Logger: s.mockLogger,
-	}
+	// Migrate the schema for testing
+	err = db.AutoMigrate(&Campaign{})
+	assert.NoError(s.T(), err)
 
-	s.db = db
-	s.repo = &Repository{db: s.db}
+	s.repo = &Repository{db: db}
 }
 
 // TearDownTest tears down the test environment
 func (s *RepositoryTestSuite) TearDownTest() {
 	s.mock.ExpectClose()
-	s.db.(*database.DB).SQL.Close()
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	sqlDB.Close()
 }
 
 // TestRepositoryTestSuite runs the Repository test suite

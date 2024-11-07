@@ -112,7 +112,7 @@ func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
 
 // FetchCampaign retrieves a campaign by parameters
 func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetCampaign(GetCampaignDTO{ID: params.ID})
+	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound

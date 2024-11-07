@@ -1,9 +1,9 @@
 package campaign
 
 import (
-	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 // Module defines the campaign module
@@ -42,7 +42,7 @@ var Module = fx.Options(
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     database.Interface
+	DB     *gorm.DB
 	Logger loggo.LoggerInterface
 }
 
