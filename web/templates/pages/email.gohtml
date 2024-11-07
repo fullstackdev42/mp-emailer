@@ -10,7 +10,7 @@
         <div class="mt-6">
             <form action="/campaign/{{.Content.CampaignID}}/send" method="POST">
                 <input type="hidden" name="email" value="{{.Content.Email}}">
-                <input type="hidden" name="content" value="{{.Content.Content}}">
+                <textarea name="content" style="display: none;">{{printf "%s" .Content.Content}}</textarea>
                 <button type="submit" 
                     class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">
                     Send Email

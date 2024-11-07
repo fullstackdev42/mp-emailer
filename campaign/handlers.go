@@ -281,7 +281,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 	h.Logger.Info("Handling email send request")
 
 	email := c.FormValue("email")
-	content := c.FormValue("content")
+	content := template.HTML(c.FormValue("content"))
 
 	if email == "" || content == "" {
 		h.Logger.Error("Missing required fields", nil,
@@ -293,7 +293,8 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 			http.StatusBadRequest)
 	}
 
-	err := h.emailService.SendEmail(email, "Campaign", content, true)
+	htmlContent := string(content)
+	err := h.emailService.SendEmail(email, "Campaign", htmlContent, true)
 	if err != nil {
 		h.Logger.Error("Failed to send email", err,
 			"recipient", email)

@@ -39,16 +39,18 @@ func (s *MailgunEmailService) SendEmail(to, subject, body string, isHTML bool) e
 	)
 
 	if isHTML {
+		s.logger.Debug("HTML Body content", "body", body)
 		message.SetHTML(body)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	_, _, err := s.client.Send(ctx, message)
+	_, id, err := s.client.Send(ctx, message)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 
+	s.logger.Debug("Email sent successfully", "messageId", id)
 	return nil
 }
