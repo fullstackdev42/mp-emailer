@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -16,18 +18,29 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 )
 
 func main() {
+	// Check for required configuration before starting the application
+	if err := config.CheckRequired(); err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
 	// Initialize application using uber/fx dependency injection
-	// Modules are composed together to form the complete application
 	app := fx.New(
-		shared.App,
-		campaign.Module,
-		user.Module,
-		server.Module,
-		api.Module,
-		fx.Invoke(registerRoutes, startServer),
+		fx.Options(
+			shared.App,
+			campaign.Module,
+			user.Module,
+			server.Module,
+			api.Module,
+			fx.Invoke(registerRoutes, startServer),
+		),
+		fx.WithLogger(func() fxevent.Logger {
+			return &fxevent.ConsoleLogger{W: os.Stdout}
+		}),
 	)
 
 	app.Run()

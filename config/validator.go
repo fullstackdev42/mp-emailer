@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,21 +33,21 @@ func validateConfig(config *Config) error {
 }
 
 func validateRequiredFields(config *Config) error {
-	if config.DBUser == "" {
-		return fmt.Errorf("DB_USER is not set in the environment")
+	missing := []string{}
+	commands := []string{}
+
+	for envVar, command := range config.RequiredEnvVars() {
+		if os.Getenv(envVar) == "" {
+			missing = append(missing, envVar)
+			commands = append(commands, command)
+		}
 	}
-	if config.DBName == "" {
-		return fmt.Errorf("DB_NAME is not set in the environment")
+
+	if len(missing) > 0 {
+		return fmt.Errorf("Missing required environment variables: %v\nRun the following commands:\n%s",
+			missing, strings.Join(commands, "\n"))
 	}
-	if config.DBPassword == "" {
-		return fmt.Errorf("DB_PASSWORD is not set in the environment")
-	}
-	if config.SessionSecret == "" {
-		return fmt.Errorf("SESSION_SECRET is not set in the environment")
-	}
-	if config.JWTSecret == "" {
-		return fmt.Errorf("JWT_SECRET is not set in the environment")
-	}
+
 	return nil
 }
 
