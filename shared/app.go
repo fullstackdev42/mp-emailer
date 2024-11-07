@@ -122,7 +122,10 @@ func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (emai
 		MailgunAPIKey: cfg.MailgunAPIKey,
 	}
 
-	emailService, err := email.NewEmailService(emailConfig, logger)
+	emailService, err := email.NewEmailService(email.Params{
+		Config: emailConfig,
+		Logger: logger,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create email service: %w", err)
 	}

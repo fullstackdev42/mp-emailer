@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/smtp"
 
-	"github.com/jonesrussell/loggo"
 	"github.com/mailgun/mailgun-go/v4"
 )
 
@@ -44,44 +43,40 @@ func (s *SMTPClientImpl) SendMail(addr string, a smtp.Auth, from string, to []st
 }
 
 // NewEmailService creates an email service based on the provided configuration
-func NewEmailService(config Config, logger loggo.LoggerInterface) (Service, error) {
-	switch config.Provider {
+func NewEmailService(p Params) (Service, error) {
+	switch p.Config.Provider {
 	case ProviderSMTP:
-		if config.SMTPHost == "" || config.SMTPPort == "" {
+		if p.Config.SMTPHost == "" || p.Config.SMTPPort == "" {
 			return nil, fmt.Errorf("SMTP configuration is incomplete")
 		}
 
 		smtpClient := &SMTPClientImpl{
-			auth: smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost),
+			auth: smtp.PlainAuth("", p.Config.SMTPUsername, p.Config.SMTPPassword, p.Config.SMTPHost),
 		}
 
 		return NewMailpitEmailService(
-			config.SMTPHost,
-			config.SMTPPort,
+			p.Config.SMTPHost,
+			p.Config.SMTPPort,
 			smtpClient,
-			logger,
-			config.SMTPFrom,
+			p.Logger,
+			p.Config.SMTPFrom,
 		), nil
 
 	case ProviderMailgun:
-		if config.MailgunDomain == "" || config.MailgunAPIKey == "" {
+		if p.Config.MailgunDomain == "" || p.Config.MailgunAPIKey == "" {
 			return nil, fmt.Errorf("Mailgun configuration is incomplete")
 		}
 
-		mg := mailgun.NewMailgun(config.MailgunDomain, config.MailgunAPIKey)
-		logger, err := loggo.NewLogger("mailgun", loggo.LevelInfo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create logger: %w", err)
-		}
+		mg := mailgun.NewMailgun(p.Config.MailgunDomain, p.Config.MailgunAPIKey)
 
 		return NewMailgunEmailService(
-			config.MailgunDomain,
-			config.MailgunAPIKey,
+			p.Config.MailgunDomain,
+			p.Config.MailgunAPIKey,
 			mg,
-			logger,
+			p.Logger,
 		), nil
 
 	default:
-		return nil, fmt.Errorf("unsupported email provider: %s", config.Provider)
+		return nil, fmt.Errorf("unsupported email provider: %s", p.Config.Provider)
 	}
 }
