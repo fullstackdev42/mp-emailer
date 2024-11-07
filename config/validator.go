@@ -29,6 +29,10 @@ func validateConfig(config *Config) error {
 		return err
 	}
 
+	if err := validateEmailConfig(config); err != nil {
+		return err
+	}
+
 	return validatePaths(config)
 }
 
@@ -97,6 +101,22 @@ func validateLogLevel(config *Config) error {
 	if !validLogLevels[config.LogLevel] {
 		return fmt.Errorf("invalid LOG_LEVEL '%s': must be one of: debug, info, warn, error",
 			config.LogLevel)
+	}
+	return nil
+}
+
+func validateEmailConfig(config *Config) error {
+	switch config.EmailProvider {
+	case EmailProviderSMTP:
+		if config.SMTPHost == "" || config.SMTPPort == "" || config.SMTPFrom == "" {
+			return fmt.Errorf("SMTP_HOST, SMTP_PORT, and SMTP_FROM are required when EMAIL_PROVIDER=smtp")
+		}
+	case EmailProviderMailgun:
+		if config.MailgunAPIKey == "" || config.MailgunDomain == "" {
+			return fmt.Errorf("MAILGUN_API_KEY and MAILGUN_DOMAIN are required when EMAIL_PROVIDER=mailgun")
+		}
+	default:
+		return fmt.Errorf("invalid EMAIL_PROVIDER '%s': must be one of: smtp, mailgun", config.EmailProvider)
 	}
 	return nil
 }

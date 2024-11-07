@@ -58,6 +58,12 @@ func loadFromEnv(appRoot string) *Config {
 		RepresentativeLookupBaseURL: getEnv("REPRESENTATIVE_LOOKUP_BASE_URL", "https://represent.opennorth.ca"),
 		SessionName:                 getEnv("SESSION_NAME", "mpe"),
 		SessionSecret:               os.Getenv("SESSION_SECRET"),
+		EmailProvider:               EmailProvider(getEnv("EMAIL_PROVIDER", string(EmailProviderSMTP))),
+		SMTPHost:                    getEnv("SMTP_HOST", "mailpit"),
+		SMTPPort:                    getEnv("SMTP_PORT", "1025"),
+		SMTPUsername:                getEnv("SMTP_USERNAME", ""),
+		SMTPPassword:                getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:                    getEnv("SMTP_FROM", "test@example.com"),
 	}
 }
 

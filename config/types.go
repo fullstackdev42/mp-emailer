@@ -22,6 +22,12 @@ type Config struct {
 	RepresentativeLookupBaseURL string
 	SessionName                 string
 	SessionSecret               string
+	EmailProvider               EmailProvider
+	SMTPHost                    string
+	SMTPPort                    string
+	SMTPUsername                string
+	SMTPPassword                string
+	SMTPFrom                    string
 }
 
 // Log is used for logging configuration without sensitive fields
@@ -42,3 +48,11 @@ func (c *Config) RequiredEnvVars() map[string]string {
 		"DB_PASSWORD":    "echo 'DB_PASSWORD=your_database_password' >> .env",
 	}
 }
+
+// EmailProvider represents the type of email service to use
+type EmailProvider string
+
+const (
+	EmailProviderSMTP    EmailProvider = "smtp"
+	EmailProviderMailgun EmailProvider = "mailgun"
+)
