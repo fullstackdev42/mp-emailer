@@ -7,6 +7,7 @@ vars:
   GO_FILES: '$(find . -name "*.go" -type f -not -path "./vendor/*")'
   BIN_DIR: bin
   DB_URL: mysql://{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}
+  MIGRATIONS_DIR: ./database/migrations
 
 tasks:
   default:
@@ -49,38 +50,38 @@ tasks:
     desc: Run all tasks (lint, test, build)
     cmds:
       - task: lint
-      - task: test
       - task: build
+      - task: test
 
   migrate-up:
     desc: Run all up migrations
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations up
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} up
 
   migrate-down:
     desc: Run all down migrations
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations down {{.CLI_ARGS}}
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} down {{.CLI_ARGS}}
 
   migrate-up-one:
     desc: Run one up migration
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations up 1
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} up 1
 
   migrate-down-one:
     desc: Run one down migration
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations down 1
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} down 1
 
   migrate-force:
     desc: Force set migration version
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations force {{.CLI_ARGS}}
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} force {{.CLI_ARGS}}
 
   migrate-version:
     desc: Show current migration version
     cmds:
-      - migrate -database "{{.DB_URL}}" -path ./migrations version
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS_DIR}} version
 
   mailpit-logs:
     desc: View Mailpit logs
