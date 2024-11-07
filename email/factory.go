@@ -58,7 +58,6 @@ func NewEmailService(p Params) (Service, error) {
 			p.Config.SMTPHost,
 			p.Config.SMTPPort,
 			smtpClient,
-			p.Logger,
 			p.Config.SMTPFrom,
 		), nil
 

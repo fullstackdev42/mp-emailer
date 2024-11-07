@@ -2,24 +2,20 @@ package email
 
 import (
 	"fmt"
-
-	"github.com/jonesrussell/loggo"
 )
 
 type MailpitEmailService struct {
 	host       string
 	port       string
 	smtpClient SMTPClient
-	logger     loggo.LoggerInterface
 	from       string
 }
 
-func NewMailpitEmailService(host, port string, smtpClient SMTPClient, logger loggo.LoggerInterface, from string) *MailpitEmailService {
+func NewMailpitEmailService(host, port string, smtpClient SMTPClient, from string) *MailpitEmailService {
 	return &MailpitEmailService{
 		host:       host,
 		port:       port,
 		smtpClient: smtpClient,
-		logger:     logger,
 		from:       from,
 	}
 }
@@ -29,7 +25,6 @@ func (s *MailpitEmailService) SendEmail(to, subject, body string, isHTML bool) e
 	contentType := "text/plain"
 	if isHTML {
 		contentType = "text/html"
-		s.logger.Debug("HTML Body content", "body", body)
 	}
 
 	message := []byte(fmt.Sprintf("From: %s\r\n"+
@@ -41,6 +36,5 @@ func (s *MailpitEmailService) SendEmail(to, subject, body string, isHTML bool) e
 		"%s",
 		s.from, to, subject, contentType, body))
 
-	s.logger.Debug("Full message", "message", string(message))
 	return s.smtpClient.SendMail(addr, nil, s.from, []string{to}, message)
 }

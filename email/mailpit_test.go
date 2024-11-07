@@ -32,7 +32,6 @@ func TestMailpitEmailService_SendEmail(t *testing.T) {
 		"localhost",
 		"1025",
 		mockSMTP,
-		mockLogger,
 		"test@example.com",
 	)
 

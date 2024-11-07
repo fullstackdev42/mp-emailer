@@ -6,7 +6,6 @@
 
 The middleware for setting the logger and session store could be combined into a single middleware for efficiency, or ideally, these should be set up in a way that they're part of the initial Echo setup or through a custom middleware group.
 
-
 ### Config Handling: 
 
 You're passing config.Config around quite a bit. Consider if this configuration could be injected into structs once rather than passed around, especially for route handlers.
@@ -105,6 +104,50 @@ The code includes a custom logging decorator for the database, which is good for
 
 The use of ** in the filepath pattern for template glob might not be supported in all file systems or Go versions. It's generally safer to use * for recursive matches if supported, or ensure your Go version supports it.
 Make sure config.SessionSecret is secure and not hardcoded or exposed in any way in production.
+
+## Email Service Decorators
+
+### Current Implementation Needed
+- [ ] Add logging before and after email sending
+- [ ] Log any errors that occur
+- [ ] Preserve the original email service interface
+- [ ] Follow decorator pattern for clean separation of concerns
+
+### Future Enhancements
+- [ ] Rate limiting decorator
+  - Implement token bucket or sliding window algorithm
+  - Configure limits per email domain/recipient
+  - Handle rate limit exceeded scenarios
+
+- [ ] Retry decorator with backoff
+  - Implement exponential backoff strategy
+  - Configure max retry attempts
+  - Handle permanent vs temporary failures
+
+- [ ] Metrics collection decorator
+  - Track success/failure rates
+  - Measure response times
+  - Monitor rate limit usage
+  - Export Prometheus metrics
+
+- [ ] Email validation decorator
+  - Validate email format
+  - Check for disposable email domains
+  - Implement DNS MX record validation
+  - Handle validation failures gracefully
+
+- [ ] Template preprocessing decorator
+  - Cache compiled templates
+  - Validate template variables
+  - Handle template rendering errors
+  - Implement template versioning
+
+### Implementation Notes
+- Each decorator should be independently configurable
+- Consider using builder pattern for decorator chain setup
+- Implement proper context handling for timeouts/cancellation
+- Add appropriate test coverage for each decorator
+- Document failure modes and recovery strategies
 
 ## Campaigns
 
