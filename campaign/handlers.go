@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
+
+	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 )
 
@@ -214,7 +215,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	}
 
 	// Add success flash message
-	session, err := h.Store.Get(c.Request(), "mpe")
+	session, err := h.Store.Get(c.Request(), h.Config.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
@@ -232,45 +233,34 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(params.ID))
 }
 
-// SendCampaign handles POST requests for sending a campaign
-func (h *Handler) SendCampaign(c echo.Context) error {
-	h.Logger.Info("Handling campaign submit request")
+// ComposeEmail handles the initial postal code submission and email composition
+func (h *Handler) ComposeEmail(c echo.Context) error {
+	h.Logger.Info("Handling email composition request")
 
-	// If we have email and content in the form, this is the final send
-	email := c.FormValue("email")
-	content := c.FormValue("content")
-	if email != "" && content != "" {
-		err := h.emailService.SendEmail(email, "Campaign", content)
-		if err != nil {
-			status, msg := h.mapError(err)
-			return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
-		}
-
-		// Redirect to success page or campaign details
-		return c.Redirect(http.StatusSeeOther, "/campaign/"+c.Param("id"))
-	}
-
-	// Otherwise, this is the initial postal code submission
 	params := new(SendCampaignParams)
 	if err := c.Bind(params); err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignData)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
 	postalCode, err := extractAndValidatePostalCode(c)
 	if err != nil {
 		status, msg := h.mapError(ErrInvalidPostalCode)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
 	mp, err := h.representativeLookupService.FetchRepresentatives(postalCode)
 	if err != nil || len(mp) == 0 {
 		status, msg := h.mapError(ErrNoRepresentatives)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
 	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: params.ID})
 	if err != nil {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+
 	userData := extractUserData(c)
 	representative := mp[0]
 	emailContent := h.service.ComposeEmail(ComposeEmailParams{
@@ -278,8 +268,51 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		Campaign: campaign,
 		UserData: userData,
 	})
-	h.Logger.Info("Email composed successfully", "campaignID", params.ID, "representative", representative.Email)
+
+	h.Logger.Info("Email composed successfully",
+		"campaignID", params.ID,
+		"representative", representative.Email)
+
 	return h.RenderEmailTemplate(c, representative.Email, emailContent)
+}
+
+// SendCampaign handles the actual email sending
+func (h *Handler) SendCampaign(c echo.Context) error {
+	h.Logger.Info("Handling email send request")
+
+	email := c.FormValue("email")
+	content := c.FormValue("content")
+
+	if email == "" || content == "" {
+		h.Logger.Error("Missing required fields", nil,
+			"email", email != "",
+			"hasContent", content != "")
+		return h.ErrorHandler.HandleHTTPError(c,
+			ErrInvalidCampaignData,
+			"Email and content are required",
+			http.StatusBadRequest)
+	}
+
+	err := h.emailService.SendEmail(email, "Campaign", content)
+	if err != nil {
+		h.Logger.Error("Failed to send email", err,
+			"recipient", email)
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	h.Logger.Info("Email sent successfully",
+		"recipient", email,
+		"campaignID", c.Param("id"))
+
+	// Add success flash message
+	session, err := h.Store.Get(c.Request(), h.Config.SessionName)
+	if err == nil {
+		session.AddFlash("Email sent successfully!", "messages")
+		_ = session.Save(c.Request(), c.Response().Writer)
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/campaign/"+c.Param("id"))
 }
 
 // RenderEmailTemplate renders the email template

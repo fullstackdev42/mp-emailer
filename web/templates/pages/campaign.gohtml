@@ -1,16 +1,18 @@
 {{define "campaign"}}
 <main class="max-w-4xl mx-auto p-8">
     <h1 class="text-3xl font-bold mb-2" id="campaign-name">{{.Content.Campaign.Name}}</h1>
+        {{if not .Content.Campaign.UpdatedAt.IsZero}}
     <p class="mb-6 text-sm text-gray-600">
-        <time datetime="{{.Content.Campaign.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
-            Last updated: {{.Content.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
-        </time>
+            <time datetime="{{.Content.Campaign.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+                Last updated: {{.Content.Campaign.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
+            </time>
     </p>
+        {{end}}
 
     {{template "campaign_send_form" .Content.Campaign}}
     
     <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
-        <h2 id="template-preview" class="sr-only">Template Preview</h2>
+        <h2 id="template-preview" class="sr-only">Preview</h2>
         <div id="editor">{{safeHTML .Content.Campaign.Template}}</div>
     </div>
 

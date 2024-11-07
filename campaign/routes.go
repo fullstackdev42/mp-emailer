@@ -10,6 +10,7 @@ func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config) {
 	// Public routes (no authentication required)
 	e.GET("/campaigns", h.GetCampaigns)
 	e.GET("/campaign/:id", h.CampaignGET)
+	e.POST("/campaign/:id/compose", h.ComposeEmail)
 	e.POST("/campaign/:id/send", h.SendCampaign)
 
 	// Protected routes (require authentication)
