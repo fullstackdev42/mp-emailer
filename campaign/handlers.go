@@ -235,6 +235,22 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 // SendCampaign handles POST requests for sending a campaign
 func (h *Handler) SendCampaign(c echo.Context) error {
 	h.Logger.Info("Handling campaign submit request")
+
+	// If we have email and content in the form, this is the final send
+	email := c.FormValue("email")
+	content := c.FormValue("content")
+	if email != "" && content != "" {
+		err := h.emailService.SendEmail(email, "Campaign", content)
+		if err != nil {
+			status, msg := h.mapError(err)
+			return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+		}
+
+		// Redirect to success page or campaign details
+		return c.Redirect(http.StatusSeeOther, "/campaign/"+c.Param("id"))
+	}
+
+	// Otherwise, this is the initial postal code submission
 	params := new(SendCampaignParams)
 	if err := c.Bind(params); err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignData)
@@ -270,15 +286,17 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 func (h *Handler) RenderEmailTemplate(c echo.Context, email string, content string) error {
 	h.Logger.Debug("Rendering email template", "recipientEmail", email)
 
-	// Convert content to template.HTML once
-	htmlContent := template.HTML(content)
+	campaignID := c.Param("id")
 
-	data := map[string]interface{}{
-		"Title":      "Email Preview",
-		"PageName":   "email",
-		"Email":      email,
-		"Content":    htmlContent,
-		"RawContent": content, // Add raw content for mailto link
+	data := shared.Data{
+		Title:    "Email Preview",
+		PageName: "email",
+		Content: map[string]interface{}{
+			"Email":      email,
+			"Content":    template.HTML(content),
+			"RawContent": content,
+			"CampaignID": campaignID,
+		},
 	}
 
 	return c.Render(http.StatusOK, "email", data)
