@@ -43,6 +43,6 @@ type User struct {
 }
 
 // IsValid checks if the user is valid
-func (u *User) IsValid() bool {
+func (u User) IsValid() bool {
 	return u.Username != "" && u.Email != "" && u.PasswordHash != ""
 }
