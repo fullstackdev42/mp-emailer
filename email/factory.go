@@ -60,6 +60,7 @@ func NewEmailService(config Config, logger loggo.LoggerInterface) (Service, erro
 			config.SMTPPort,
 			smtpClient,
 			logger,
+			config.SMTPFrom,
 		), nil
 
 	case ProviderMailgun:

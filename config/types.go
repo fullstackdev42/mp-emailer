@@ -16,8 +16,6 @@ type Config struct {
 	LogLevel                    string
 	MailgunAPIKey               string
 	MailgunDomain               string
-	MailpitHost                 string
-	MailpitPort                 string
 	MigrationsPath              string
 	RepresentativeLookupBaseURL string
 	SessionName                 string

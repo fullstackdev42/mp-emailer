@@ -52,8 +52,6 @@ func loadFromEnv(appRoot string) *Config {
 		LogLevel:                    getEnv("LOG_LEVEL", "info"),
 		MailgunAPIKey:               getEnv("MAILGUN_API_KEY", ""),
 		MailgunDomain:               getEnv("MAILGUN_DOMAIN", ""),
-		MailpitHost:                 getEnv("MAILPIT_HOST", "localhost"),
-		MailpitPort:                 getEnv("MAILPIT_PORT", "1025"),
 		MigrationsPath:              normalizePath(getEnv("MIGRATIONS_PATH", "migrations"), appRoot),
 		RepresentativeLookupBaseURL: getEnv("REPRESENTATIVE_LOOKUP_BASE_URL", "https://represent.opennorth.ca"),
 		SessionName:                 getEnv("SESSION_NAME", "mpe"),
