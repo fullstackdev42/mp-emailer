@@ -2,17 +2,12 @@ package email
 
 import (
 	"fmt"
-	"net/smtp"
 )
 
 type MailpitEmailService struct {
 	host       string
 	port       string
 	smtpClient SMTPClient
-}
-
-type SMTPClient interface {
-	SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error
 }
 
 func (s *MailpitEmailService) SendEmail(to, subject, body string) error {

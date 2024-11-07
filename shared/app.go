@@ -41,13 +41,7 @@ var App = fx.Options(
 			ProvideTemplates,
 			fx.As(new(TemplateRendererInterface)),
 		),
-		func() email.Service {
-			return email.NewMailpitEmailService(
-				"test@test.com",
-				"test",
-				nil,
-			)
-		},
+		provideEmailService,
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
 		NewFlashHandler,
@@ -70,6 +64,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 	return decorated, nil
 }
 
+// connectToDB attempts to connect to the database with retries
 func connectToDB(dsn string, logger loggo.LoggerInterface) (database.Interface, error) {
 	var err error
 	for retries := 5; retries > 0; retries-- {
@@ -112,4 +107,25 @@ func ProvideTemplates(store sessions.Store) (TemplateRendererInterface, error) {
 	}
 
 	return NewCustomTemplateRenderer(tmpl, store), nil
+}
+
+// provideEmailService creates a new email service based on the configuration
+func provideEmailService(cfg *config.Config) (email.Service, error) {
+	emailConfig := email.Config{
+		Provider:      email.Provider(cfg.EmailProvider),
+		SMTPHost:      cfg.SMTPHost,
+		SMTPPort:      cfg.SMTPPort,
+		SMTPUsername:  cfg.SMTPUsername,
+		SMTPPassword:  cfg.SMTPPassword,
+		SMTPFrom:      cfg.SMTPFrom,
+		MailgunDomain: cfg.MailgunDomain,
+		MailgunAPIKey: cfg.MailgunAPIKey,
+	}
+
+	emailService, err := email.NewEmailService(emailConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email service: %w", err)
+	}
+
+	return emailService, nil
 }
