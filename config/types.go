@@ -5,11 +5,11 @@ type Config struct {
 	AppDebug                    bool
 	AppEnv                      Environment
 	AppPort                     string
-	DBHost                      string
-	DBName                      string
-	DBPassword                  string
-	DBPort                      string
-	DBUser                      string
+	DBUser                      string `env:"DB_USER,required"`
+	DBPassword                  string `env:"DB_PASSWORD,required"`
+	DBHost                      string `env:"DB_HOST,required"`
+	DBPort                      string `env:"DB_PORT" envDefault:"3306"`
+	DBName                      string `env:"DB_NAME,required"`
 	EmailProvider               EmailProvider
 	JWTExpiry                   string
 	JWTSecret                   string

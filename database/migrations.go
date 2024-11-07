@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/golang-migrate/migrate/v4"
 	"go.uber.org/fx"
 
 	// Import MySQL driver for database migrations
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
@@ -42,13 +44,18 @@ func NewMigrationService(config *config.Config, migrationsPath string) *Migratio
 
 // Run executes the migrations
 func (ms *MigrationService) Run(migrator Migrator) error {
+	// Add debug logging
+	pwd, _ := os.Getwd()
+	fmt.Printf("Current working directory: %s\n", pwd)
+	fmt.Printf("Looking for migrations in: %s\n", ms.migrationsPath)
+
 	// Validate DSN
 	if ms.dsn == "" {
 		return fmt.Errorf("DSN is required")
 	}
 
 	// Ensure the migrations directory exists
-	if _, err := os.Stat(ms.migrationsPath); os.IsNotExist(err) {
+	if _, err := os.Stat(strings.TrimPrefix(ms.migrationsPath, "file://")); os.IsNotExist(err) {
 		return fmt.Errorf("migrations directory does not exist: %w", err)
 	}
 
@@ -71,7 +78,7 @@ func (ms *MigrationService) RunMigrations() error {
 	// Create a new migrator instance
 	m, err := migrate.New(
 		ms.migrationsPath,
-		ms.dsn,
+		fmt.Sprintf("mysql://%s", ms.dsn), // Prefix the DSN with mysql:// protocol
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
@@ -106,6 +113,6 @@ type MigrationParams struct {
 }
 
 func RunMigrations(p MigrationParams) error {
-	migrationService := NewMigrationService(p.Config, "file://migrations")
+	migrationService := NewMigrationService(p.Config, "file://database/migrations")
 	return migrationService.RunMigrations()
 }

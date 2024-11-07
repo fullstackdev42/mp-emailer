@@ -7,9 +7,8 @@ import (
 	"time"
 )
 
-// DatabaseDSN returns the Data Source Name for connecting to the database.
+// DatabaseDSN returns the formatted DSN string for MySQL
 func (c *Config) DatabaseDSN() string {
-	// DSN format specific to MariaDB
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
 

@@ -7,7 +7,7 @@ vars:
   GO_FILES: '$(find . -name "*.go" -type f -not -path "./vendor/*")'
   BIN_DIR: bin
   DB_URL: mysql://{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}
-  MIGRATIONS: "{{.MIGRATIONS_DIR}}"
+  MIGRATIONS: "{{.MIGRATIONS_PATH}}"
 
 tasks:
   default:

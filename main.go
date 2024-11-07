@@ -10,6 +10,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/server"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
@@ -36,6 +37,7 @@ func main() {
 			user.Module,
 			server.Module,
 			api.Module,
+			database.MigrationModule,
 			fx.Invoke(registerRoutes, startServer),
 		),
 		fx.WithLogger(func() fxevent.Logger {
