@@ -10,6 +10,7 @@ type Config struct {
 	DBPassword                  string
 	DBPort                      string
 	DBUser                      string
+	EmailProvider               EmailProvider
 	JWTExpiry                   string
 	JWTSecret                   string
 	LogFile                     string
@@ -20,12 +21,11 @@ type Config struct {
 	RepresentativeLookupBaseURL string
 	SessionName                 string
 	SessionSecret               string
-	EmailProvider               EmailProvider
+	SMTPFrom                    string
 	SMTPHost                    string
+	SMTPPassword                string
 	SMTPPort                    string
 	SMTPUsername                string
-	SMTPPassword                string
-	SMTPFrom                    string
 }
 
 // Log is used for logging configuration without sensitive fields
