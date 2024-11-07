@@ -5,11 +5,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/golang-migrate/migrate/v4"
+	"go.uber.org/fx"
+
 	// Import MySQL driver for database migrations
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jonesrussell/loggo"
+)
+
+// MigrationModule is the module for database migrations
+// nolint:gochecknoglobals
+var MigrationModule = fx.Options(
+	fx.Invoke(RunMigrations),
 )
 
 // Migrator interface for running and closing migrations
@@ -22,41 +30,58 @@ type Migrator interface {
 type MigrationService struct {
 	dsn            string
 	migrationsPath string
-	logger         loggo.LoggerInterface
+}
+
+// NewMigrationService creates a new instance of MigrationService
+func NewMigrationService(config *config.Config, migrationsPath string) *MigrationService {
+	return &MigrationService{
+		dsn:            config.DatabaseDSN(),
+		migrationsPath: migrationsPath,
+	}
 }
 
 // Run executes the migrations
 func (ms *MigrationService) Run(migrator Migrator) error {
 	// Validate DSN
 	if ms.dsn == "" {
-		ms.logger.Error("DSN is empty", nil)
 		return fmt.Errorf("DSN is required")
 	}
 
-	// Log the migrations path for debugging
-	ms.logger.Debug("Migrations path: " + ms.migrationsPath)
-
 	// Ensure the migrations directory exists
 	if _, err := os.Stat(ms.migrationsPath); os.IsNotExist(err) {
-		ms.logger.Error("Migrations directory does not exist", err, "path", ms.migrationsPath)
 		return fmt.Errorf("migrations directory does not exist: %w", err)
 	}
 
 	// Run migrations
 	switch err := migrator.Up(); {
 	case err != nil && !errors.Is(err, migrate.ErrNoChange):
-		ms.logger.Error("Error running migrations", err)
 		return fmt.Errorf("error running migrations: %w", err)
 	}
 
 	// Always close the migrator
 	if err := migrator.Close(); err != nil {
-		ms.logger.Error("Error closing migration instance", err)
 		return fmt.Errorf("error closing migrations: %w", err)
 	}
 
-	ms.logger.Info("Migrations completed successfully")
 	return nil
+}
+
+// RunMigrations executes the database migrations
+func (ms *MigrationService) RunMigrations() error {
+	// Create a new migrator instance
+	m, err := migrate.New(
+		ms.migrationsPath,
+		ms.dsn,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create migrator: %w", err)
+	}
+
+	// Create a default migrator
+	migrator := &DefaultMigrator{Migrate: m}
+
+	// Run the migrations
+	return ms.Run(migrator)
 }
 
 // DefaultMigrator wraps the migrate.Migrate struct
@@ -73,4 +98,14 @@ func (dm *DefaultMigrator) Up() error {
 func (dm *DefaultMigrator) Close() error {
 	_, err := dm.Migrate.Close()
 	return err
+}
+
+type MigrationParams struct {
+	fx.In
+	Config *config.Config
+}
+
+func RunMigrations(p MigrationParams) error {
+	migrationService := NewMigrationService(p.Config, "file://migrations")
+	return migrationService.RunMigrations()
 }

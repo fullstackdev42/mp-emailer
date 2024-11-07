@@ -5,13 +5,10 @@ import (
 	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"go.uber.org/fx"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 // ServiceInterface defines the interface for user services
@@ -24,7 +21,7 @@ type ServiceInterface interface {
 
 // Service is the implementation of the UserServiceInterface
 type Service struct {
-	db       database.Interface
+	repo     RepositoryInterface
 	validate *validator.Validate
 	cfg      *config.Config
 }
@@ -41,7 +38,7 @@ var _ ServiceInterface = (*Service)(nil)
 // ServiceParams for dependency injection
 type ServiceParams struct {
 	fx.In
-	DB       database.Interface
+	Repo     RepositoryInterface
 	Validate *validator.Validate
 	Cfg      *config.Config
 }
@@ -49,7 +46,7 @@ type ServiceParams struct {
 // NewService creates a new user service
 func NewService(params ServiceParams) ServiceInterface {
 	return &Service{
-		db:       params.DB,
+		repo:     params.Repo,
 		validate: params.Validate,
 		cfg:      params.Cfg,
 	}
@@ -75,17 +72,15 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 
 	// Create the user with the hashed password
 	user := User{
-		ID:           generateUserID(), // Implement this function to generate user ID
 		Username:     params.Username,
 		Email:        params.Email,
 		PasswordHash: string(hashedPassword),
 	}
-	if err := s.db.Create(&user); err != nil {
+	if err := s.repo.Create(&user); err != nil {
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
 	return &DTO{
-		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
@@ -95,14 +90,9 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 
 // LoginUser logs in a user and returns a JWT token
 func (s *Service) LoginUser(params *LoginDTO) (string, error) {
-	// Check if user exists and password is correct
-	var user User
-	err := s.db.FindOne(&user, "username = ?", params.Username)
+	user, err := s.repo.FindByUsername(params.Username)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return "", fmt.Errorf("invalid username or password")
-		}
-		return "", fmt.Errorf("error querying user: %w", err)
+		return "", fmt.Errorf("invalid username or password")
 	}
 
 	// Compare the provided password with the stored hashed password
@@ -126,12 +116,10 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 
 // GetUser retrieves a user by their username
 func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
-	var user User
-	err := s.db.FindOne(&user, "username = ?", params.Username)
+	user, err := s.repo.FindByUsername(params.Username)
 	if err != nil {
 		return nil, fmt.Errorf("error querying user: %w", err)
 	}
-
 	return &DTO{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -154,9 +142,4 @@ func (s *Service) Warn(_ string, _ ...interface{}) {
 // Error logs an error message with the given parameters
 func (s *Service) Error(_ string, _ error, _ ...interface{}) {
 	// Empty implementation as logging is handled by the decorator
-}
-
-// Helper function to generate a user ID (UUID)
-func generateUserID() string {
-	return uuid.New().String()
 }
