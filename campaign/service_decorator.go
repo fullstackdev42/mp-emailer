@@ -16,20 +16,22 @@ func NewLoggingDecorator(service ServiceInterface, logger loggo.LoggerInterface)
 	}
 }
 
-// Implement LoggableService methods
+// Info logs an info message with the given parameters
 func (d *LoggingDecorator) Info(message string, params ...interface{}) {
 	d.logger.Info(message, params...)
 }
 
+// Warn logs a warning message with the given parameters
 func (d *LoggingDecorator) Warn(message string, params ...interface{}) {
 	d.logger.Warn(message, params...)
 }
 
+// Error logs an error message with the given parameters
 func (d *LoggingDecorator) Error(message string, err error, params ...interface{}) {
 	d.logger.Error(message, err, params...)
 }
 
-// Implement ServiceInterface methods with logging
+// CreateCampaign creates a new campaign
 func (d *LoggingDecorator) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 	d.logger.Info("Creating campaign", "dto", dto)
 	campaign, err := d.service.CreateCampaign(dto)
@@ -39,6 +41,7 @@ func (d *LoggingDecorator) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, er
 	return campaign, err
 }
 
+// UpdateCampaign updates an existing campaign
 func (d *LoggingDecorator) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	d.logger.Info("Updating campaign", "dto", dto)
 	err := d.service.UpdateCampaign(dto)
@@ -48,6 +51,7 @@ func (d *LoggingDecorator) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	return err
 }
 
+// GetCampaignByID gets a campaign by its ID
 func (d *LoggingDecorator) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
 	d.logger.Info("Getting campaign by ID", "params", params)
 	campaign, err := d.service.GetCampaignByID(params)
@@ -57,6 +61,7 @@ func (d *LoggingDecorator) GetCampaignByID(params GetCampaignParams) (*Campaign,
 	return campaign, err
 }
 
+// GetCampaigns gets all campaigns
 func (d *LoggingDecorator) GetCampaigns() ([]Campaign, error) {
 	d.logger.Info("Fetching all campaigns")
 	campaigns, err := d.service.GetCampaigns()
@@ -66,6 +71,7 @@ func (d *LoggingDecorator) GetCampaigns() ([]Campaign, error) {
 	return campaigns, err
 }
 
+// DeleteCampaign deletes a campaign
 func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignDTO) error {
 	d.logger.Info("Deleting campaign", "params", params)
 	err := d.service.DeleteCampaign(params)
@@ -75,6 +81,7 @@ func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignDTO) error {
 	return err
 }
 
+// FetchCampaign fetches a campaign
 func (d *LoggingDecorator) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
 	d.logger.Info("Fetching campaign", "params", params)
 	campaign, err := d.service.FetchCampaign(params)
@@ -84,6 +91,7 @@ func (d *LoggingDecorator) FetchCampaign(params GetCampaignParams) (*Campaign, e
 	return campaign, err
 }
 
+// ComposeEmail composes an email
 func (d *LoggingDecorator) ComposeEmail(params ComposeEmailParams) string {
 	d.logger.Info("Composing email", "params", params)
 	return d.service.ComposeEmail(params)

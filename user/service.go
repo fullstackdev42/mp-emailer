@@ -118,15 +118,17 @@ func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
 	}, nil
 }
 
-// Add these methods to implement LoggableService
+// Info logs an info message with the given parameters
 func (s *Service) Info(_ string, _ ...interface{}) {
 	// Empty implementation as logging is handled by the decorator
 }
 
+// Warn logs a warning message with the given parameters
 func (s *Service) Warn(_ string, _ ...interface{}) {
 	// Empty implementation as logging is handled by the decorator
 }
 
+// Error logs an error message with the given parameters
 func (s *Service) Error(_ string, _ error, _ ...interface{}) {
 	// Empty implementation as logging is handled by the decorator
 }

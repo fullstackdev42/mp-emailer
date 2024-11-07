@@ -30,17 +30,19 @@ func NewGenericLoggingDecorator[T ServiceWithLogging](service T, logger loggo.Lo
 	}
 }
 
-// Base logging methods
+// Info logs an info message with the given parameters
 func (d *GenericLoggingDecorator[T]) Info(message string, params ...interface{}) {
 	d.Logger.Info(message, params...)
 	d.Service.Info(message, params...)
 }
 
+// Warn logs a warning message with the given parameters
 func (d *GenericLoggingDecorator[T]) Warn(message string, params ...interface{}) {
 	d.Logger.Warn(message, params...)
 	d.Service.Warn(message, params...)
 }
 
+// Error logs an error message with the given parameters
 func (d *GenericLoggingDecorator[T]) Error(message string, err error, params ...interface{}) {
 	d.Logger.Error(message, err, params...)
 	d.Service.Error(message, err, params...)

@@ -88,7 +88,7 @@ func validatePaths(c *Config) error {
 	return nil
 }
 
-// Helper method to get the absolute path
+// GetAbsolutePath returns the absolute path of a given path
 func (c *Config) GetAbsolutePath(path string) string {
 	if filepath.IsAbs(path) {
 		return path
@@ -100,16 +100,17 @@ func (c *Config) GetAbsolutePath(path string) string {
 	return abs
 }
 
-// Add these methods to get normalized paths
+// GetMigrationsPath returns the path to the migrations directory
 func (c *Config) GetMigrationsPath() string {
 	return c.MigrationsPath
 }
 
+// GetLogFilePath returns the path to the log file
 func (c *Config) GetLogFilePath() string {
 	return c.LogFile
 }
 
-// Helper method to get parsed JWT expiry duration
+// GetJWTExpiryDuration returns the parsed JWT expiry duration
 func (c *Config) GetJWTExpiryDuration() (time.Duration, error) {
 	return time.ParseDuration(c.JWTExpiry)
 }

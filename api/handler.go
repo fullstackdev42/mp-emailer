@@ -36,11 +36,11 @@ func (h *Handler) GetCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 
-	campaign, err := h.campaignService.GetCampaignByID(campaign.GetCampaignParams{ID: id})
+	cmpn, err := h.campaignService.GetCampaignByID(campaign.GetCampaignParams{ID: id})
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
 	}
-	return c.JSON(http.StatusOK, campaign)
+	return c.JSON(http.StatusOK, cmpn)
 }
 
 func (h *Handler) CreateCampaign(c echo.Context) error {
@@ -86,7 +86,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// User-related handlers
+// RegisterUser User-related handlers
 func (h *Handler) RegisterUser(c echo.Context) error {
 	dto := new(user.RegisterDTO)
 	if err := c.Bind(dto); err != nil {
