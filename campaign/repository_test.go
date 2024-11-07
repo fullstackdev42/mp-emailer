@@ -8,6 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -73,11 +74,11 @@ func (s *RepositoryTestSuite) TestCreate() {
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
-				OwnerID:     "123e4567-e89b-12d3-a456-426614174000",
+				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
 			setup: func() {
 				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", "123e4567-e89b-12d3-a456-426614174000").
+					WithArgs("Test Campaign", "Test Description", "Test Template", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
@@ -88,11 +89,11 @@ func (s *RepositoryTestSuite) TestCreate() {
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
-				OwnerID:     "123e4567-e89b-12d3-a456-426614174000",
+				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
 			setup: func() {
 				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", "123e4567-e89b-12d3-a456-426614174000").
+					WithArgs("Test Campaign", "Test Description", "Test Template", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).
 					WillReturnError(errors.New("database error"))
 			},
 			wantErr: true,

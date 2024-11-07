@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/google/uuid"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/mocks"
@@ -80,9 +81,10 @@ func TestCampaignGET(t *testing.T) {
 				s.mockLogger.EXPECT().Debug("CampaignGET: Parsed ID", "id", 1)
 				s.mockLogger.EXPECT().Debug("CampaignGET: Campaign fetched successfully", "id", 1)
 
-				campaignTest := &campaign.Campaign{ID: 1, Name: "Test Campaign"}
+				campaignID := uuid.New()
+				campaignTest := &campaign.Campaign{Name: "Test Campaign"}
 				s.mockService.EXPECT().FetchCampaign(
-					campaign.GetCampaignParams{ID: 1},
+					campaign.GetCampaignParams{ID: campaignID},
 				).Return(campaignTest, nil)
 
 				s.mockTemplateRenderer.EXPECT().Render(
@@ -158,7 +160,10 @@ func TestGetCampaigns(t *testing.T) {
 		{
 			name: "successful campaigns fetch",
 			setupMocks: func(s *handlerTestSuite) {
-				campaigns := []campaign.Campaign{{ID: 1, Name: "Test Campaign"}}
+				campaigns := []campaign.Campaign{{
+					Name:      "Test Campaign",
+					BaseModel: shared.BaseModel{ID: uuid.New()},
+				}}
 
 				s.mockLogger.EXPECT().Debug("Handling GetCampaigns request")
 				s.mockLogger.EXPECT().Debug("Rendering all campaigns", "count", 1)

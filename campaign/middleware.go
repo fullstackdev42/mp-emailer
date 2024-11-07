@@ -3,6 +3,7 @@ package campaign
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
@@ -15,18 +16,18 @@ func getSession(c echo.Context, sessionName string) *sessions.Session {
 }
 
 // GetUserIDFromSession safely extracts the user ID from the session
-func GetUserIDFromSession(c echo.Context, sessionName string) (string, error) {
+func GetUserIDFromSession(c echo.Context, sessionName string) (uuid.UUID, error) {
 	session := getSession(c, sessionName)
 	if session == nil {
-		return "", ErrSessionInvalid
+		return uuid.UUID{}, ErrSessionInvalid
 	}
 
 	userID, ok := session.Values["user_id"].(string)
 	if !ok || userID == "" {
-		return "", ErrUserNotFound
+		return uuid.UUID{}, ErrUserNotFound
 	}
 
-	return userID, nil
+	return uuid.Parse(userID)
 }
 
 // ValidateSession middleware ensures a valid session exists

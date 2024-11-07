@@ -3,12 +3,12 @@ package api
 import (
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 )
@@ -31,7 +31,7 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 }
 
 func (h *Handler) GetCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
@@ -57,7 +57,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 }
 
 func (h *Handler) UpdateCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
@@ -75,7 +75,7 @@ func (h *Handler) UpdateCampaign(c echo.Context) error {
 }
 
 func (h *Handler) DeleteCampaign(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
