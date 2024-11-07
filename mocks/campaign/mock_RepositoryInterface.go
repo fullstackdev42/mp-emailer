@@ -239,64 +239,6 @@ func (_c *MockRepositoryInterface_GetByID_Call) RunAndReturn(run func(campaign.G
 	return _c
 }
 
-// GetCampaign provides a mock function with given fields: dto
-func (_m *MockRepositoryInterface) GetCampaign(dto campaign.GetCampaignDTO) (*campaign.Campaign, error) {
-	ret := _m.Called(dto)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetCampaign")
-	}
-
-	var r0 *campaign.Campaign
-	var r1 error
-	if rf, ok := ret.Get(0).(func(campaign.GetCampaignDTO) (*campaign.Campaign, error)); ok {
-		return rf(dto)
-	}
-	if rf, ok := ret.Get(0).(func(campaign.GetCampaignDTO) *campaign.Campaign); ok {
-		r0 = rf(dto)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*campaign.Campaign)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(campaign.GetCampaignDTO) error); ok {
-		r1 = rf(dto)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockRepositoryInterface_GetCampaign_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCampaign'
-type MockRepositoryInterface_GetCampaign_Call struct {
-	*mock.Call
-}
-
-// GetCampaign is a helper method to define mock.On call
-//   - dto campaign.GetCampaignDTO
-func (_e *MockRepositoryInterface_Expecter) GetCampaign(dto interface{}) *MockRepositoryInterface_GetCampaign_Call {
-	return &MockRepositoryInterface_GetCampaign_Call{Call: _e.mock.On("GetCampaign", dto)}
-}
-
-func (_c *MockRepositoryInterface_GetCampaign_Call) Run(run func(dto campaign.GetCampaignDTO)) *MockRepositoryInterface_GetCampaign_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(campaign.GetCampaignDTO))
-	})
-	return _c
-}
-
-func (_c *MockRepositoryInterface_GetCampaign_Call) Return(_a0 *campaign.Campaign, _a1 error) *MockRepositoryInterface_GetCampaign_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockRepositoryInterface_GetCampaign_Call) RunAndReturn(run func(campaign.GetCampaignDTO) (*campaign.Campaign, error)) *MockRepositoryInterface_GetCampaign_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Update provides a mock function with given fields: dto
 func (_m *MockRepositoryInterface) Update(dto *campaign.UpdateCampaignDTO) error {
 	ret := _m.Called(dto)

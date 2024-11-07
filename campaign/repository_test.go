@@ -1,13 +1,13 @@
 package campaign
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -16,28 +16,31 @@ import (
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	mock       sqlmock.Sqlmock
-	db         *database.DB
-	repo       *Repository
-	mockLogger *mocks.MockLoggerInterface
+	mock sqlmock.Sqlmock
+	db   *database.DB
+	repo *Repository
 }
 
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
-	// Use an in-memory SQLite database for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Initialize sqlmock
+	var err error
+	var sqlDB *sql.DB
+	sqlDB, s.mock, err = sqlmock.New()
 	assert.NoError(s.T(), err)
 
-	s.mockLogger = new(mocks.MockLoggerInterface)
+	// Set up expectations for GORM's initial version check
+	s.mock.ExpectQuery("^SELECT sqlite_version\\(\\)$").WillReturnRows(sqlmock.NewRows([]string{"sqlite_version()"}).AddRow("3.32.3"))
 
-	// Setup expected logger calls
-	s.mockLogger.On("Debug", "Connecting to database", []interface{}{}).Return(nil)
+	// Open GORM DB connection using the sqlmock DB
+	gormDB, err := gorm.Open(sqlite.Dialector{Conn: sqlDB}, &gorm.Config{})
+	assert.NoError(s.T(), err)
 
 	// Migrate the schema for testing
-	err = db.AutoMigrate(&Campaign{})
+	err = gormDB.AutoMigrate(&Campaign{})
 	assert.NoError(s.T(), err)
 
-	s.db = &database.DB{GormDB: db}
+	s.db = &database.DB{GormDB: gormDB}
 	s.repo = &Repository{db: s.db}
 }
 
