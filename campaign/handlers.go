@@ -293,7 +293,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 			http.StatusBadRequest)
 	}
 
-	err := h.emailService.SendEmail(email, "Campaign", content)
+	err := h.emailService.SendEmail(email, "Campaign", content, true)
 	if err != nil {
 		h.Logger.Error("Failed to send email", err,
 			"recipient", email)
@@ -327,7 +327,6 @@ func (h *Handler) RenderEmailTemplate(c echo.Context, email string, content stri
 		Content: map[string]interface{}{
 			"Email":      email,
 			"Content":    template.HTML(content),
-			"RawContent": content,
 			"CampaignID": campaignID,
 		},
 	}

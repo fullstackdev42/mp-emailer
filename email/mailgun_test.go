@@ -26,7 +26,7 @@ func TestMailgunEmailService_SendEmail(t *testing.T) {
 	MockMailgunClient.On("NewMessage", "no-reply@example.com", "Subject", "Body", "test@example.com").Return(message)
 	MockMailgunClient.On("Send", mock.Anything, message).Return("", "", nil)
 
-	err := service.SendEmail("test@example.com", "Subject", "Body")
+	err := service.SendEmail("test@example.com", "Subject", "Body", false)
 
 	assert.NoError(t, err)
 	MockMailgunClient.AssertExpectations(t)

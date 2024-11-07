@@ -17,17 +17,17 @@ func (_m *MockService) EXPECT() *MockService_Expecter {
 	return &MockService_Expecter{mock: &_m.Mock}
 }
 
-// SendEmail provides a mock function with given fields: to, subject, body
-func (_m *MockService) SendEmail(to string, subject string, body string) error {
-	ret := _m.Called(to, subject, body)
+// SendEmail provides a mock function with given fields: to, subject, body, isHTML
+func (_m *MockService) SendEmail(to string, subject string, body string, isHTML bool) error {
+	ret := _m.Called(to, subject, body, isHTML)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SendEmail")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(to, subject, body)
+	if rf, ok := ret.Get(0).(func(string, string, string, bool) error); ok {
+		r0 = rf(to, subject, body, isHTML)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -44,13 +44,14 @@ type MockService_SendEmail_Call struct {
 //   - to string
 //   - subject string
 //   - body string
-func (_e *MockService_Expecter) SendEmail(to interface{}, subject interface{}, body interface{}) *MockService_SendEmail_Call {
-	return &MockService_SendEmail_Call{Call: _e.mock.On("SendEmail", to, subject, body)}
+//   - isHTML bool
+func (_e *MockService_Expecter) SendEmail(to interface{}, subject interface{}, body interface{}, isHTML interface{}) *MockService_SendEmail_Call {
+	return &MockService_SendEmail_Call{Call: _e.mock.On("SendEmail", to, subject, body, isHTML)}
 }
 
-func (_c *MockService_SendEmail_Call) Run(run func(to string, subject string, body string)) *MockService_SendEmail_Call {
+func (_c *MockService_SendEmail_Call) Run(run func(to string, subject string, body string, isHTML bool)) *MockService_SendEmail_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string), args[2].(string))
+		run(args[0].(string), args[1].(string), args[2].(string), args[3].(bool))
 	})
 	return _c
 }
@@ -60,7 +61,7 @@ func (_c *MockService_SendEmail_Call) Return(_a0 error) *MockService_SendEmail_C
 	return _c
 }
 
-func (_c *MockService_SendEmail_Call) RunAndReturn(run func(string, string, string) error) *MockService_SendEmail_Call {
+func (_c *MockService_SendEmail_Call) RunAndReturn(run func(string, string, string, bool) error) *MockService_SendEmail_Call {
 	_c.Call.Return(run)
 	return _c
 }

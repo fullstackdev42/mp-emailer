@@ -110,7 +110,7 @@ func ProvideTemplates(store sessions.Store) (TemplateRendererInterface, error) {
 }
 
 // provideEmailService creates a new email service based on the configuration
-func provideEmailService(cfg *config.Config) (email.Service, error) {
+func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (email.Service, error) {
 	emailConfig := email.Config{
 		Provider:      email.Provider(cfg.EmailProvider),
 		SMTPHost:      cfg.SMTPHost,
@@ -122,7 +122,7 @@ func provideEmailService(cfg *config.Config) (email.Service, error) {
 		MailgunAPIKey: cfg.MailgunAPIKey,
 	}
 
-	emailService, err := email.NewEmailService(emailConfig)
+	emailService, err := email.NewEmailService(emailConfig, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create email service: %w", err)
 	}

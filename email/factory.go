@@ -44,7 +44,7 @@ func (s *SMTPClientImpl) SendMail(addr string, a smtp.Auth, from string, to []st
 }
 
 // NewEmailService creates an email service based on the provided configuration
-func NewEmailService(config Config) (Service, error) {
+func NewEmailService(config Config, logger loggo.LoggerInterface) (Service, error) {
 	switch config.Provider {
 	case ProviderSMTP:
 		if config.SMTPHost == "" || config.SMTPPort == "" {
@@ -59,6 +59,7 @@ func NewEmailService(config Config) (Service, error) {
 			config.SMTPHost,
 			config.SMTPPort,
 			smtpClient,
+			logger,
 		), nil
 
 	case ProviderMailgun:

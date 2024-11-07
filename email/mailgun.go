@@ -30,13 +30,17 @@ func NewMailgunEmailService(domain, apiKey string, client MailgunClient, logger 
 	}
 }
 
-func (s *MailgunEmailService) SendEmail(to, subject, body string) error {
+func (s *MailgunEmailService) SendEmail(to, subject, body string, isHTML bool) error {
 	message := s.client.NewMessage(
 		fmt.Sprintf("no-reply@%s", s.domain),
 		subject,
 		body,
 		to,
 	)
+
+	if isHTML {
+		message.SetHTML(body)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

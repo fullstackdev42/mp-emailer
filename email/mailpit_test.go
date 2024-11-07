@@ -21,7 +21,7 @@ func TestMailpitEmailService_SendEmail(t *testing.T) {
 
 	mockSMTP.On("SendMail", addr, nil, "no-reply@example.com", []string{"test@example.com"}, message).Return(nil)
 
-	err := service.SendEmail("test@example.com", "Subject", "Body")
+	err := service.SendEmail("test@example.com", "Subject", "Body", false)
 
 	assert.NoError(t, err)
 	mockSMTP.AssertExpectations(t)
