@@ -92,7 +92,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	user, err := h.repo.GetUserByUsername(params.Username)
+	user, err := h.repo.FindByUsername(params.Username)
 	if err != nil || user == nil {
 		h.service.Info("Login failed - user not found", "username", params.Username)
 		return h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password")

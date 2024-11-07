@@ -12,9 +12,7 @@ import (
 // nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
-		fx.Annotate(NewRepository,
-			fx.As(new(RepositoryInterface)),
-		),
+		NewRepository,
 		fx.Annotate(NewService,
 			fx.As(new(ServiceInterface)),
 		),

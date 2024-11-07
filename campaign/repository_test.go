@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/fullstackdev42/mp-emailer/database"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -16,7 +17,7 @@ import (
 type RepositoryTestSuite struct {
 	suite.Suite
 	mock       sqlmock.Sqlmock
-	db         *gorm.DB
+	db         *database.DB
 	repo       *Repository
 	mockLogger *mocks.MockLoggerInterface
 }
@@ -36,13 +37,14 @@ func (s *RepositoryTestSuite) SetupTest() {
 	err = db.AutoMigrate(&Campaign{})
 	assert.NoError(s.T(), err)
 
-	s.repo = &Repository{db: db}
+	s.db = &database.DB{GormDB: db}
+	s.repo = &Repository{db: s.db}
 }
 
 // TearDownTest tears down the test environment
 func (s *RepositoryTestSuite) TearDownTest() {
 	s.mock.ExpectClose()
-	sqlDB, err := s.db.DB()
+	sqlDB, err := s.db.GormDB.DB()
 	if err != nil {
 		s.T().Fatal(err)
 	}

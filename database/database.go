@@ -28,8 +28,7 @@ func (db *DB) Exists(model interface{}, query string, args ...interface{}) (bool
 }
 
 func (db *DB) Create(value interface{}) error {
-	result := db.GormDB.Create(value)
-	return result.Error
+	return db.GormDB.Create(value).Error
 }
 
 func (db *DB) FindOne(model interface{}, query string, args ...interface{}) error {

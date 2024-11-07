@@ -1,59 +1,50 @@
 package user
 
 import (
-	"github.com/jonesrussell/loggo"
-	"go.uber.org/fx"
-	"gorm.io/gorm"
+	"fmt"
+
+	"github.com/fullstackdev42/mp-emailer/database"
 )
 
-// RepositoryInterface defines the methods for user repository
+// RepositoryInterface defines the contract for user repository operations
 type RepositoryInterface interface {
-	CreateUser(user *User) error
-	GetUserByUsername(username string) (*User, error)
+	Create(user *User) error
+	FindByEmail(email string) (*User, error)
+	FindByUsername(username string) (*User, error)
 }
 
-// Repository implements the user repository interface
+// Repository implements the RepositoryInterface
 type Repository struct {
-	db     *gorm.DB
-	logger loggo.LoggerInterface
+	db database.Interface
 }
 
-// CreateUser creates a new user in the database
-func (r *Repository) CreateUser(user *User) error {
-	r.logger.Debug("Creating user", "user", user)
-	return r.db.Create(user).Error
+// NewRepository creates a new instance of Repository
+func NewRepository(db database.Interface) RepositoryInterface {
+	return &Repository{db: db}
 }
 
-// GetUserByUsername retrieves a user by username
-func (r *Repository) GetUserByUsername(username string) (*User, error) {
+// Create adds a new user to the database
+func (r *Repository) Create(user *User) error {
+	if err := r.db.Create(user); err != nil {
+		return fmt.Errorf("error creating user: %w", err)
+	}
+	return nil
+}
+
+// FindByEmail retrieves a user by email
+func (r *Repository) FindByEmail(email string) (*User, error) {
 	var user User
-	err := r.db.Where("username = ?", username).First(&user).Error
-	if err != nil {
-		r.logger.Error("Error fetching user", err, "username", username)
-		return nil, err
+	if err := r.db.FindOne(&user, "email = ?", email); err != nil {
+		return nil, fmt.Errorf("error finding user by email: %w", err)
 	}
 	return &user, nil
 }
 
-// RepositoryParams for dependency injection
-type RepositoryParams struct {
-	fx.In
-	DB     *gorm.DB
-	Logger loggo.LoggerInterface
-}
-
-// RepositoryResult is the output struct for NewRepository
-type RepositoryResult struct {
-	fx.Out
-	Repository RepositoryInterface `group:"repositories"`
-}
-
-// NewRepository creates a new user repository
-func NewRepository(params RepositoryParams) RepositoryResult {
-	return RepositoryResult{
-		Repository: &Repository{
-			db:     params.DB,
-			logger: params.Logger,
-		},
+// FindByUsername retrieves a user by username
+func (r *Repository) FindByUsername(username string) (*User, error) {
+	var user User
+	if err := r.db.FindOne(&user, "username = ?", username); err != nil {
+		return nil, fmt.Errorf("error finding user by username: %w", err)
 	}
+	return &user, nil
 }
