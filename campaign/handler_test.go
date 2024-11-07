@@ -67,6 +67,9 @@ func setupHandlerTest(t *testing.T) *handlerTestSuite {
 }
 
 func TestCampaignGET(t *testing.T) {
+	// Declare campaignID at the test function level
+	campaignID := uuid.New()
+
 	tests := []struct {
 		name           string
 		setupMocks     func(*handlerTestSuite)
@@ -78,11 +81,16 @@ func TestCampaignGET(t *testing.T) {
 			name: "successful campaign fetch",
 			setupMocks: func(s *handlerTestSuite) {
 				s.mockLogger.EXPECT().Debug("CampaignGET: Starting")
-				s.mockLogger.EXPECT().Debug("CampaignGET: Parsed ID", "id", 1)
-				s.mockLogger.EXPECT().Debug("CampaignGET: Campaign fetched successfully", "id", 1)
+				s.mockLogger.EXPECT().Debug("CampaignGET: Parsed ID", "id", campaignID)
+				s.mockLogger.EXPECT().Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
 
-				campaignID := uuid.New()
-				campaignTest := &campaign.Campaign{Name: "Test Campaign"}
+				campaignTest := &campaign.Campaign{
+					Name: "Test Campaign",
+					BaseModel: shared.BaseModel{
+						ID: campaignID,
+					},
+				}
+
 				s.mockService.EXPECT().FetchCampaign(
 					campaign.GetCampaignParams{ID: campaignID},
 				).Return(campaignTest, nil)
@@ -99,7 +107,7 @@ func TestCampaignGET(t *testing.T) {
 					mock.Anything,
 				).Return(nil)
 			},
-			campaignID:     "1",
+			campaignID:     campaignID.String(),
 			expectedStatus: http.StatusOK,
 		},
 		{
