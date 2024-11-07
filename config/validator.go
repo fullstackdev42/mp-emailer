@@ -62,8 +62,8 @@ func validateNumericFields(config *Config) error {
 	}
 
 	// Validate Mailpit Port
-	if _, err := strconv.Atoi(config.MailpitPort); err != nil {
-		return fmt.Errorf("invalid MAILPIT_PORT '%s': must be a valid number", config.MailpitPort)
+	if _, err := strconv.Atoi(config.SMTPPort); err != nil {
+		return fmt.Errorf("invalid SMTP_PORT '%s': must be a valid number", config.SMTPPort)
 	}
 
 	// Validate App Port
