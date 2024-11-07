@@ -38,7 +38,8 @@
 				"GitHub.vscode-github-actions",
 				"humao.rest-client",
 				"mtxr.sqltools-driver-mysql",
-				"mtxr.sqltools"
+				"mtxr.sqltools",
+				"eamodio.gitlens"
 			]
 		}
 	},
