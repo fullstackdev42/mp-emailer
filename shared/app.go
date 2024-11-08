@@ -63,7 +63,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 
 	// Wrap the DB in a decorator that implements the correct interface
 	decorated := &database.LoggingDBDecorator{
-		DB:     db.(database.Interface), // Type assertion to ensure correct interface
+		DB:     db,
 		Logger: logger,
 	}
 	return decorated, nil
