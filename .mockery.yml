@@ -1,20 +1,32 @@
-with-expecter: true
-
-inpackage: false
-
 dir: "mocks/{{.PackageName}}"
+filename: "mock_{{.InterfaceName}}.go"
+inpackage: false
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "mocks"
+with-expecter: true
 
 packages:
 
-  # github.com/fullstackdev42/mp-emailer/database:
-  #   interfaces:
-  #     Migrator:
+  github.com/fullstackdev42/mp-emailer/campaign:
+    interfaces:
+      ServiceInterface:
+      RepresentativeLookupServiceInterface:
+      ClientInterface:
+      RepositoryInterface:
+
+  github.com/fullstackdev42/mp-emailer/database:
+    interfaces:
+      Interface:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:
       Service:
       SMTPClient:
       MailgunClient:
+
+  github.com/fullstackdev42/mp-emailer/user:
+    interfaces:
+      RepositoryInterface:
 
   # github.com/fullstackdev42/mp-emailer/server:
   #   interfaces:

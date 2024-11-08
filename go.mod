@@ -3,7 +3,6 @@ module github.com/fullstackdev42/mp-emailer
 go 1.23
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -18,7 +17,6 @@ require (
 	go.uber.org/fx v1.23.0
 	golang.org/x/crypto v0.28.0
 	gorm.io/driver/mysql v1.5.7
-	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.12
 )
 
@@ -41,7 +39,6 @@ require (
 	github.com/mailgun/errors v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -1,58 +1,36 @@
 package campaign
 
 import (
-	"database/sql"
-	"errors"
+	"fmt"
 	"testing"
-	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fullstackdev42/mp-emailer/database"
+	mocksDatabase "github.com/fullstackdev42/mp-emailer/mocks/database"
+
+	"github.com/stretchr/testify/mock"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	mock sqlmock.Sqlmock
-	db   *database.DB
-	repo *Repository
+	mockDB *mocksDatabase.MockInterface
+	repo   *Repository
 }
 
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
-	// Initialize sqlmock
-	var err error
-	var sqlDB *sql.DB
-	sqlDB, s.mock, err = sqlmock.New()
-	assert.NoError(s.T(), err)
-
-	// Set up expectations for GORM's initial version check
-	s.mock.ExpectQuery("^SELECT sqlite_version\\(\\)$").WillReturnRows(sqlmock.NewRows([]string{"sqlite_version()"}).AddRow("3.32.3"))
-
-	// Open GORM DB connection using the sqlmock DB
-	gormDB, err := gorm.Open(sqlite.Dialector{Conn: sqlDB}, &gorm.Config{})
-	assert.NoError(s.T(), err)
-
-	// Migrate the schema for testing
-	err = gormDB.AutoMigrate(&Campaign{})
-	assert.NoError(s.T(), err)
-
-	s.db = &database.DB{GormDB: gormDB}
-	s.repo = &Repository{db: s.db}
+	s.mockDB = mocksDatabase.NewMockInterface(s.T())
+	s.repo = NewRepository(s.mockDB).(*Repository)
 }
 
 // TearDownTest tears down the test environment
 func (s *RepositoryTestSuite) TearDownTest() {
-	s.mock.ExpectClose()
-	sqlDB, err := s.db.GormDB.DB()
-	if err != nil {
-		s.T().Fatal(err)
+	// Clean up database connection
+	if s.mockDB != nil {
+		s.mockDB.AssertExpectations(s.T())
 	}
-	sqlDB.Close()
 }
 
 // TestRepositoryTestSuite runs the Repository test suite
@@ -64,37 +42,35 @@ func TestRepositoryTestSuite(t *testing.T) {
 func (s *RepositoryTestSuite) TestCreate() {
 	tests := []struct {
 		name    string
-		dto     *CreateCampaignDTO
 		setup   func()
+		dto     *CreateCampaignDTO
 		wantErr bool
 	}{
 		{
 			name: "successful creation",
+			setup: func() {
+				s.mockDB.On("Create", mock.AnythingOfType("*campaign.Campaign")).
+					Return(nil)
+			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
 				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-			},
-			setup: func() {
-				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).
-					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
 		},
 		{
 			name: "database error",
+			setup: func() {
+				s.mockDB.On("Create", mock.AnythingOfType("*campaign.Campaign")).
+					Return(fmt.Errorf("db error"))
+			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
 				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-			},
-			setup: func() {
-				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).
-					WillReturnError(errors.New("database error"))
 			},
 			wantErr: true,
 		},
@@ -103,7 +79,6 @@ func (s *RepositoryTestSuite) TestCreate() {
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			tt.setup()
-
 			campaign, err := s.repo.Create(tt.dto)
 			if tt.wantErr {
 				assert.Error(s.T(), err)
@@ -113,14 +88,17 @@ func (s *RepositoryTestSuite) TestCreate() {
 				assert.NotNil(s.T(), campaign)
 				assert.Equal(s.T(), tt.dto.Name, campaign.Name)
 			}
-
-			assert.NoError(s.T(), s.mock.ExpectationsWereMet())
 		})
 	}
 }
 
 // TestGetAll tests the GetAll method of Repository
 func (s *RepositoryTestSuite) TestGetAll() {
+	campaigns := []*Campaign{
+		{Name: "Campaign 1"},
+		{Name: "Campaign 2"},
+	}
+
 	tests := []struct {
 		name      string
 		setup     func()
@@ -130,10 +108,12 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "successful retrieval",
 			setup: func() {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "template", "owner_id", "created_at", "updated_at"}).
-					AddRow(1, "Campaign 1", "Desc 1", "Template 1", 1, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05")).
-					AddRow(2, "Campaign 2", "Desc 2", "Template 2", 1, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
-				s.mock.ExpectQuery("SELECT (.+) FROM campaigns").WillReturnRows(rows)
+				s.mockDB.On("Find", mock.AnythingOfType("*[]*campaign.Campaign")).
+					Run(func(args mock.Arguments) {
+						result := args.Get(0).(*[]*Campaign)
+						*result = campaigns
+					}).
+					Return(nil)
 			},
 			wantCount: 2,
 			wantErr:   false,
@@ -141,8 +121,8 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "database error",
 			setup: func() {
-				s.mock.ExpectQuery("SELECT (.+) FROM campaigns").
-					WillReturnError(errors.New("database error"))
+				s.mockDB.On("Find", mock.AnythingOfType("*[]*campaign.Campaign")).
+					Return(fmt.Errorf("db error"))
 			},
 			wantCount: 0,
 			wantErr:   true,
@@ -161,8 +141,6 @@ func (s *RepositoryTestSuite) TestGetAll() {
 				assert.NoError(s.T(), err)
 				assert.Len(s.T(), campaigns, tt.wantCount)
 			}
-
-			assert.NoError(s.T(), s.mock.ExpectationsWereMet())
 		})
 	}
 }

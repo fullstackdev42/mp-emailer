@@ -17,6 +17,18 @@ type DB struct {
 	GormDB *gorm.DB
 }
 
+var _ Interface = (*DB)(nil)
+
+// NewDB creates a new database instance with the provided gorm.DB
+func NewDB(gormDB *gorm.DB) Interface {
+	if gormDB == nil {
+		panic("gormDB cannot be nil")
+	}
+	return &DB{
+		GormDB: gormDB,
+	}
+}
+
 // Implement the generic interface
 func (db *DB) Exists(model interface{}, query string, args ...interface{}) (bool, error) {
 	var count int64
