@@ -50,7 +50,7 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 	}
 	h.Logger.Debug("Rendering all campaigns", "count", len(campaigns))
 	data := shared.Data{
-		Title:    "All Campaigns",
+		Title:    "Campaigns",
 		PageName: "campaigns",
 		Content: map[string]interface{}{
 			"Campaigns": campaigns,
