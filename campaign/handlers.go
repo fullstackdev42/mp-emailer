@@ -73,7 +73,7 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	userID, err := GetUserIDFromSession(c, h.Config.SessionName)
+	userID, err := GetUserIDFromSession(c, h.Config.SessionName, h.Logger)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
 		status, msg := h.mapError(ErrUnauthorizedAccess)

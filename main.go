@@ -67,7 +67,7 @@ func registerRoutes(
 
 	// Register middleware and route handlers separately for better organization
 	registerMiddlewares(e, sessionStore, logger)
-	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg)
+	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg, logger)
 
 	// Serve static files from web/public directory
 	e.Static("/static", "web/public")
@@ -109,9 +109,10 @@ func registerHandlers(
 	userHandler *user.Handler,
 	apiHandler *api.Handler,
 	cfg *config.Config,
+	logger loggo.LoggerInterface,
 ) {
 	server.RegisterRoutes(serverHandler, e)
-	campaign.RegisterRoutes(campaignHandler, e, cfg)
+	campaign.RegisterRoutes(campaignHandler, e, cfg, logger)
 	user.RegisterRoutes(userHandler, e)
 	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
 }
