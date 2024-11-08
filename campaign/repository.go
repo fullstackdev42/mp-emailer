@@ -34,12 +34,9 @@ func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 		OwnerID:     dto.OwnerID,
 	}
 
-	// Attempt to create the campaign in the database
 	if err := r.db.Create(campaign); err != nil {
-		// Return nil for campaign and the error if creation fails
 		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
-	// Return the created campaign if successful
 	return campaign, nil
 }
 

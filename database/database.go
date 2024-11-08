@@ -10,11 +10,31 @@ type Interface interface {
 	Create(value interface{}) error
 	FindOne(model interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) error
-	Query(query string, args ...interface{}) *gorm.DB
+	Query(query string, args ...interface{}) Result
+}
+
+// Result represents the interface for database query results
+type Result interface {
+	Scan(dest interface{}) Result
+	Error() error
 }
 
 type DB struct {
 	GormDB *gorm.DB
+}
+
+// gormResult wraps gorm.DB to implement the Result interface
+type gormResult struct {
+	db *gorm.DB
+}
+
+func (r *gormResult) Scan(dest interface{}) Result {
+	r.db = r.db.Scan(dest)
+	return r
+}
+
+func (r *gormResult) Error() error {
+	return r.db.Error
 }
 
 var _ Interface = (*DB)(nil)
@@ -51,6 +71,6 @@ func (db *DB) Exec(query string, args ...interface{}) error {
 	return db.GormDB.Exec(query, args...).Error
 }
 
-func (db *DB) Query(query string, args ...interface{}) *gorm.DB {
-	return db.GormDB.Raw(query, args...)
+func (db *DB) Query(query string, args ...interface{}) Result {
+	return &gormResult{db: db.GormDB.Raw(query, args...)}
 }

@@ -22,6 +22,7 @@ type RepositoryTestSuite struct {
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
 	s.mockDB = mocksDatabase.NewMockInterface(s.T())
+	s.mockDB.Mock.ExpectedCalls = nil // Clear any existing expectations
 	s.repo = NewRepository(s.mockDB).(*Repository)
 }
 
@@ -63,8 +64,12 @@ func (s *RepositoryTestSuite) TestCreate() {
 		{
 			name: "database error",
 			setup: func() {
-				s.mockDB.On("Create", mock.AnythingOfType("*campaign.Campaign")).
-					Return(fmt.Errorf("db error"))
+				s.mockDB.On("Create", mock.MatchedBy(func(campaign *Campaign) bool {
+					return campaign.Name == "Test Campaign" &&
+						campaign.Description == "Test Description" &&
+						campaign.Template == "Test Template" &&
+						campaign.OwnerID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+				})).Return(fmt.Errorf("db error"))
 			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
@@ -78,8 +83,11 @@ func (s *RepositoryTestSuite) TestCreate() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
 			tt.setup()
+
 			campaign, err := s.repo.Create(tt.dto)
+
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 				assert.Nil(s.T(), campaign)
@@ -108,11 +116,9 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "successful retrieval",
 			setup: func() {
-				s.mockDB.On("Find", mock.AnythingOfType("*[]*campaign.Campaign")).
-					Run(func(args mock.Arguments) {
-						result := args.Get(0).(*[]*Campaign)
-						*result = campaigns
-					}).
+				s.mockDB.On("Query", "SELECT * FROM campaigns").
+					Return(s.mockDB)
+				s.mockDB.On("Find", &campaigns).
 					Return(nil)
 			},
 			wantCount: 2,
@@ -143,4 +149,28 @@ func (s *RepositoryTestSuite) TestGetAll() {
 			}
 		})
 	}
+
+	s.Run("database_error", func() {
+		// Setup
+		var campaigns []Campaign
+		expectedErr := fmt.Errorf("database error")
+
+		// Mock the database calls
+		mockResult := new(mocks.Result)
+		mockResult.On("Scan", &campaigns).Return(expectedErr)
+		mockResult.On("Error").Return(expectedErr)
+
+		s.mockDB.On("Query", "SELECT * FROM campaigns").
+			Return(mockResult)
+
+		// Execute
+		result, err := s.repo.GetAll()
+
+		// Assert
+		s.Error(err)
+		s.Nil(result)
+		s.Contains(err.Error(), "error querying campaigns")
+		s.mockDB.AssertExpectations(s.T())
+		mockResult.AssertExpectations(s.T())
+	})
 }
