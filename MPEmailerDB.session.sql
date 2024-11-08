@@ -1,0 +1,8 @@
+SHOW DATABASES;
+USE db;
+
+SHOW TABLES;
+
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS campaigns;
+DROP TABLE IF EXISTS schema_migrations;
