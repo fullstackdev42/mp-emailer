@@ -1,7 +1,10 @@
 package user
 
 import (
+	"encoding/gob"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -9,6 +12,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func init() {
+	// Register UUID type with gob encoder for session serialization
+	gob.Register(uuid.UUID{})
+}
 
 // RegisterRoutes registers the user routes
 func RegisterRoutes(h *Handler, e *echo.Echo) {
