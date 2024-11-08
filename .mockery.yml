@@ -24,6 +24,11 @@ packages:
       SMTPClient:
       MailgunClient:
 
+  github.com/fullstackdev42/mp-emailer/shared:
+    interfaces:
+      ErrorHandlerInterface:
+      TemplateRendererInterface:
+
   github.com/fullstackdev42/mp-emailer/user:
     interfaces:
       RepositoryInterface:
