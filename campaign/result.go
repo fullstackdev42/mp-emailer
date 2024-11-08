@@ -15,7 +15,7 @@ type DatabaseResult struct {
 }
 
 // Scan implements Result.Scan
-func (r *DatabaseResult) Scan(dest interface{}) Result {
+func (r *DatabaseResult) Scan(_ interface{}) Result {
 	// Implementation would depend on your actual database
 	return r
 }

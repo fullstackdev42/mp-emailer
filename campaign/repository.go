@@ -43,8 +43,8 @@ func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 // GetAll retrieves all campaigns from the database
 func (r *Repository) GetAll() ([]Campaign, error) {
 	var campaigns []Campaign
-	err := r.db.Query("SELECT * FROM campaigns").Scan(&campaigns).Error
-	if err != nil {
+	result := r.db.Query("SELECT * FROM campaigns")
+	if err := result.Scan(&campaigns).Error(); err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
 	return campaigns, nil

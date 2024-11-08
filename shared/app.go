@@ -61,8 +61,11 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 		return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
 	}
 
-	// Wrap the base DB with the logging decorator
-	decorated := database.NewLoggingDBDecorator(db, logger)
+	// Wrap the DB in a decorator that implements the correct interface
+	decorated := &database.LoggingDBDecorator{
+		DB:     db.(database.Interface), // Type assertion to ensure correct interface
+		Logger: logger,
+	}
 	return decorated, nil
 }
 

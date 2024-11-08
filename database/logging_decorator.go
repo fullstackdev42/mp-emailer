@@ -2,7 +2,6 @@ package database
 
 import (
 	"github.com/jonesrussell/loggo"
-	"gorm.io/gorm"
 )
 
 // LoggingDBDecorator is a decorator for logging database operations
@@ -55,7 +54,7 @@ func (d *LoggingDBDecorator) Exec(query string, args ...interface{}) error {
 	return err
 }
 
-func (d *LoggingDBDecorator) Query(query string, args ...interface{}) *gorm.DB {
+func (d *LoggingDBDecorator) Query(query string, args ...interface{}) Result {
 	d.Logger.Debug("Querying", "query", query, "args", args)
 	return d.DB.Query(query, args...)
 }

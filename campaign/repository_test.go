@@ -152,13 +152,12 @@ func (s *RepositoryTestSuite) TestGetAll() {
 
 	s.Run("database_error", func() {
 		// Setup
-		var campaigns []Campaign
 		expectedErr := fmt.Errorf("database error")
 
 		// Mock the database calls
-		mockResult := new(mocks.Result)
-		mockResult.On("Scan", &campaigns).Return(expectedErr)
+		mockResult := &mocksDatabase.MockResult{}
 		mockResult.On("Error").Return(expectedErr)
+		mockResult.On("Scan", mock.Anything).Return(mockResult)
 
 		s.mockDB.On("Query", "SELECT * FROM campaigns").
 			Return(mockResult)
