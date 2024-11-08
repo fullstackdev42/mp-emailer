@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/config"
@@ -75,20 +76,32 @@ func (ms *MigrationService) Run(migrator Migrator) error {
 
 // RunMigrations executes the database migrations
 func (ms *MigrationService) RunMigrations() error {
-	// Create a new migrator instance
-	m, err := migrate.New(
-		ms.migrationsPath,
-		fmt.Sprintf("mysql://%s", ms.dsn), // Prefix the DSN with mysql:// protocol
-	)
+	fmt.Println("Starting RunMigrations...")
+
+	sourceURL := fmt.Sprintf("file://%s", strings.TrimPrefix(ms.migrationsPath, "file://"))
+	dbURL := fmt.Sprintf("mysql://%s&multiStatements=true", ms.dsn)
+
+	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
 	}
 
-	// Create a default migrator
-	migrator := &DefaultMigrator{Migrate: m}
+	// Use a more robust defer for cleanup
+	defer func() {
+		if m != nil {
+			if _, dbErr := m.Close(); dbErr != nil {
+				fmt.Printf("Error closing migrations: %v\n", dbErr)
+			}
+		}
+	}()
 
-	// Run the migrations
-	return ms.Run(migrator)
+	// Run migrations with proper error handling
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("error running migrations: %w", err)
+	}
+
+	fmt.Println("Migrations completed successfully.")
+	return nil
 }
 
 // DefaultMigrator wraps the migrate.Migrate struct
@@ -98,7 +111,14 @@ type DefaultMigrator struct {
 
 // Up runs the migrations
 func (dm *DefaultMigrator) Up() error {
-	return dm.Migrate.Up()
+	fmt.Println("Starting migration process...")
+	err := dm.Migrate.Up()
+	if err != nil {
+		fmt.Printf("Error during migration: %v\n", err)
+	} else {
+		fmt.Println("Migration completed successfully.")
+	}
+	return err
 }
 
 // Close closes the migrations
@@ -113,6 +133,35 @@ type MigrationParams struct {
 }
 
 func RunMigrations(p MigrationParams) error {
-	migrationService := NewMigrationService(p.Config, "file://database/migrations")
-	return migrationService.RunMigrations()
+	pwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// Construct and verify migrations path
+	migrationsDir := filepath.Clean(filepath.Join(pwd, "database", "migrations"))
+	if _, err := os.Stat(migrationsDir); os.IsNotExist(err) {
+		return fmt.Errorf("migrations directory not found at %s: %w", migrationsDir, err)
+	}
+
+	// List migration files for debugging
+	files, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read migrations directory: %w", err)
+	}
+	fmt.Printf("Found migration files in %s:\n", migrationsDir)
+	for _, file := range files {
+		fmt.Printf("- %s\n", file.Name())
+	}
+
+	// Ensure the path is in the correct format for the migrate library
+	sourceURL := "file://" + filepath.ToSlash(migrationsDir)
+	fmt.Printf("Using migrations source URL: %s\n", sourceURL)
+
+	migrationService := NewMigrationService(p.Config, sourceURL)
+	if err := migrationService.RunMigrations(); err != nil {
+		return fmt.Errorf("migration failed: %w", err)
+	}
+
+	return nil
 }
