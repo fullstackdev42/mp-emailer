@@ -58,3 +58,9 @@ func (d *LoggingDBDecorator) Query(query string, args ...interface{}) Result {
 	d.Logger.Debug("Querying", "query", query, "args", args)
 	return d.DB.Query(query, args...)
 }
+
+// Add Association method implementation
+func (d *LoggingDBDecorator) Association(column string) AssociationInterface {
+	d.Logger.Debug("Getting association", "column", column)
+	return d.DB.Association(column)
+}

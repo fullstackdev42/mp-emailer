@@ -27,6 +27,10 @@ var MigrationModule = fx.Options(
 type Migrator interface {
 	Up() error
 	Close() error
+	CreateTable(dst ...interface{}) error
+	DropTable(dst ...interface{}) error
+	HasTable(dst interface{}) bool
+	AutoMigrate(dst ...interface{}) error
 }
 
 // MigrationService struct to encapsulate migration logic

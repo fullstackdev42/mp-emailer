@@ -66,6 +66,12 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 		DB:     db,
 		Logger: logger,
 	}
+
+	// Ensure database migrations are run
+	if err := decorated.AutoMigrate(); err != nil {
+		return nil, fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
 	return decorated, nil
 }
 

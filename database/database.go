@@ -11,6 +11,22 @@ type Interface interface {
 	FindOne(model interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) error
 	Query(query string, args ...interface{}) Result
+	Delete(value interface{}) error
+	Unscoped() Interface
+	WithTrashed() Interface
+	Preload(query string, args ...interface{}) Interface
+	Association(column string) AssociationInterface
+	Where(query interface{}, args ...interface{}) Interface
+	Or(query interface{}, args ...interface{}) Interface
+	Not(query interface{}, args ...interface{}) Interface
+	Order(value interface{}) Interface
+	Group(query string) Interface
+	Having(query string, args ...interface{}) Interface
+	Joins(query string, args ...interface{}) Interface
+	Limit(limit int) Interface
+	Offset(offset int) Interface
+	AutoMigrate(dst ...interface{}) error
+	Migrator() Migrator
 }
 
 // Result represents the interface for database query results
@@ -73,4 +89,143 @@ func (db *DB) Exec(query string, args ...interface{}) error {
 
 func (db *DB) Query(query string, args ...interface{}) Result {
 	return &gormResult{db: db.GormDB.Raw(query, args...)}
+}
+
+func (db *DB) Delete(value interface{}) error {
+	return db.GormDB.Delete(value).Error
+}
+
+func (db *DB) Unscoped() Interface {
+	return &DB{GormDB: db.GormDB.Unscoped()}
+}
+
+func (db *DB) WithTrashed() Interface {
+	return db
+}
+
+func (db *DB) Preload(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Preload(query, args...)}
+}
+
+func (db *DB) Association(column string) AssociationInterface {
+	return &gormAssociation{association: db.GormDB.Association(column)}
+}
+
+type AssociationInterface interface {
+	Find(out interface{}) error
+	Append(values ...interface{}) error
+	Replace(values ...interface{}) error
+	Delete(values ...interface{}) error
+	Clear() error
+	Count() int64
+}
+
+type gormAssociation struct {
+	association *gorm.Association
+}
+
+func (a *gormAssociation) Find(out interface{}) error {
+	return a.association.Find(out)
+}
+
+func (a *gormAssociation) Append(values ...interface{}) error {
+	return a.association.Append(values...)
+}
+
+func (a *gormAssociation) Replace(values ...interface{}) error {
+	return a.association.Replace(values...)
+}
+
+func (a *gormAssociation) Delete(values ...interface{}) error {
+	return a.association.Delete(values...)
+}
+
+func (a *gormAssociation) Clear() error {
+	return a.association.Clear()
+}
+
+func (a *gormAssociation) Count() int64 {
+	return a.association.Count()
+}
+
+func (db *DB) AutoMigrate(dst ...interface{}) error {
+	return db.GormDB.AutoMigrate(dst...)
+}
+
+func (db *DB) Migrator() Migrator {
+	gormMigrator := db.GormDB.Migrator()
+	return &customMigrator{migrator: gormMigrator}
+}
+
+func (db *DB) Group(query string) Interface {
+	return &DB{GormDB: db.GormDB.Group(query)}
+}
+
+func (db *DB) Having(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Having(query, args...)}
+}
+
+// Add custom migrator type
+type customMigrator struct {
+	migrator gorm.Migrator
+}
+
+func (m *customMigrator) AutoMigrate(dst ...interface{}) error {
+	return m.migrator.AutoMigrate(dst...)
+}
+
+func (m *customMigrator) Close() error {
+	// Implement any cleanup if needed
+	return nil
+}
+
+// Add Joins method implementation
+func (db *DB) Joins(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Joins(query, args...)}
+}
+
+func (db *DB) Limit(limit int) Interface {
+	return &DB{GormDB: db.GormDB.Limit(limit)}
+}
+
+func (db *DB) Offset(offset int) Interface {
+	return &DB{GormDB: db.GormDB.Offset(offset)}
+}
+
+func (db *DB) Not(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Not(query, args...)}
+}
+
+func (db *DB) Order(value interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Order(value)}
+}
+
+// Add Or method implementation
+func (db *DB) Or(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Or(query, args...)}
+}
+
+// Add missing methods to customMigrator
+func (m *customMigrator) CreateTable(dst ...interface{}) error {
+	return m.migrator.CreateTable(dst...)
+}
+
+func (m *customMigrator) DropTable(dst ...interface{}) error {
+	return m.migrator.DropTable(dst...)
+}
+
+func (m *customMigrator) HasTable(dst interface{}) bool {
+	return m.migrator.HasTable(dst)
+}
+
+// Add Where method implementation
+func (db *DB) Where(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Where(query, args...)}
+}
+
+// Add Up method to customMigrator
+func (m *customMigrator) Up() error {
+	// Since GORM's migrator doesn't have an Up method directly,
+	// we'll treat AutoMigrate as our "up" operation
+	return m.AutoMigrate()
 }
