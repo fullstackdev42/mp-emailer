@@ -1,15 +1,13 @@
 package campaign
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	mocksDatabase "github.com/fullstackdev42/mp-emailer/mocks/database"
-
-	"github.com/stretchr/testify/mock"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,7 +20,6 @@ type RepositoryTestSuite struct {
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
 	s.mockDB = mocksDatabase.NewMockInterface(s.T())
-	s.mockDB.Mock.ExpectedCalls = nil // Clear any existing expectations
 	s.repo = NewRepository(s.mockDB).(*Repository)
 }
 
@@ -69,7 +66,7 @@ func (s *RepositoryTestSuite) TestCreate() {
 						campaign.Description == "Test Description" &&
 						campaign.Template == "Test Template" &&
 						campaign.OwnerID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
-				})).Return(fmt.Errorf("db error"))
+				})).Return(errors.New("db error"))
 			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
@@ -102,11 +99,6 @@ func (s *RepositoryTestSuite) TestCreate() {
 
 // TestGetAll tests the GetAll method of Repository
 func (s *RepositoryTestSuite) TestGetAll() {
-	campaigns := []*Campaign{
-		{Name: "Campaign 1"},
-		{Name: "Campaign 2"},
-	}
-
 	tests := []struct {
 		name      string
 		setup     func()
@@ -116,10 +108,20 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "successful retrieval",
 			setup: func() {
+				mockResult := &mocksDatabase.MockResult{}
+				mockResult.On("Error").Return(nil)
+				mockResult.On("Scan", mock.AnythingOfType("*[]campaign.Campaign")).
+					Run(func(args mock.Arguments) {
+						dest := args.Get(0).(*[]Campaign)
+						*dest = []Campaign{
+							{Name: "Campaign 1"},
+							{Name: "Campaign 2"},
+						}
+					}).
+					Return(mockResult)
+
 				s.mockDB.On("Query", "SELECT * FROM campaigns").
-					Return(s.mockDB)
-				s.mockDB.On("Find", &campaigns).
-					Return(nil)
+					Return(mockResult)
 			},
 			wantCount: 2,
 			wantErr:   false,
@@ -127,8 +129,13 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "database error",
 			setup: func() {
-				s.mockDB.On("Find", mock.AnythingOfType("*[]*campaign.Campaign")).
-					Return(fmt.Errorf("db error"))
+				mockResult := &mocksDatabase.MockResult{}
+				mockResult.On("Error").Return(errors.New("db error"))
+				mockResult.On("Scan", mock.AnythingOfType("*[]campaign.Campaign")).
+					Return(mockResult)
+
+				s.mockDB.On("Query", "SELECT * FROM campaigns").
+					Return(mockResult)
 			},
 			wantCount: 0,
 			wantErr:   true,
@@ -137,6 +144,7 @@ func (s *RepositoryTestSuite) TestGetAll() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
 			campaigns, err := s.repo.GetAll()
@@ -149,27 +157,4 @@ func (s *RepositoryTestSuite) TestGetAll() {
 			}
 		})
 	}
-
-	s.Run("database_error", func() {
-		// Setup
-		expectedErr := fmt.Errorf("database error")
-
-		// Mock the database calls
-		mockResult := &mocksDatabase.MockResult{}
-		mockResult.On("Error").Return(expectedErr)
-		mockResult.On("Scan", mock.Anything).Return(mockResult)
-
-		s.mockDB.On("Query", "SELECT * FROM campaigns").
-			Return(mockResult)
-
-		// Execute
-		result, err := s.repo.GetAll()
-
-		// Assert
-		s.Error(err)
-		s.Nil(result)
-		s.Contains(err.Error(), "error querying campaigns")
-		s.mockDB.AssertExpectations(s.T())
-		mockResult.AssertExpectations(s.T())
-	})
 }
