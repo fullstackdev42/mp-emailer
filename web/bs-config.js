@@ -22,6 +22,6 @@ module.exports = {
         ignored: ['node_modules', 'tmp'],
         ignoreInitial: true,
         cwd: '.',
-        usePolling: true
+        usePolling: false
     }
 }; 
