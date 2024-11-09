@@ -1,6 +1,8 @@
 package database
 
 import (
+	"time"
+
 	"github.com/jonesrussell/loggo"
 )
 
@@ -63,4 +65,100 @@ func (d *LoggingDBDecorator) Query(query string, args ...interface{}) Result {
 func (d *LoggingDBDecorator) Association(column string) AssociationInterface {
 	d.Logger.Debug("Getting association", "column", column)
 	return d.DB.Association(column)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) AutoMigrate(dst ...interface{}) error {
+	d.Logger.Info("Executing AutoMigrate")
+	start := time.Now()
+
+	// Call the underlying db's AutoMigrate method
+	err := d.DB.AutoMigrate(dst...)
+
+	d.Logger.Info("Completed AutoMigrate",
+		"duration", time.Since(start),
+		"error", err)
+
+	return err
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Delete(model interface{}) error {
+	d.Logger.Debug("Deleting model", "model", model)
+	err := d.DB.Delete(model)
+	if err != nil {
+		d.Logger.Error("Error deleting model", err, "model", model)
+	}
+	return err
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Group(name string) Interface {
+	d.Logger.Debug("Creating database group", "name", name)
+	return d.DB.Group(name)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Having(query string, args ...interface{}) Interface {
+	d.Logger.Debug("Applying Having clause", "query", query, "args", args)
+	return d.DB.Having(query, args...)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Joins(query string, args ...interface{}) Interface {
+	d.Logger.Debug("Applying Joins clause", "query", query, "args", args)
+	return d.DB.Joins(query, args...)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Limit(limit int) Interface {
+	d.Logger.Debug("Applying Limit clause", "limit", limit)
+	return d.DB.Limit(limit)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Offset(offset int) Interface {
+	d.Logger.Debug("Applying Offset clause", "offset", offset)
+	return d.DB.Offset(offset)
+}
+
+// Add this method to the LoggingDBDecorator struct
+func (d *LoggingDBDecorator) Migrator() Migrator {
+	d.Logger.Debug("Getting database migrator")
+	return d.DB.Migrator()
+}
+
+func (d *LoggingDBDecorator) Not(query interface{}, args ...interface{}) Interface {
+	d.Logger.Debug("Executing Not query", "query", query, "args", args)
+	return d.DB.Not(query, args...)
+}
+
+func (d *LoggingDBDecorator) Or(query interface{}, args ...interface{}) Interface {
+	d.Logger.Debug("Executing Or query", "query", query, "args", args)
+	return d.DB.Or(query, args...)
+}
+
+func (d *LoggingDBDecorator) Order(value interface{}) Interface {
+	d.Logger.Debug("Applying Order clause", "value", value)
+	return d.DB.Order(value)
+}
+
+func (d *LoggingDBDecorator) Preload(query string, args ...interface{}) Interface {
+	d.Logger.Debug("Applying Preload", "query", query, "args", args)
+	return d.DB.Preload(query, args...)
+}
+
+func (d *LoggingDBDecorator) Unscoped() Interface {
+	d.Logger.Debug("Applying Unscoped")
+	return d.DB.Unscoped()
+}
+
+func (d *LoggingDBDecorator) Where(query interface{}, args ...interface{}) Interface {
+	d.Logger.Debug("Applying Where clause", "query", query, "args", args)
+	return d.DB.Where(query, args...)
+}
+
+func (d *LoggingDBDecorator) WithTrashed() Interface {
+	d.Logger.Debug("Applying WithTrashed")
+	return d.DB.WithTrashed()
 }
