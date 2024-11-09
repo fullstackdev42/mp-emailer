@@ -8,21 +8,20 @@ import (
 
 // RegisterRoutes registers the campaign routes
 func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface) {
-	// Use the logged middleware
-	e.Use(ValidateSessionWithLogging(cfg.SessionName, logger))
-
 	// Public routes (no authentication required)
 	e.GET("/campaigns", h.GetCampaigns)
 	e.GET("/campaign/:id", h.CampaignGET)
-	e.POST("/campaign/:id/compose", h.ComposeEmail)
-	e.POST("/campaign/:id/send", h.SendCampaign)
 
 	// Protected routes (require authentication)
 	protected := e.Group("/campaign")
+	protected.Use(ValidateSessionWithLogging(cfg.SessionName, logger))
 
+	// Protected campaign routes
 	protected.GET("/new", h.CreateCampaignForm)
 	protected.POST("", h.CreateCampaign)
 	protected.GET("/:id/edit", h.EditCampaignForm)
 	protected.PUT("/:id", h.EditCampaign)
 	protected.DELETE("/:id", h.DeleteCampaign)
+	protected.POST("/:id/compose", h.ComposeEmail)
+	protected.POST("/:id/send", h.SendCampaign)
 }
