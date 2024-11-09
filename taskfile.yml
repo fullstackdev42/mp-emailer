@@ -107,3 +107,13 @@ tasks:
     dir: web
     cmds:
       - npm run dev
+    method: none
+
+  dev-sync:
+    cmds:
+      - |
+        (cd web && npm run dev) & \
+        air & \
+        (cd web && npx browser-sync start --config ../bs-config.js)
+    desc: Run the application with live reloading, frontend assets compilation, and browser sync
+    method: none
