@@ -94,26 +94,31 @@ tasks:
       - air
 
   frontend-install:
+    desc: Install frontend dependencies
     dir: web
     cmds:
       - npm install
 
   frontend-build:
+    desc: Build frontend assets
     dir: web
     cmds:
       - npm run build
 
   frontend-dev:
+    desc: Run frontend development server
     dir: web
     cmds:
       - npm run dev
     method: none
 
   dev-sync:
+    desc: Run the application with live reloading, frontend assets compilation, and browser sync
     cmds:
       - |
+        trap 'kill $(jobs -p) 2>/dev/null' EXIT
         (cd web && npm run dev) & \
         air & \
-        (cd web && npx browser-sync start --config ../bs-config.js)
-    desc: Run the application with live reloading, frontend assets compilation, and browser sync
+        (cd web && npx browser-sync start --config bs-config.js) & \
+        wait
     method: none
