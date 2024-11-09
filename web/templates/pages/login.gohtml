@@ -1,10 +1,5 @@
 {{define "login"}}
 <main class="max-w-md mx-auto p-8">
-    {{if .Error}}
-    <div class="bg-red-100 text-red-700 p-4 mb-4 border border-red-300 rounded">
-        {{.Error}}
-    </div>
-    {{end}}
     <form action="/user/login" method="post" class="space-y-4">
         <div>
             <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>

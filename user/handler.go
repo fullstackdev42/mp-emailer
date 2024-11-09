@@ -103,18 +103,18 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	user, err := h.repo.FindByUsername(params.Username)
 	if err != nil || user == nil {
 		h.service.Info("Login failed - user not found", "username", params.Username)
-		if err := h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password"); err != nil {
-			return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
-		}
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
+			Title: "Login",
+			Error: "Invalid username or password",
+		})
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
 		h.service.Info("Login failed - invalid password", "username", params.Username)
-		if err := h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password"); err != nil {
-			return h.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
-		}
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
+			Title: "Login",
+			Error: "Invalid username or password",
+		})
 	}
 
 	sess, err := h.Store.Get(c.Request(), h.SessionName)
