@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
@@ -22,6 +23,7 @@ type MiddlewareTestSuite struct {
 	mockLogger *mocks.MockLoggerInterface
 	mockStore  *mocksMiddleware.MockSessionStore
 	manager    *middleware.Manager
+	config     *config.Config
 }
 
 func (s *MiddlewareTestSuite) SetupTest() {
@@ -32,10 +34,19 @@ func (s *MiddlewareTestSuite) SetupTest() {
 	// Add this line to register UUID type with gob
 	gob.Register(uuid.UUID{})
 
-	s.manager = middleware.NewManager(middleware.ManagerParams{
+	// Create mock dependencies
+	s.config = &config.Config{
+		SessionName: "test_session",
+		AppEnv:      "test",
+	}
+
+	var err error
+	s.manager, err = middleware.NewManager(middleware.ManagerParams{
 		SessionStore: s.mockStore,
 		Logger:       s.mockLogger,
+		Cfg:          s.config,
 	})
+	s.Require().NoError(err)
 }
 
 func TestMiddlewareTestSuite(t *testing.T) {

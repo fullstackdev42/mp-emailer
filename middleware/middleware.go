@@ -41,12 +41,22 @@ type ManagerParams struct {
 }
 
 // NewManager creates a new middleware manager
-func NewManager(params ManagerParams) *Manager {
+func NewManager(params ManagerParams) (*Manager, error) {
+	if params.SessionStore == nil {
+		return nil, errors.New("session store cannot be nil")
+	}
+	if params.Logger == nil {
+		return nil, errors.New("logger cannot be nil")
+	}
+	if params.Cfg == nil {
+		return nil, errors.New("config cannot be nil")
+	}
+
 	return &Manager{
 		sessionStore: params.SessionStore,
 		logger:       params.Logger,
 		cfg:          params.Cfg,
-	}
+	}, nil
 }
 
 // Register configures all middleware for the application
@@ -81,10 +91,37 @@ func (m *Manager) sessionsMiddleware() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			session, err := m.sessionStore.Get(c.Request(), m.cfg.SessionName)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Error retrieving session")
+				m.logger.Error("Error retrieving session", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Session error")
 			}
+
+			// Set secure cookie flags in production
+			if m.cfg.AppEnv == config.EnvProduction {
+				session.Options.Secure = true
+				session.Options.HttpOnly = true
+				session.Options.SameSite = http.SameSiteStrictMode
+			} else {
+				// Development settings
+				session.Options.HttpOnly = false
+				session.Options.SameSite = http.SameSiteLaxMode
+			}
+
+			// Add session ID if not present
+			if session.ID == "" {
+				session.ID = uuid.New().String()
+			}
+
 			c.Set("session", session)
-			return next(c)
+
+			err = next(c)
+
+			// Save session after handler execution
+			if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+				m.logger.Error("Error saving session", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Session error")
+			}
+
+			return err
 		}
 	}
 }
@@ -190,24 +227,32 @@ func (m *Manager) GetUserIDFromSession(c echo.Context, sessionName string) (stri
 func (m *Manager) ValidateSession(sessionName string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			m.logger.Debug("Validating session",
-				"session_name", sessionName,
-				"path", c.Path())
-
-			session := m.GetSession(c, sessionName)
-			if session == nil {
-				m.logger.Debug("Session validation failed - no session")
+			session, err := m.sessionStore.Get(c.Request(), sessionName)
+			if err != nil {
+				m.logger.Error("Session validation error", err)
 				return c.Redirect(http.StatusSeeOther, "/user/login")
 			}
 
+			if session.IsNew {
+				m.logger.Debug("New session detected, redirecting to login")
+				return c.Redirect(http.StatusSeeOther, "/user/login")
+			}
+
+			// Check authentication status
+			auth, ok := session.Values["authenticated"].(bool)
+			if !ok || !auth {
+				m.logger.Debug("User not authenticated")
+				return c.Redirect(http.StatusSeeOther, "/user/login")
+			}
+
+			// Get and validate user ID
 			userID, err := m.GetUserIDFromSession(c, sessionName)
 			if err != nil {
-				m.logger.Debug("Session validation error", "error", err)
+				m.logger.Debug("Invalid user ID in session", "error", err)
 				return c.Redirect(http.StatusSeeOther, "/user/login")
 			}
 
 			c.Set("user_id", userID)
-			m.logger.Debug("Session validated successfully", "user_id", userID)
 			return next(c)
 		}
 	}
