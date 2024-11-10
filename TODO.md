@@ -97,16 +97,6 @@
 
 ## shared/app.go
 
-### Session Secret Management:
-
-Hardcoding the session secret in newSessionStore might not be ideal. Consider loading this from configuration or environment variables:
-
-```go
-func newSessionStore(cfg *config.Config) sessions.Store {
-    return sessions.NewCookieStore([]byte(cfg.SessionSecret))
-}
-```
-
 ### Database Connection Attempts:
 
 The retry logic in connectToDB could benefit from exponential backoff instead of a fixed retry interval. This makes it more resilient to network issues:
