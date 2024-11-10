@@ -151,19 +151,14 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 
 ## Campaigns
 
-### Observations and Suggestions
-
-3. **Time Parsing**
-   - Using `shared.ParseDateTime`, which is fine as long as potential parsing errors are handled appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
-
 ## Testing Plan
 
 ### Priority Areas
 
 #### 1. Core Business Logic
-- [ ] Campaign utils and handlers
+- [x] Campaign utils and handlers
 - [ ] User authentication and management
-- [ ] Email sending functionality
+- [x] Email sending functionality
 
 #### 2. Infrastructure
 - [ ] Database operations
@@ -179,19 +174,25 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 
 ```plaintext
 tests/
-├── campaign/
-│   ├── handler_test.go
-│   ├── repository_test.go
-│   ├── service_test.go
-│   └── lookup_service_test.go
-├── user/
-│   ├── handler_test.go
-│   ├── repository_test.go
-│   ├── auth_test.go
-│   └── service_test.go
-├── email/
-│   ├── template_test.go
-│   └── service_test.go
+├── campaign/ ✓
+│   ├── ✓ handler_test.go
+│   ├── ✓ repository_test.go
+│   ├── ✓ service_test.go
+│   └── ✓ utils_test.go
+├── email/ ✓
+│   ├── ✓ mailgun_test.go
+│   └── ✓ mailpit_test.go
+├── database/ ✓
+│   ├── ✓ migrations_test.go
+│   └── ✓ factories/
+│       ├── ✓ campaign_factory.go
+│       └── ✓ user_factory.go
+├── mocks/ ✓
+│   ├── ✓ campaign/
+│   ├── ✓ database/
+│   ├── ✓ email/
+│   ├── ✓ shared/
+│   └── ✓ user/
 ├── config/
 │   └── config_test.go
 └── shared/
@@ -202,10 +203,10 @@ tests/
 ### Package Testing Requirements
 
 #### Campaign Package
-- [ ] Expand existing tests in `campaign/utils_test.go`
-- [ ] Test campaign handlers
-- [ ] Test campaign repository methods
-- [ ] Test campaign service layer
+- [x] Expand existing tests in `campaign/utils_test.go`
+- [x] Test campaign handlers
+- [x] Test campaign repository methods
+- [x] Test campaign service layer
 - [ ] Test representative lookup service
 
 #### User Package
@@ -215,16 +216,19 @@ tests/
 - [ ] User repository methods
 
 #### Email Package
+- [x] Email sending failures (mailgun_test.go, mailpit_test.go)
 - [ ] Email template rendering
-- [ ] Email sending failures
 - [ ] Rate limiting
 - [ ] Email validation
 
 #### Database Package
-- [ ] Database connection handling
+- [x] Database connection handling
+- [x] Migration testing
 - [ ] Query methods
 - [ ] Transaction handling
 - [ ] Error scenarios
+- [x] Seeding functionality
+- [x] Factory implementations
 
 #### Config Package
 - [ ] Environment variable loading
@@ -241,14 +245,14 @@ tests/
 ### Testing Guidelines
 
 #### 1. Table-Driven Tests
-- [ ] Use table-driven tests for comprehensive coverage
-- [ ] Include edge cases and boundary conditions
-- [ ] Test both valid and invalid inputs
+- [x] Use table-driven tests for comprehensive coverage (see migrations_test.go)
+- [x] Include edge cases and boundary conditions
+- [x] Test both valid and invalid inputs
 
 #### 2. Mocking
-- [ ] Use testify/mock for external dependencies
-- [ ] Create mock implementations of interfaces
-- [ ] Test interaction between components
+- [x] Use testify/mock for external dependencies (see mocks/)
+- [x] Create mock implementations of interfaces
+- [x] Test interaction between components
 
 #### 3. Error Handling
 - [ ] Test error conditions
@@ -283,3 +287,47 @@ tests/
 - Testify documentation
 - Echo framework testing guide
 - Go testing best practices
+
+### CLI Flags
+
+#### Configuration Priority
+1. Command line flags (highest)
+2. Environment variables
+3. Configuration file (Viper)
+4. Default values (lowest)
+
+#### Core Flags
+- [ ] `--config` - Path to configuration file
+- [ ] `--db-dsn` - Database connection string
+- [ ] `--port` - Server port
+- [ ] `--env` - Environment (dev/prod)
+- [ ] `--log-level` - Logging level
+
+#### Implementation Notes
+- Use Cobra for CLI framework
+- Implement Viper for config management
+- All flags should have:
+  - Corresponding env var (e.g., `MP_DB_DSN`)
+  - Config file key (e.g., `database.dsn`)
+  - Sensible default value
+  - Help text explaining all configuration methods
+
+#### Example Usage
+```shell
+# Using flags
+mp-emailer --port=8080 --env=dev
+
+# Using env vars
+export MP_DB_DSN="user:pass@tcp(localhost:3306)/db"
+mp-emailer
+
+# Using config file
+mp-emailer --config=/etc/mp-emailer/config.yaml
+```
+
+#### Testing Requirements
+- [ ] Test configuration priority order
+- [ ] Test default values
+- [ ] Test environment variable loading
+- [ ] Test config file parsing
+- [ ] Test flag validation

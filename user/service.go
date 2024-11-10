@@ -2,7 +2,6 @@ package user
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -24,12 +23,6 @@ type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
 	cfg      *config.Config
-}
-
-// Config is the configuration for the UserService
-type Config struct {
-	JWTSecret string
-	JWTExpiry time.Duration
 }
 
 // Explicitly implement the ServiceInterface
@@ -101,17 +94,7 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 		return "", fmt.Errorf("invalid username or password")
 	}
 
-	// Generate JWT token
-	expiry, err := time.ParseDuration(s.cfg.JWTExpiry)
-	if err != nil {
-		return "", fmt.Errorf("invalid JWT expiry duration: %w", err)
-	}
-	token, err := shared.GenerateToken(params.Username, s.cfg.JWTSecret, int(expiry.Minutes()))
-	if err != nil {
-		return "", fmt.Errorf("error generating token: %w", err)
-	}
-
-	return token, nil
+	return params.Username, nil
 }
 
 // GetUser retrieves a user by their username
