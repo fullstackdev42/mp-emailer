@@ -1,68 +1,6 @@
 # TODO
 
-## Middleware & Request Processing
-
-### Core Middleware
-- [ ] Add rate limiting middleware
-- [ ] Add metrics collection
-- [ ] Add request tracing
-- [ ] Implement proper panic recovery
-- [ ] Add request ID middleware
-
-### Session Management
-- [ ] Improve session handling
-  - [ ] Add session validation
-  - [ ] Add session cleanup
-  - [ ] Add session security headers
-  - [ ] Add session encryption
-  - [ ] Add session timeout handling
-
-### Error Handling
-- [x] Add error handling to rate limiter middleware
-- [ ] Implement proper error responses
-  - [ ] Add structured error types
-  - [ ] Add error logging
-  - [ ] Add user-friendly error messages
-- [ ] Add metrics collection for rate limiting
-
-### Testing Requirements
-- [ ] Add more test cases for middleware manager
-- [ ] Test session store implementations
-- [ ] Test error scenarios in middleware
-- [ ] Add integration tests for middleware chain
-- [ ] Test session validation edge cases
-
 ## main.go
-
-### Middleware Registration
-- [x] Combine logger and session store middleware for efficiency
-  - [x] Create unified middleware function
-  - [x] Add proper error handling
-  - [x] Add proper logging
-  - [x] Consider moving to initial Echo setup
-
-### Config Handling
-- [ ] Reduce config.Config passing
-  - [ ] Implement dependency injection for route handlers
-  - [ ] Use struct injection instead of parameter passing
-  - [ ] Consider using context values for config where appropriate
-
-### Error Handling in Middleware
-- [x] Add error handling to rate limiter middleware
-- [ ] Implement proper error responses
-  - [ ] Add structured error types
-  - [ ] Add error logging
-  - [ ] Add user-friendly error messages
-- [ ] Add metrics collection for rate limiting
-
-### Session Store
-- [x] Add error handling for nil session store
-- [ ] Improve session management
-  - [ ] Add session validation
-  - [ ] Add session cleanup
-  - [ ] Add session security headers
-  - [ ] Add session encryption
-  - [ ] Add session timeout handling
 
 ### Server Start and Stop
 - [x] Implement non-blocking server start
@@ -83,17 +21,7 @@
 
 ### Implementation References
 - Server startup (see main.go:startServer)
-- Middleware registration (see main.go:registerMiddlewares)
 - Route registration (see main.go:registerRoutes)
-- Session store configuration (see main.go:registerMiddlewares)
-
-### Testing Requirements
-- [ ] Test middleware chain
-- [ ] Test configuration loading
-- [ ] Test server startup/shutdown
-- [ ] Test error scenarios
-- [ ] Test rate limiting
-- [ ] Test session handling
 
 ## shared/app.go
 
@@ -116,13 +44,6 @@ for retries := 5; retries > 0; retries-- {
 ### Environment Specific Configuration:
 
 If email.NewMailpitEmailService is for development or testing, consider making this environment-dependent or configurable.
-
-### Testing Considerations:
-While there's no test code here, the design does facilitate testing by providing functions for creating instances. However, the use of real database connections and file system operations in ProvideTemplates might complicate testing. Mocking these would be necessary.
-
-### Redundancy in Logger Creation:
-
-There's a possibility of creating multiple loggers if config.Load is called multiple times. Ensure this doesn't happen or that there's a mechanism to reuse or ensure a singleton logger.
 
 ### Additional Observations:
 
@@ -201,38 +122,6 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 - [ ] Form handling
 - [ ] Session management
 
-### Test Files to Create
-
-```plaintext
-tests/
-├── campaign/ ✓
-│   ├── ✓ handler_test.go
-│   ├── ✓ repository_test.go
-│   ├── ✓ service_test.go
-│   └── ✓ utils_test.go
-├── email/ ✓
-│   ├── ✓ mailgun_test.go
-│   └── ✓ mailpit_test.go
-├── database/ ✓
-│   ├── ✓ migrations_test.go
-│   └── ✓ factories/
-│       ├── ✓ campaign_factory.go
-│       └── ✓ user_factory.go
-├── mocks/ ✓
-│   ├── ✓ campaign/
-│   ├── ✓ database/
-│   ├── ✓ email/
-│   ├── ✓ shared/
-│   └── ✓ user/
-├── user/ ✓
-│   └── ✓ service_test.go
-├── config/
-│   └── config_test.go
-└── shared/
-    ├── template_test.go
-    └── session_test.go
-```
-
 ### Package Testing Requirements
 
 #### Campaign Package
@@ -278,56 +167,48 @@ tests/
 ### Testing Guidelines
 
 #### 1. Table-Driven Tests
-- [x] Use table-driven tests for comprehensive coverage (see migrations_test.go)
-- [x] Include edge cases and boundary conditions
-- [x] Test both valid and invalid inputs
+- Use table-driven tests for comprehensive coverage (see migrations_test.go)
+- Include edge cases and boundary conditions  
+- Test both valid and invalid inputs
 
 #### 2. Mocking
-- [x] Use testify/mock for external dependencies (see mocks/)
-- [x] Create mock implementations of interfaces
-- [x] Test interaction between components
+- Use testify/mock for external dependencies (see mocks/)
+- Create mock implementations of interfaces
+- Test interaction between components
 
 #### 3. Error Handling
-- [ ] Test error conditions
-- [ ] Verify error messages
-- [ ] Test error propagation
+- Test error conditions
+- Verify error messages
+- Test error propagation
 
-#### 4. Integration Testing
-- [ ] Test critical user flows
-- [ ] Test API endpoints
-- [ ] Test database interactions
+#### 4. Integration Testing  
+- Test critical user flows
+- Test API endpoints
+- Test database interactions
 
 #### 5. Test Coverage
-- [ ] Aim for 80% code coverage in critical packages
-- [ ] Use `go test -cover` to measure coverage
-- [ ] Identify and test edge cases
+- Aim for 80% code coverage in critical packages
+- Use `go test -cover` to measure coverage
+- Identify and test edge cases
 
 #### 6. Best Practices
-- [ ] Write clear test descriptions
-- [ ] Use test helpers for common operations
-- [ ] Keep tests maintainable and readable
-- [ ] Follow Go testing conventions
-
-### Notes
+- Write clear test descriptions
+- Use test helpers for common operations 
+- Keep tests maintainable and readable
+- Follow Go testing conventions
 - Use `testify/assert` for assertions
 - Avoid global state in tests
 - Use test fixtures where appropriate
 - Document complex test scenarios
 - Consider adding benchmarks for performance-critical code
 
-### Resources
-- Go testing documentation
-- Testify documentation
-- Echo framework testing guide
-- Go testing best practices
-
 ### CLI Flags
 
 #### Configuration Priority
-1. Command line flags (highest)
-2. Environment variables
-3. Configuration file (Viper)
-4. Default values (lowest)
+- Command line flags (highest)
+- Environment variables
+- Configuration file (Viper)
+- Default values (lowest)
 
 #### Core Flags
 - [ ] `--config` - Path to configuration file
