@@ -19,7 +19,9 @@
 			"userGid": "automatic"
 		},
 		"ghcr.io/devcontainers/features/node:1": {
-			"version": "lts",
+			"nodeGypDependencies": true,
+			"installYarnUsingApt": true,
+			"version": "latest",
 			"pnpmVersion": "latest",
 			"nvmVersion": "latest"
 		},
@@ -27,7 +29,8 @@
 			"installDirectlyFromGitHubRelease": true,
 			"version": "latest"
 		},
-		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {}
+		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {},
+		"ghcr.io/stuartleeks/dev-container-features/shell-history:0": {}
 	},
 	"customizations": {
 		"vscode": {
