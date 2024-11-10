@@ -38,6 +38,7 @@ func main() {
 			server.Module,
 			api.Module,
 			database.MigrationModule,
+			appMiddleware.Module,
 			fx.Invoke(registerRoutes, startServer),
 		),
 		fx.WithLogger(func() fxevent.Logger {
@@ -64,10 +65,10 @@ func registerRoutes(
 	// Set custom template renderer for HTML responses
 	e.Renderer = renderer
 
-	// Register middleware
+	// Register middleware first
 	middlewareManager.Register(e)
 
-	// Register route handlers
+	// Register route handlers after middleware
 	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg, middlewareManager)
 
 	// Serve static files

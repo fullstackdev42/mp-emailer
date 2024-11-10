@@ -33,6 +33,6 @@ packages:
     interfaces:
       RepositoryInterface:
 
-  # github.com/fullstackdev42/mp-emailer/server:
-  #   interfaces:
-  #     TemplateRenderer:
+  github.com/fullstackdev42/mp-emailer/middleware:
+    interfaces:
+      SessionStore:

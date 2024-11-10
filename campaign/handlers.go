@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/user"
-
+	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -73,7 +72,13 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	userID, err := user.GetOwnerIDFromSession(c)
+	// Get the middleware manager from context
+	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
+	if !ok {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	}
+
+	userID, err := manager.GetOwnerIDFromSession(c)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
 		status, msg := h.mapError(ErrUnauthorizedAccess)
@@ -175,7 +180,14 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	ownerID, err := user.GetOwnerIDFromSession(c)
+
+	// Get the middleware manager from context
+	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
+	if !ok {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	}
+
+	ownerID, err := manager.GetOwnerIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 
 	"errors"
@@ -28,6 +29,7 @@ var Module = fx.Options(
 type Manager struct {
 	sessionStore sessions.Store
 	logger       loggo.LoggerInterface
+	cfg          *config.Config
 }
 
 // ManagerParams for dependency injection
@@ -35,6 +37,7 @@ type ManagerParams struct {
 	fx.In
 	SessionStore sessions.Store
 	Logger       loggo.LoggerInterface
+	Cfg          *config.Config
 }
 
 // NewManager creates a new middleware manager
@@ -42,6 +45,7 @@ func NewManager(params ManagerParams) *Manager {
 	return &Manager{
 		sessionStore: params.SessionStore,
 		logger:       params.Logger,
+		cfg:          params.Cfg,
 	}
 }
 
@@ -55,7 +59,7 @@ func (m *Manager) Register(e *echo.Echo) {
 
 // registerContextMiddleware adds session store and logger to context
 func (m *Manager) registerContextMiddleware(e *echo.Echo) {
-	e.Use(sessionsMiddleware(m.sessionStore))
+	e.Use(m.sessionsMiddleware())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if m.sessionStore == nil {
@@ -65,16 +69,17 @@ func (m *Manager) registerContextMiddleware(e *echo.Echo) {
 
 			c.Set("logger", m.logger)
 			c.Set("store", m.sessionStore)
+			c.Set("middleware_manager", m)
 			return next(c)
 		}
 	})
 }
 
 // sessionsMiddleware sets up session middleware
-func sessionsMiddleware(store sessions.Store) echo.MiddlewareFunc {
+func (m *Manager) sessionsMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			session, err := store.Get(c.Request(), "session-name")
+			session, err := m.sessionStore.Get(c.Request(), m.cfg.SessionName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Error retrieving session")
 			}
@@ -124,18 +129,9 @@ func (m *Manager) registerMethodOverride(e *echo.Echo) {
 func (m *Manager) GetSession(c echo.Context, sessionName string) *sessions.Session {
 	m.logger.Debug("Getting session", "session_name", sessionName)
 
-	store := c.Get("store").(sessions.Store)
-	session, err := store.Get(c.Request(), sessionName)
+	session, err := m.sessionStore.Get(c.Request(), sessionName)
 	if err != nil {
 		m.logger.Debug("Error getting session", "error", err)
-		return nil
-	}
-
-	fmt.Printf("Session ID: %v, IsNew: %v, Values: %v\n", session.ID, session.IsNew, session.Values) // Debugging statement
-
-	// Ensure the session is saved to persist values
-	if err := session.Save(c.Request(), c.Response()); err != nil {
-		m.logger.Error("Failed to save session", err)
 		return nil
 	}
 
@@ -146,30 +142,47 @@ func (m *Manager) GetSession(c echo.Context, sessionName string) *sessions.Sessi
 	return session
 }
 
-func (m *Manager) GetUserIDFromSession(c echo.Context, sessionName string) (uuid.UUID, error) {
-	m.logger.Debug("Attempting to get userID from session", "session_name", sessionName)
+// GetUserIDFromSession retrieves the user ID from the session with proper type handling
+func (m *Manager) GetUserIDFromSession(c echo.Context, sessionName string) (string, error) {
+	m.logger.Debug("Attempting to get userID from session",
+		"session_name", sessionName)
 
 	session := m.GetSession(c, sessionName)
 	if session == nil {
-		m.logger.Debug("Session is nil")
-		return uuid.UUID{}, ErrSessionInvalid
+		m.logger.Debug("Session is nil",
+			"session_name", sessionName)
+		return "", ErrSessionInvalid
 	}
 
 	userIDValue := session.Values["user_id"]
-	fmt.Printf("Raw user_id value from session: %v, type: %T\n", userIDValue, userIDValue) // Debugging statement
-	m.logger.Debug("Raw user_id value", "type", fmt.Sprintf("%T", userIDValue))
+	if userIDValue == nil {
+		m.logger.Debug("User ID not found in session",
+			"session_name", sessionName)
+		return "", ErrUserNotFound
+	}
 
+	// Handle different types of user ID storage
 	switch v := userIDValue.(type) {
-	case uuid.UUID:
-		return v, nil
 	case string:
-		return uuid.Parse(v)
+		m.logger.Debug("User ID found in session",
+			"user_id", v,
+			"session_name", sessionName)
+		return v, nil
+	case uuid.UUID:
+		m.logger.Debug("User ID (UUID) found in session",
+			"user_id", v.String(),
+			"session_name", sessionName)
+		return v.String(), nil
 	case []byte:
-		return uuid.Parse(string(v))
+		m.logger.Debug("User ID (bytes) found in session",
+			"user_id", string(v),
+			"session_name", sessionName)
+		return string(v), nil
 	default:
-		fmt.Printf("Unexpected type for user_id: %T\n", userIDValue) // Debugging statement
-		m.logger.Debug("Unexpected type for user_id", "type", fmt.Sprintf("%T", userIDValue))
-		return uuid.UUID{}, ErrUserNotFound
+		m.logger.Debug("Invalid user ID type in session",
+			"type", fmt.Sprintf("%T", userIDValue),
+			"session_name", sessionName)
+		return "", ErrUserNotFound
 	}
 }
 
@@ -181,16 +194,19 @@ func (m *Manager) ValidateSession(sessionName string) echo.MiddlewareFunc {
 				"session_name", sessionName,
 				"path", c.Path())
 
+			session := m.GetSession(c, sessionName)
+			if session == nil {
+				m.logger.Debug("Session validation failed - no session")
+				return c.Redirect(http.StatusSeeOther, "/user/login")
+			}
+
 			userID, err := m.GetUserIDFromSession(c, sessionName)
 			if err != nil {
 				m.logger.Debug("Session validation error", "error", err)
-
-				if err == ErrSessionInvalid || err == ErrUserNotFound {
-					return c.Redirect(http.StatusSeeOther, "/user/login")
-				}
-				return err
+				return c.Redirect(http.StatusSeeOther, "/user/login")
 			}
 
+			c.Set("user_id", userID)
 			m.logger.Debug("Session validated successfully", "user_id", userID)
 			return next(c)
 		}
@@ -201,3 +217,18 @@ var (
 	ErrSessionInvalid = errors.New("session is invalid")
 	ErrUserNotFound   = errors.New("user not found in session")
 )
+
+// GetOwnerIDFromSession retrieves the owner ID from the session
+func (m *Manager) GetOwnerIDFromSession(c echo.Context) (string, error) {
+	m.logger.Debug("GetOwnerIDFromSession: Starting")
+
+	// Use the session name from config
+	ownerID, err := m.GetUserIDFromSession(c, m.cfg.SessionName)
+	if err != nil {
+		m.logger.Debug("GetOwnerIDFromSession: Failed to get owner ID", "error", err)
+		return "", err
+	}
+
+	m.logger.Debug("GetOwnerIDFromSession: Owner ID retrieved", "ownerID", ownerID)
+	return ownerID, nil
+}

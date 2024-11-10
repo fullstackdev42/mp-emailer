@@ -2,7 +2,6 @@ package middleware_test
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,25 +9,25 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
 )
 
 type MiddlewareTestSuite struct {
 	suite.Suite
 	echo       *echo.Echo
 	mockLogger *mocks.MockLoggerInterface
-	mockStore  *sessions.CookieStore
+	mockStore  *mocksMiddleware.MockSessionStore
 	manager    *middleware.Manager
 }
 
 func (s *MiddlewareTestSuite) SetupTest() {
 	s.echo = echo.New()
 	s.mockLogger = mocks.NewMockLoggerInterface(s.T())
-	s.mockStore = sessions.NewCookieStore([]byte("test-key"))
+	s.mockStore = mocksMiddleware.NewMockSessionStore(s.T())
 
 	// Add this line to register UUID type with gob
 	gob.Register(uuid.UUID{})
@@ -43,66 +42,45 @@ func TestMiddlewareTestSuite(t *testing.T) {
 	suite.Run(t, new(MiddlewareTestSuite))
 }
 func (s *MiddlewareTestSuite) TestGetUserIDFromSession() {
-	testCases := []struct {
-		name          string
-		setupSession  func(*sessions.Session)
-		setupMocks    func()
-		expectedError error
-	}{
-		{
-			name: "valid UUID in session",
-			setupSession: func(session *sessions.Session) {
-				testUUID := uuid.New()
-				session.Values["user_id"] = testUUID
-				fmt.Printf("Setting session user_id: %v\n", testUUID)
-			},
-			setupMocks: func() {
-				s.mockLogger.On("Debug", "Attempting to get userID from session", "session_name", "test-session").Return()
-				s.mockLogger.On("Debug", "Getting session", "session_name", "test-session").Return()
-				s.mockLogger.On("Debug", "Session retrieved successfully", "session_id", mock.Anything, "is_new", mock.Anything, "values_count", mock.Anything).Return()
-				s.mockLogger.On("Debug", "Raw user_id value", "type", "<nil>").Return()
-				s.mockLogger.On("Debug", "Unexpected type for user_id", "type", "<nil>").Return()
-			},
-			expectedError: middleware.ErrUserNotFound,
-		},
-	}
+	s.Run("valid UUID in session", func() {
+		// Set up all expected logger calls in the correct order
+		s.mockLogger.EXPECT().
+			Debug("Attempting to get userID from session", "session_name", "test-session")
 
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			fmt.Printf("Running test case: %s\n", tc.name)
+		s.mockLogger.EXPECT().
+			Debug("Getting session", "session_name", "test-session")
 
-			// Setup
-			req := httptest.NewRequest(http.MethodGet, "/", nil)
-			rec := httptest.NewRecorder()
-			c := s.echo.NewContext(req, rec)
+		s.mockLogger.EXPECT().
+			Debug("Session retrieved successfully",
+				"session_id", "", // The session ID might be empty in test
+				"is_new", false,
+				"values_count", 1)
 
-			// Create and setup session
-			session, _ := s.mockStore.New(req, "test-session")
-			if tc.setupSession != nil {
-				tc.setupSession(session)
-				err := session.Save(req, rec)
-				s.NoError(err, "Failed to save session")
-			}
+		s.mockLogger.EXPECT().
+			Debug("User ID (UUID) found in session",
+				"user_id", "e513302d-4563-47c4-932f-d22af5c07e62",
+				"session_name", "test-session")
 
-			// Set store in context
-			c.Set("store", s.mockStore)
+		// Setup test session
+		userID := uuid.MustParse("e513302d-4563-47c4-932f-d22af5c07e62")
+		session := sessions.NewSession(s.mockStore, "test-session")
+		session.Values["user_id"] = userID
 
-			// Setup mocks
-			tc.setupMocks()
+		// Create test context
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
 
-			// Execute
-			userID, err := s.manager.GetUserIDFromSession(c, "test-session")
+		// Mock the session store Get method
+		s.mockStore.EXPECT().
+			Get(req, "test-session").
+			Return(session, nil)
 
-			// Assert
-			if tc.expectedError != nil {
-				s.Error(err)
-				s.Equal(tc.expectedError, err)
-			} else {
-				s.NoError(err)
-				s.NotEqual(uuid.Nil, userID)
-			}
+		// Test the method
+		result, err := s.manager.GetUserIDFromSession(c, "test-session")
 
-			s.mockLogger.AssertExpectations(s.T())
-		})
-	}
+		s.NoError(err)
+		s.Equal(userID.String(), result)
+	})
 }
