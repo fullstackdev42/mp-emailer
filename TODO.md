@@ -1,5 +1,37 @@
 # TODO
 
+## Middleware & Request Processing
+
+### Core Middleware
+- [ ] Add rate limiting middleware
+- [ ] Add metrics collection
+- [ ] Add request tracing
+- [ ] Implement proper panic recovery
+- [ ] Add request ID middleware
+
+### Session Management
+- [ ] Improve session handling
+  - [ ] Add session validation
+  - [ ] Add session cleanup
+  - [ ] Add session security headers
+  - [ ] Add session encryption
+  - [ ] Add session timeout handling
+
+### Error Handling
+- [x] Add error handling to rate limiter middleware
+- [ ] Implement proper error responses
+  - [ ] Add structured error types
+  - [ ] Add error logging
+  - [ ] Add user-friendly error messages
+- [ ] Add metrics collection for rate limiting
+
+### Testing Requirements
+- [ ] Add more test cases for middleware manager
+- [ ] Test session store implementations
+- [ ] Test error scenarios in middleware
+- [ ] Add integration tests for middleware chain
+- [ ] Test session validation edge cases
+
 ## main.go
 
 ### Middleware Registration
@@ -88,17 +120,6 @@ for retries := 5; retries > 0; retries-- {
     sleepDuration := time.Duration(5 * (6 - retries)) * time.Second // Exponential backoff
     logger.Warn("Failed to connect to database, retrying...", "error", err, "retry in", sleepDuration)
     time.Sleep(sleepDuration)
-}
-```
-
-### Template Loading:
-
-The ProvideTemplates function doesn't handle errors in a very descriptive way. Perhaps adding more context about which template caused the error would be helpful:
-
-```go
-tmpl, err := tmpl.ParseFiles(templates...)
-if err != nil {
-    return nil, fmt.Errorf("failed to parse one or more templates: %w", err)
 }
 ```
 
@@ -450,10 +471,10 @@ mp-emailer --config=/etc/mp-emailer/config.yaml
 
 #### Implementation References
 - Database connection retry logic (see shared/app.go:79-93)
-- Session store configuration (see shared/app.go:96-98)
+- Session store configuration (see middleware/store.go)
 - Template rendering system (see shared/app.go:101-124)
 - JWT token handling (see shared/jwt.go)
-- Configuration management (see config/types.go)
+- Middleware management (see middleware/middleware.go)
 
 #### Testing Guidelines
 - Use table-driven tests for configuration scenarios
@@ -529,5 +550,12 @@ mp-emailer --config=/etc/mp-emailer/config.yaml
 - [ ] Health checks
 - [ ] Audit logging
 
-### Code References
-- Handler implementation (see api/handler.go)
+### Code Quality
+- [x] Reduce config.Config passing
+  - [x] Implement DI for route handlers
+  - [x] Use struct injection
+- [ ] Improve context value handling
+  - [ ] Type assertion error handling
+  - [ ] Default values
+  - [ ] Validation
+- [x] Review template error handling in ProvideTemplates for more descriptive errors
