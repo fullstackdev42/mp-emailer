@@ -116,9 +116,45 @@ tasks:
     desc: Run the application with live reloading, frontend assets compilation, and browser sync
     cmds:
       - |
-        trap 'kill $(jobs -p) 2>/dev/null' EXIT
-        (cd web && npm run dev) & \
-        air & \
-        (cd web && npx browser-sync start --config bs-config.js) & \
+        exec /usr/bin/env bash -c '
+        set -x
+
+        PID_FILE="/tmp/dev-sync-pids.txt"
+        rm -f "$PID_FILE"
+        touch "$PID_FILE"
+
+        cleanup() {
+          echo "Shutting down processes..."
+          
+          # Kill all child processes in their own process group
+          kill -TERM -$$
+          
+          # Clean up PID file
+          rm -f "$PID_FILE"
+          
+          # Force kill any remaining processes
+          pkill -KILL -P $$
+          
+          exit 0
+        }
+
+        # Set up process group
+        set -m
+        
+        # Handle both SIGINT and SIGTERM
+        trap cleanup INT TERM
+
+        # Start processes in their own process groups
+        (cd web && npm run dev) & 
+        echo $! >> "$PID_FILE"
+
+        (air) &
+        echo $! >> "$PID_FILE"
+
+        (cd web && npx browser-sync start --config bs-config.js) &
+        echo $! >> "$PID_FILE"
+
         wait
+        '
+    shell: bash
     method: none

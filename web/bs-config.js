@@ -7,7 +7,13 @@ module.exports = {
                 this.reload("*.css");
             }
         },
-        "templates/**/*.gohtml",
+        {
+            match: ["templates/**/*.gohtml"],
+            fn: function (event, file) {
+                console.log(`Template changed: ${file}`);
+                this.reload();
+            }
+        },
         "public/js/*.js"
     ],
     port: 3000,
@@ -21,7 +27,11 @@ module.exports = {
     watchOptions: {
         ignored: ['node_modules', 'tmp'],
         ignoreInitial: true,
-        cwd: '.',
-        usePolling: false
+        cwd: 'web',
+        usePolling: false,
+        awaitWriteFinish: {
+            stabilityThreshold: 100,
+            pollInterval: 100
+        }
     }
 }; 
