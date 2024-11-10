@@ -365,3 +365,154 @@ mp-emailer --config=/etc/mp-emailer/config.yaml
   - [ ] Test password hashing
 - [ ] Implement repository tests
 - [ ] Implement API handler tests
+
+#### 2. Infrastructure
+
+##### Database Package
+- [ ] Connection Management
+  - [ ] Test retry mechanism with exponential backoff
+  - [ ] Test connection timeouts
+  - [ ] Test connection failures
+  - [ ] Test successful connections
+
+- [ ] Migration System
+  - [x] Test migration execution
+  - [x] Test migration failures
+  - [x] Test migration rollbacks
+  - [ ] Test migration version tracking
+
+- [ ] Seeding System
+  - [x] Test user seeder
+  - [x] Test campaign seeder
+  - [ ] Test data relationships
+  - [ ] Test seeding failures
+  - [ ] Test data validation
+
+- [ ] Factory System
+  - [x] Test user factory generation
+  - [x] Test campaign factory generation
+  - [ ] Test factory relationships
+  - [ ] Test custom factory attributes
+  - [ ] Test factory validation rules
+
+##### Config Package
+- [ ] Environment Variables
+  - [ ] Test required env vars validation
+  - [ ] Test default values
+  - [ ] Test sensitive data handling
+  - [ ] Test config overrides
+
+- [ ] JWT Configuration
+  - [ ] Test secret key management
+  - [ ] Test token expiration settings
+  - [ ] Test token validation rules
+
+- [ ] Email Provider Configuration
+  - [ ] Test SMTP settings
+  - [ ] Test Mailgun settings
+  - [ ] Test provider switching
+  - [ ] Test credentials validation
+
+##### Shared Package
+- [ ] Template System
+  - [ ] Test template loading
+  - [ ] Test template parsing
+  - [ ] Test custom functions
+  - [ ] Test error handling
+  - [ ] Test template caching
+
+- [ ] Session Management
+  - [ ] Test session store initialization
+  - [ ] Test session data persistence
+  - [ ] Test session expiration
+  - [ ] Test session security
+
+- [ ] JWT Implementation
+  - [ ] Test token generation
+  - [ ] Test token validation
+  - [ ] Test claims handling
+  - [ ] Test error scenarios
+
+#### Implementation References
+- Database connection retry logic (see shared/app.go:79-93)
+- Session store configuration (see shared/app.go:96-98)
+- Template rendering system (see shared/app.go:101-124)
+- JWT token handling (see shared/jwt.go)
+- Configuration management (see config/types.go)
+
+#### Testing Guidelines
+- Use table-driven tests for configuration scenarios
+- Implement mocks for external dependencies
+- Test both success and failure paths
+- Ensure proper cleanup in teardown
+- Test configuration validation rules
+- Verify security-sensitive operations
+
+## API Layer
+
+### Handler Implementation
+- [x] Campaign endpoints
+  - [x] GET /api/campaigns
+  - [x] GET /api/campaign/:id
+  - [x] POST /api/campaign
+  - [x] PUT /api/campaign/:id
+  - [x] DELETE /api/campaign/:id
+- [x] User endpoints
+  - [x] POST /api/user/register
+  - [x] POST /api/user/login
+  - [x] GET /api/user/:username
+
+### Authentication & Authorization
+- [x] JWT middleware implementation (see api/middleware.go)
+- [x] Protected route group setup
+- [ ] Rate limiting
+- [ ] Request validation
+- [ ] Response validation
+- [ ] Error handling standardization
+
+### Testing Requirements
+- [ ] Handler Tests
+  - [ ] Test campaign endpoints
+  - [ ] Test user endpoints
+  - [ ] Test authentication flows
+  - [ ] Test error scenarios
+  - [ ] Test input validation
+  - [ ] Test response formats
+
+- [ ] Middleware Tests
+  - [ ] Test JWT validation
+  - [ ] Test authorization failures
+  - [ ] Test token expiration
+  - [ ] Test invalid tokens
+  - [ ] Test missing tokens
+
+### Error Handling
+- [ ] Implement consistent error responses
+- [ ] Add error codes
+- [ ] Add error messages
+- [ ] Add validation errors
+- [ ] Add logging for errors
+
+### Security
+- [ ] Input sanitization
+- [ ] CORS configuration
+- [ ] Rate limiting
+- [ ] Request size limits
+- [ ] Security headers
+
+### Documentation
+- [ ] API documentation
+- [ ] Swagger/OpenAPI specs
+- [ ] Authentication documentation
+- [ ] Error codes documentation
+- [ ] Example requests/responses
+
+### Monitoring & Logging
+- [ ] Request logging
+- [ ] Error logging
+- [ ] Performance metrics
+- [ ] Health checks
+- [ ] Audit logging
+
+### Code References
+- Handler implementation (see api/handler.go)
