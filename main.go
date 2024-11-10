@@ -88,7 +88,7 @@ func registerHandlers(
 	server.RegisterRoutes(serverHandler, e)
 	campaign.RegisterRoutes(campaignHandler, e, cfg, middlewareManager)
 	user.RegisterRoutes(userHandler, e)
-	api.RegisterRoutes(apiHandler, e, cfg.JWTSecret)
+	api.RegisterRoutes(apiHandler, e, middlewareManager)
 }
 
 // startServer configures the server and starts it
