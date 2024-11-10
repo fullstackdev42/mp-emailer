@@ -44,11 +44,10 @@ func (s *ServiceTestSuite) TestLoginUser() {
 		{
 			name: "successful login",
 			setup: func() {
-				// Generate a real hash for "password" using bcrypt
 				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
 					Username:     "testuser",
-					PasswordHash: string(hashedPassword), // Use the actual hash instead of hardcoded value
+					PasswordHash: string(hashedPassword),
 				}, nil)
 			},
 			dto: &user.LoginDTO{
@@ -66,6 +65,39 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			dto: &user.LoginDTO{
 				Username: "nonexistent",
 				Password: "anypassword",
+			},
+			wantErr: true,
+		},
+		{
+			name: "incorrect password",
+			setup: func() {
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpass"), bcrypt.DefaultCost)
+				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
+					Username:     "testuser",
+					PasswordHash: string(hashedPassword),
+				}, nil)
+			},
+			dto: &user.LoginDTO{
+				Username: "testuser",
+				Password: "wrongpass",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "empty username",
+			setup: func() {},
+			dto: &user.LoginDTO{
+				Username: "",
+				Password: "password",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "empty password",
+			setup: func() {},
+			dto: &user.LoginDTO{
+				Username: "testuser",
+				Password: "",
 			},
 			wantErr: true,
 		},

@@ -157,7 +157,12 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 
 #### 1. Core Business Logic
 - [x] Campaign utils and handlers
-- [ ] User authentication and management
+- [-] User authentication and management
+  - [x] Basic login functionality
+  - [ ] User registration
+  - [ ] Password reset
+  - [ ] Account management
+  - [ ] Session handling
 - [x] Email sending functionality
 
 #### 2. Infrastructure
@@ -193,6 +198,8 @@ tests/
 │   ├── ✓ email/
 │   ├── ✓ shared/
 │   └── ✓ user/
+├── user/ ✓
+│   └── ✓ service_test.go
 ├── config/
 │   └── config_test.go
 └── shared/
@@ -331,3 +338,30 @@ mp-emailer --config=/etc/mp-emailer/config.yaml
 - [ ] Test environment variable loading
 - [ ] Test config file parsing
 - [ ] Test flag validation
+
+## API Authentication
+
+### JWT Implementation
+- [ ] Move JWT handling to API layer
+  - [ ] Create JWT middleware for API routes
+  - [ ] Implement token generation in API handlers
+  - [ ] Configure JWT secret and expiry via environment variables
+  - [ ] Add refresh token functionality
+  - [ ] Implement token revocation
+
+### Testing Requirements
+- [ ] Test JWT token generation
+- [ ] Test token validation
+- [ ] Test token expiry
+- [ ] Test invalid token scenarios
+- [ ] Test refresh token flow
+
+## Testing
+- [x] Implement user service tests
+  - [x] Test user login functionality
+  - [ ] Test user registration
+  - [ ] Test password validation
+  - [ ] Test edge cases (empty username/password)
+  - [ ] Test password hashing
+- [ ] Implement repository tests
+- [ ] Implement API handler tests
