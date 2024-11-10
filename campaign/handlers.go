@@ -73,7 +73,7 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	userID, err := GetUserIDFromSession(c, h.Config.SessionName, h.Logger)
+	userID, err := user.GetOwnerIDFromSession(c)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
 		status, msg := h.mapError(ErrUnauthorizedAccess)
@@ -84,7 +84,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		Name:        strings.TrimSpace(c.FormValue("name")),
 		Description: strings.TrimSpace(c.FormValue("description")),
 		Template:    strings.TrimSpace(c.FormValue("template")),
-		OwnerID:     userID,
+		OwnerID:     uuid.Must(uuid.Parse(userID)), // Convert string to UUID
 	}
 
 	// Enhanced validation with specific error messages

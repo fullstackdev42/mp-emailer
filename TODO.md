@@ -2,51 +2,66 @@
 
 ## main.go
 
-### Middleware Registration: 
+### Middleware Registration
+- [x] Combine logger and session store middleware for efficiency
+  - [x] Create unified middleware function
+  - [x] Add proper error handling
+  - [x] Add proper logging
+  - [x] Consider moving to initial Echo setup
 
-The middleware for setting the logger and session store could be combined into a single middleware for efficiency, or ideally, these should be set up in a way that they're part of the initial Echo setup or through a custom middleware group.
+### Config Handling
+- [ ] Reduce config.Config passing
+  - [ ] Implement dependency injection for route handlers
+  - [ ] Use struct injection instead of parameter passing
+  - [ ] Consider using context values for config where appropriate
 
-### Config Handling: 
+### Error Handling in Middleware
+- [x] Add error handling to rate limiter middleware
+- [ ] Implement proper error responses
+  - [ ] Add structured error types
+  - [ ] Add error logging
+  - [ ] Add user-friendly error messages
+- [ ] Add metrics collection for rate limiting
 
-You're passing config.Config around quite a bit. Consider if this configuration could be injected into structs once rather than passed around, especially for route handlers.
+### Session Store
+- [x] Add error handling for nil session store
+- [ ] Improve session management
+  - [ ] Add session validation
+  - [ ] Add session cleanup
+  - [ ] Add session security headers
+  - [ ] Add session encryption
+  - [ ] Add session timeout handling
 
-### Error Handling in Middleware: 
+### Server Start and Stop
+- [x] Implement non-blocking server start
+- [x] Add graceful shutdown with timeout
+- [ ] Enhance shutdown process
+  - [ ] Add connection draining
+  - [ ] Add cleanup procedures
+  - [ ] Add shutdown status logging
+  - [ ] Add health check endpoint
 
-The rate limiter middleware doesn't handle the error case. You might want to add error handling there or ensure the middleware knows how to handle rate limit exceedances.
+### Type Assertions
+- [ ] Improve context value handling
+  - [ ] Add type assertion error handling
+  - [ ] Add default values
+  - [ ] Add validation
+  - [ ] Add logging for missing values
+  - [ ] Consider using strongly typed context values
 
-### Session Store: 
+### Implementation References
+- Server startup (see main.go:startServer)
+- Middleware registration (see main.go:registerMiddlewares)
+- Route registration (see main.go:registerRoutes)
+- Session store configuration (see main.go:registerMiddlewares)
 
-There's no error handling when setting the session store in the middleware. This should be checked to ensure the session store can actually be accessed:
-
-```go
-e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-    return func(c echo.Context) error {
-        if sessionStore != nil {
-            c.Set("store", sessionStore)
-        } else {
-            return errors.New("session store not available")
-        }
-        return next(c)
-    }
-})
-```
-
-### Server Start and Stop: 
-
-The server starts in a goroutine, which is good for non-blocking start. However, you might want to add some form of timeout for graceful shutdown to prevent indefinite waits.
-
-```go
-OnStop: func(ctx context.Context) error {
-    shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-    defer cancel()
-    return e.Shutdown(shutdownCtx)
-},
-```
-
-### Type Assertions: 
-
-When using context.Context to retrieve values set by middleware, remember that value retrieval can return nil. In your handlers, ensure you handle this scenario properly.
-
+### Testing Requirements
+- [ ] Test middleware chain
+- [ ] Test configuration loading
+- [ ] Test server startup/shutdown
+- [ ] Test error scenarios
+- [ ] Test rate limiting
+- [ ] Test session handling
 
 ## shared/app.go
 

@@ -83,6 +83,13 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 
 // LoginUser logs in a user and returns a JWT token
 func (s *Service) LoginUser(params *LoginDTO) (string, error) {
+	if params.Username == "" {
+		return "", fmt.Errorf("username cannot be empty")
+	}
+	if params.Password == "" {
+		return "", fmt.Errorf("password cannot be empty")
+	}
+
 	user, err := s.repo.FindByUsername(params.Username)
 	if err != nil {
 		return "", fmt.Errorf("invalid username or password")
