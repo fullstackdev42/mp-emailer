@@ -17,7 +17,7 @@ type Handler struct {
 	Store           sessions.Store
 	templateManager shared.TemplateRendererInterface
 	campaignService campaign.ServiceInterface
-	errorHandler    *shared.ErrorHandler
+	errorHandler    shared.ErrorHandlerInterface
 	EmailService    email.Service
 	logger          loggo.LoggerInterface
 }
@@ -34,7 +34,7 @@ type HandlerParams struct {
 	Store           sessions.Store
 	TemplateManager shared.TemplateRendererInterface
 	CampaignService campaign.ServiceInterface
-	ErrorHandler    *shared.ErrorHandler
+	ErrorHandler    shared.ErrorHandlerInterface
 	EmailService    email.Service
 	Logger          loggo.LoggerInterface
 }
@@ -70,7 +70,16 @@ func (h *Handler) Error(message string, err error, params ...interface{}) {
 func (h *Handler) HandleIndex(c echo.Context) error {
 	campaigns, err := h.campaignService.GetCampaigns()
 	if err != nil {
-		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
+		h.Error("Error fetching campaigns", err)
+		// Render error page and return the error
+		renderErr := c.Render(http.StatusInternalServerError, "error", &shared.Data{
+			Error:      "Error fetching campaigns",
+			StatusCode: http.StatusInternalServerError,
+		})
+		if renderErr != nil {
+			return renderErr
+		}
+		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
 
 	return c.Render(http.StatusOK, "home", &shared.Data{

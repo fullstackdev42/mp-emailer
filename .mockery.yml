@@ -35,4 +35,5 @@ packages:
 
   github.com/fullstackdev42/mp-emailer/middleware:
     interfaces:
+      SessionManager:
       SessionStore:

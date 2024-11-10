@@ -66,6 +66,18 @@ func setupHandlerTest(t *testing.T) *handlerTestSuite {
 	return suite
 }
 
+func (s *handlerTestSuite) tearDown() {
+	// Clear all mock expectations and handlers
+	s.mockService = nil
+	s.mockLookupService = nil
+	s.mockEmailService = nil
+	s.mockClient = nil
+	s.mockLogger = nil
+	s.mockErrorHandler = nil
+	s.mockTemplateRenderer = nil
+	s.handler = nil
+}
+
 func TestCampaignGET(t *testing.T) {
 	// Declare campaignID at the test function level
 	campaignID := uuid.New()
@@ -131,6 +143,8 @@ func TestCampaignGET(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suite := setupHandlerTest(t)
+			defer suite.tearDown()
+
 			tt.setupMocks(suite)
 
 			req := httptest.NewRequest(http.MethodGet, "/campaign/"+tt.campaignID, nil)
@@ -204,6 +218,8 @@ func TestGetCampaigns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suite := setupHandlerTest(t)
+			defer suite.tearDown()
+
 			tt.setupMocks(suite)
 
 			e := echo.New()
@@ -211,7 +227,6 @@ func TestGetCampaigns(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			// Important: Set the renderer on the context
 			e.Renderer = suite.mockTemplateRenderer
 
 			err := suite.handler.GetCampaigns(c)
