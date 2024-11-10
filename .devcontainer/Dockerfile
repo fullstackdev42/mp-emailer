@@ -11,6 +11,9 @@ RUN go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@la
     go install github.com/vektra/mockery/v2@v2.46.3 && \
     go install github.com/air-verse/air@latest
 
+# Install specific npm version globally
+RUN npm install -g npm@latest
+
 # Ensure the migrate binary is in the PATH for vscode user
 ENV PATH="/home/vscode/go/bin:${PATH}"
 
