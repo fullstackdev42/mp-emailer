@@ -21,7 +21,7 @@
 		"ghcr.io/devcontainers/features/node:1": {
 			"nodeGypDependencies": true,
 			"installYarnUsingApt": true,
-			"version": "latest",
+			"version": "lts",
 			"pnpmVersion": "latest",
 			"nvmVersion": "latest"
 		},
