@@ -4,27 +4,28 @@ import (
 	"fmt"
 	"net/smtp"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/mailgun/mailgun-go/v4"
 )
 
 // Provider represents supported email service providers
-type Provider string
+type Provider = config.EmailProvider
 
 const (
-	ProviderSMTP    Provider = "smtp"
-	ProviderMailgun Provider = "mailgun"
+	ProviderSMTP    Provider = config.EmailProviderSMTP
+	ProviderMailgun Provider = config.EmailProviderMailgun
 )
 
 // Config holds the configuration needed for email services
 type Config struct {
-	Provider      Provider
-	SMTPHost      string
-	SMTPPort      string
-	SMTPUsername  string
-	SMTPPassword  string
-	SMTPFrom      string
-	MailgunDomain string
-	MailgunAPIKey string
+	Provider      Provider `env:"EMAIL_PROVIDER" envDefault:"smtp"`
+	SMTPHost      string   `env:"SMTP_HOST"`
+	SMTPPort      int      `env:"SMTP_PORT" envDefault:"587"`
+	SMTPUsername  string   `env:"SMTP_USERNAME"`
+	SMTPPassword  string   `env:"SMTP_PASSWORD"`
+	SMTPFrom      string   `env:"SMTP_FROM"`
+	MailgunDomain string   `env:"MAILGUN_DOMAIN"`
+	MailgunAPIKey string   `env:"MAILGUN_API_KEY"`
 }
 
 // SMTPClient interface
@@ -46,7 +47,7 @@ func (s *SMTPClientImpl) SendMail(addr string, a smtp.Auth, from string, to []st
 func NewEmailService(p Params) (Service, error) {
 	switch p.Config.Provider {
 	case ProviderSMTP:
-		if p.Config.SMTPHost == "" || p.Config.SMTPPort == "" {
+		if p.Config.SMTPHost == "" {
 			return nil, fmt.Errorf("SMTP configuration is incomplete")
 		}
 
@@ -56,7 +57,7 @@ func NewEmailService(p Params) (Service, error) {
 
 		return NewMailpitEmailService(
 			p.Config.SMTPHost,
-			p.Config.SMTPPort,
+			fmt.Sprintf("%d", p.Config.SMTPPort),
 			smtpClient,
 			p.Config.SMTPFrom,
 		), nil

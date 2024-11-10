@@ -19,5 +19,3 @@ func normalizePath(path, baseDir string) string {
 	}
 	return filepath.Clean(path)
 }
-
-// Add other helper functions...

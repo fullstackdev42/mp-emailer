@@ -40,3 +40,5 @@ Testing
 - Do not use github.com/golang/mock/gomock; use testify's mock package instead.
 - Use testify's assert package for assertions.
 
+Methods
+- Use logger.Error("Server error", err) instead of logger.Error("Server error", "error", err).

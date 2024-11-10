@@ -54,7 +54,7 @@ var App = fx.Options(
 // Provide a new database connection
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
 	logger.Info("Initializing database connection")
-	dsn := cfg.DatabaseDSN()
+	dsn := cfg.DSN()
 
 	db, err := connectToDB(dsn, logger)
 	if err != nil {

@@ -7,9 +7,15 @@ import (
 	"time"
 )
 
-// DatabaseDSN returns the formatted DSN string for MySQL
-func (c *Config) DatabaseDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
+// DSN returns the database connection string
+func (c *Config) DSN() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		c.DBUser,
+		c.DBPassword,
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
+	)
 }
 
 // IsDevelopment checks if the app is running in a development environment.

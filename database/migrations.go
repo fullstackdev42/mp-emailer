@@ -42,7 +42,7 @@ type MigrationService struct {
 // NewMigrationService creates a new instance of MigrationService
 func NewMigrationService(config *config.Config, migrationsPath string) *MigrationService {
 	return &MigrationService{
-		dsn:            config.DatabaseDSN(),
+		dsn:            config.DSN(),
 		migrationsPath: migrationsPath,
 	}
 }

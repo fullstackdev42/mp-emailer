@@ -2,30 +2,31 @@ package config
 
 // Config holds the application's configuration values.
 type Config struct {
-	AppDebug                    bool
-	AppEnv                      Environment
-	AppPort                     string
-	DBUser                      string `env:"DB_USER,required"`
-	DBPassword                  string `env:"DB_PASSWORD,required"`
-	DBHost                      string `env:"DB_HOST,required"`
-	DBPort                      string `env:"DB_PORT" envDefault:"3306"`
-	DBName                      string `env:"DB_NAME,required"`
-	EmailProvider               EmailProvider
-	JWTExpiry                   string
-	JWTSecret                   string
-	LogFile                     string
-	LogLevel                    string
-	MailgunAPIKey               string
-	MailgunDomain               string
-	MigrationsPath              string
-	RepresentativeLookupBaseURL string
-	SessionName                 string
-	SessionSecret               string
-	SMTPFrom                    string
-	SMTPHost                    string
-	SMTPPassword                string
-	SMTPPort                    string
-	SMTPUsername                string
+	AppDebug                    bool          `env:"APP_DEBUG" envDefault:"false"`
+	AppEnv                      Environment   `env:"APP_ENV" envDefault:"development"`
+	AppHost                     string        `env:"APP_HOST" envDefault:"localhost"`
+	AppPort                     int           `env:"APP_PORT" envDefault:"8080"`
+	DBUser                      string        `env:"DB_USER,required"`
+	DBPassword                  string        `env:"DB_PASSWORD,required"`
+	DBHost                      string        `env:"DB_HOST,required"`
+	DBPort                      int           `env:"DB_PORT" envDefault:"3306"`
+	DBName                      string        `env:"DB_NAME,required"`
+	EmailProvider               EmailProvider `env:"EMAIL_PROVIDER" envDefault:"smtp"`
+	JWTExpiry                   string        `env:"JWT_EXPIRY" envDefault:"24h"`
+	JWTSecret                   string        `env:"JWT_SECRET,required"`
+	LogFile                     string        `env:"LOG_FILE" envDefault:"storage/logs/app.log"`
+	LogLevel                    string        `env:"LOG_LEVEL" envDefault:"info"`
+	MailgunAPIKey               string        `env:"MAILGUN_API_KEY"`
+	MailgunDomain               string        `env:"MAILGUN_DOMAIN"`
+	MigrationsPath              string        `env:"MIGRATIONS_PATH" envDefault:"database/migrations"`
+	RepresentativeLookupBaseURL string        `env:"REPRESENTATIVE_LOOKUP_BASE_URL"`
+	SessionName                 string        `env:"SESSION_NAME" envDefault:"mp_emailer_session"`
+	SessionSecret               string        `env:"SESSION_SECRET,required"`
+	SMTPFrom                    string        `env:"SMTP_FROM"`
+	SMTPHost                    string        `env:"SMTP_HOST"`
+	SMTPPassword                string        `env:"SMTP_PASSWORD"`
+	SMTPPort                    int           `env:"SMTP_PORT" envDefault:"587"`
+	SMTPUsername                string        `env:"SMTP_USERNAME"`
 }
 
 // Log is used for logging configuration without sensitive fields

@@ -1,5 +1,11 @@
+require('dotenv').config({ path: '../.env' });
+
+const serverPort = parseInt(process.env.APP_PORT || '8080', 10);
+const serverHost = process.env.APP_HOST || 'localhost';
+console.log(`Proxying to ${serverHost}:${serverPort}`);
+
 module.exports = {
-    proxy: "localhost:8080",
+    proxy: `${serverHost}:${serverPort}`,
     files: [
         {
             match: ["public/css/styles.css"],
@@ -17,6 +23,7 @@ module.exports = {
         "public/js/*.js"
     ],
     port: 3000,
+    host: serverHost,
     open: false,
     notify: false,
     reloadDelay: 100,

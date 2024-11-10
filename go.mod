@@ -3,6 +3,7 @@ module github.com/fullstackdev42/mp-emailer
 go 1.23
 
 require (
+	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-faker/faker/v4 v4.5.0
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/go-sql-driver/mysql v1.8.1
@@ -13,7 +14,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/jonesrussell/loggo v0.3.0
 	github.com/labstack/echo/v4 v4.12.0
-	github.com/mailgun/mailgun-go/v4 v4.18.1
+	github.com/mailgun/mailgun-go/v4 v4.18.5
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/fx v1.23.0
 	golang.org/x/crypto v0.29.0
@@ -52,7 +53,7 @@ require (
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/time v0.8.0 // indirect

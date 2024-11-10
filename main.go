@@ -118,24 +118,20 @@ func registerHandlers(
 }
 
 // startServer configures the server and starts it
-func startServer(lc fx.Lifecycle, e *echo.Echo, config *config.Config, logger loggo.LoggerInterface) {
+func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface) {
 	lc.Append(fx.Hook{
-		OnStart: func(_ context.Context) error {
+		OnStart: func(ctx context.Context) error {
 			go func() {
-				logger.Info("Starting server on port " + config.AppPort)
-				if err := e.Start(":" + config.AppPort); !errors.Is(err, http.ErrServerClosed) {
-					logger.Error("Error starting server", err)
+				addr := fmt.Sprintf("%s:%d", cfg.AppHost, cfg.AppPort)
+				logger.Info("Starting server", "host", cfg.AppHost, "port", cfg.AppPort)
+				if err := e.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					logger.Error("Server error", err)
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logger.Info("Server shutting down")
-			if err := e.Shutdown(ctx); err != nil {
-				logger.Error("Error shutting down server", err)
-				return err
-			}
-			return nil
+			return e.Shutdown(ctx)
 		},
 	})
 }

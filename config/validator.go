@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -57,18 +56,18 @@ func validateRequiredFields(config *Config) error {
 
 func validateNumericFields(config *Config) error {
 	// Validate DB Port
-	if _, err := strconv.Atoi(config.DBPort); err != nil {
-		return fmt.Errorf("invalid DB_PORT '%s': must be a valid number", config.DBPort)
+	if config.DBPort <= 0 {
+		return fmt.Errorf("invalid DB_PORT '%d': must be a positive number", config.DBPort)
 	}
 
 	// Validate Mailpit Port
-	if _, err := strconv.Atoi(config.SMTPPort); err != nil {
-		return fmt.Errorf("invalid SMTP_PORT '%s': must be a valid number", config.SMTPPort)
+	if config.SMTPPort <= 0 {
+		return fmt.Errorf("invalid SMTP_PORT '%d': must be a valid number", config.SMTPPort)
 	}
 
 	// Validate App Port
-	if _, err := strconv.Atoi(config.AppPort); err != nil {
-		return fmt.Errorf("invalid APP_PORT '%s': must be a valid number", config.AppPort)
+	if config.AppPort <= 0 {
+		return fmt.Errorf("invalid APP_PORT '%d': must be a positive number", config.AppPort)
 	}
 
 	return nil
@@ -108,7 +107,7 @@ func validateLogLevel(config *Config) error {
 func validateEmailConfig(config *Config) error {
 	switch config.EmailProvider {
 	case EmailProviderSMTP:
-		if config.SMTPHost == "" || config.SMTPPort == "" || config.SMTPFrom == "" {
+		if config.SMTPHost == "" || config.SMTPPort <= 0 || config.SMTPFrom == "" {
 			return fmt.Errorf("SMTP_HOST, SMTP_PORT, and SMTP_FROM are required when EMAIL_PROVIDER=smtp")
 		}
 	case EmailProviderMailgun:
@@ -117,6 +116,32 @@ func validateEmailConfig(config *Config) error {
 		}
 	default:
 		return fmt.Errorf("invalid EMAIL_PROVIDER '%s': must be one of: smtp, mailgun", config.EmailProvider)
+	}
+	return nil
+}
+
+func validateSMTPConfig(config *Config) error {
+	if config.EmailProvider == EmailProviderSMTP {
+		if config.SMTPHost == "" {
+			return fmt.Errorf("SMTP_HOST is required when EMAIL_PROVIDER is smtp")
+		}
+		if config.SMTPPort == 0 {
+			return fmt.Errorf("SMTP_PORT is required when EMAIL_PROVIDER is smtp")
+		}
+		if config.SMTPUsername == "" {
+			return fmt.Errorf("SMTP_USERNAME is required when EMAIL_PROVIDER is smtp")
+		}
+		if config.SMTPPassword == "" {
+			return fmt.Errorf("SMTP_PASSWORD is required when EMAIL_PROVIDER is smtp")
+		}
+		if config.SMTPFrom == "" {
+			return fmt.Errorf("SMTP_FROM is required when EMAIL_PROVIDER is smtp")
+		}
+
+		// Validate port range
+		if config.SMTPPort < 1 || config.SMTPPort > 65535 {
+			return fmt.Errorf("invalid SMTP_PORT %d: must be between 1 and 65535", config.SMTPPort)
+		}
 	}
 	return nil
 }
