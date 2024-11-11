@@ -429,7 +429,7 @@ mp-emailer --config=/etc/mp-emailer/config.yaml
   - [ ] Type assertion error handling
   - [ ] Default values
   - [ ] Validation
-- [x] Review template error handling in ProvideTemplates for more descriptive errors
+- [x] Review template error handling in provideTemplates for more descriptive errors
 
 ## API Testing Progress
 

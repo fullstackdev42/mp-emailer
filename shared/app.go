@@ -40,7 +40,7 @@ var App = fx.Options(
 		newSessionStore,
 		validator.New,
 		fx.Annotate(
-			ProvideTemplates,
+			provideTemplates,
 			fx.As(new(TemplateRendererInterface)),
 		),
 		provideEmailService,
@@ -97,8 +97,8 @@ func newSessionStore(cfg *config.Config) sessions.Store {
 	return sessions.NewCookieStore([]byte(cfg.SessionSecret))
 }
 
-// ProvideTemplates creates and configures the template renderer
-func ProvideTemplates(store sessions.Store) (TemplateRendererInterface, error) {
+// provideTemplates creates and configures the template renderer
+func provideTemplates(store sessions.Store, cfg *config.Config) (TemplateRendererInterface, error) {
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"hasPrefix": strings.HasPrefix,
 		"safeHTML":  func(s string) template.HTML { return template.HTML(s) },
@@ -120,7 +120,7 @@ func ProvideTemplates(store sessions.Store) (TemplateRendererInterface, error) {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 
-	return NewCustomTemplateRenderer(tmpl, store), nil
+	return NewCustomTemplateRenderer(tmpl, store, cfg), nil
 }
 
 // provideEmailService creates a new email service based on the configuration

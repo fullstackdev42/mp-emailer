@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
@@ -40,22 +41,24 @@ type TemplateRendererInterface interface {
 type CustomTemplateRenderer struct {
 	templates *template.Template
 	store     sessions.Store
+	config    *config.Config
 }
 
 // Ensure CustomTemplateRenderer implements TemplateRendererInterface
 var _ TemplateRendererInterface = (*CustomTemplateRenderer)(nil)
 
 // NewCustomTemplateRenderer creates a new template renderer
-func NewCustomTemplateRenderer(t *template.Template, store sessions.Store) TemplateRendererInterface {
+func NewCustomTemplateRenderer(t *template.Template, store sessions.Store, cfg *config.Config) TemplateRendererInterface {
 	return &CustomTemplateRenderer{
 		templates: t,
 		store:     store,
+		config:    cfg,
 	}
 }
 
 // Render method implements echo.Renderer and handles rendering templates
 func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	session, err := t.store.Get(c.Request(), "mpe")
+	session, err := t.store.Get(c.Request(), t.config.SessionName)
 	if err != nil {
 		return fmt.Errorf("failed to get session: %w", err)
 	}
