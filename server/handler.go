@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
@@ -20,12 +21,14 @@ type Handler struct {
 	errorHandler    shared.ErrorHandlerInterface
 	EmailService    email.Service
 	logger          loggo.LoggerInterface
+	IsShuttingDown  bool
 }
 
 // HandlerInterface defines the base logging interface for handlers
 type HandlerInterface interface {
 	shared.HandlerLoggable
 	HandleIndex(c echo.Context) error
+	HandleHealthCheck(c echo.Context) error
 }
 
 // HandlerParams defines the input parameters for Handler
@@ -89,4 +92,20 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 			"Campaigns": campaigns,
 		},
 	})
+}
+
+// HandleHealthCheck health check endpoint
+func (h *Handler) HandleHealthCheck(c echo.Context) error {
+	status := http.StatusOK
+	response := map[string]interface{}{
+		"status": "healthy",
+		"time":   time.Now().UTC(),
+	}
+
+	if h.IsShuttingDown {
+		status = http.StatusServiceUnavailable
+		response["status"] = "shutting_down"
+	}
+
+	return c.JSON(status, response)
 }

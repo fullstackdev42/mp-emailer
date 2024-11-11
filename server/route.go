@@ -34,7 +34,7 @@ func RegisterRoutes(handler HandlerInterface, e *echo.Echo) {
 	// Create routes
 	routes := []Route{
 		NewRoute("GET", "/", handler.HandleIndex),
-		// Add more routes as needed
+		NewRoute("GET", "/health", handler.HandleHealthCheck),
 	}
 
 	// Apply routes

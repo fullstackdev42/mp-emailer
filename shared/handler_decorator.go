@@ -53,3 +53,12 @@ func (d *LoggingHandlerDecorator[T]) HandleIndex(c echo.Context) error {
 	}
 	return echo.ErrMethodNotAllowed
 }
+
+func (d *LoggingHandlerDecorator[T]) HandleHealthCheck(c echo.Context) error {
+	d.Logger.Info("Health check requested")
+	// Type assertion using interface{} conversion first, like HandleIndex
+	if handler, ok := interface{}(d.Handler).(interface{ HandleHealthCheck(echo.Context) error }); ok {
+		return handler.HandleHealthCheck(c)
+	}
+	return echo.ErrMethodNotAllowed
+}

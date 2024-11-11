@@ -1,6 +1,6 @@
 # TODO
 
-## main.go
+## main
 
 ### Server Start and Stop
 - [x] Implement non-blocking server start

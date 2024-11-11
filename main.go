@@ -92,9 +92,15 @@ func registerHandlers(
 }
 
 // startServer configures the server and starts it
-func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface) {
+func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface, handler server.HandlerInterface) {
+	// Create a channel to signal shutdown
+	shutdown := make(chan struct{})
+
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
+			// Register health check endpoint
+			e.GET("/health", handler.HandleHealthCheck)
+
 			go func() {
 				addr := fmt.Sprintf("%s:%d", cfg.AppHost, cfg.AppPort)
 				logger.Info("Starting server", "host", cfg.AppHost, "port", cfg.AppPort)
@@ -105,9 +111,48 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
+			logger.Info("Initiating graceful shutdown")
+
+			// Signal shutdown status
+			close(shutdown)
+
+			// Set shutting down status for health checks
+			if h, ok := handler.(*server.Handler); ok {
+				h.IsShuttingDown = true
+			}
+
+			// Create shutdown context with timeout
 			shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			return e.Shutdown(shutdownCtx)
+
+			// Perform cleanup procedures
+			cleanup := make(chan bool)
+			go func() {
+				// Add your cleanup procedures here
+				logger.Info("Running cleanup procedures")
+
+				// Example: Wait for active requests to complete
+				time.Sleep(2 * time.Second)
+
+				cleanup <- true
+			}()
+
+			// Wait for cleanup or timeout
+			select {
+			case <-cleanup:
+				logger.Info("Cleanup completed successfully")
+			case <-shutdownCtx.Done():
+				logger.Warn("Cleanup timed out")
+			}
+
+			// Shutdown the server
+			if err := e.Shutdown(shutdownCtx); err != nil {
+				logger.Error("Error during shutdown", err)
+				return err
+			}
+
+			logger.Info("Server shutdown completed")
+			return nil
 		},
 	})
 }
