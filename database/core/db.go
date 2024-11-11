@@ -140,3 +140,11 @@ func (db *DB) Migrator() Migrator {
 func (db *DB) GetSQLDB() (*sql.DB, error) {
 	return db.GormDB.DB()
 }
+
+// Add Error method to DB struct
+func (db *DB) Error() string {
+	if db.GormDB.Error != nil {
+		return db.GormDB.Error.Error()
+	}
+	return ""
+}

@@ -5,18 +5,17 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/jonesrussell/loggo"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func ConnectWithRetry(cfg *config.Config, retryConfig *RetryConfig, logger loggo.LoggerInterface) (core.Interface, error) {
-	var dbInterface core.Interface
+func ConnectWithRetry(cfg *config.Config, retryConfig *RetryConfig, logger loggo.LoggerInterface) (*gorm.DB, error) {
+	var db *gorm.DB
 
 	operation := func() error {
 		var err error
-		dbInterface, err = Connect(cfg)
+		db, err = Connect(cfg)
 		if err != nil {
 			logger.Error("Failed to connect to database", err)
 			return err
@@ -36,13 +35,13 @@ func ConnectWithRetry(cfg *config.Config, retryConfig *RetryConfig, logger loggo
 	}
 
 	logger.Info("Successfully connected to database after retry")
-	return dbInterface, nil
+	return db, nil
 }
 
-func Connect(cfg *config.Config) (core.Interface, error) {
+func Connect(cfg *config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
-	return core.NewDB(db), nil
+	return db, nil
 }
