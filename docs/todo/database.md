@@ -68,7 +68,7 @@
   - [ ] Test query timeouts
 
 ## Implementation References
-- Database connection retry logic (see shared/app.go:79-93)
-- Migration system (see database/migrations.go)
-- Seeding functionality (see database/seeds/)
-- Factory implementations (see database/factories/)
+- Database connection retry logic (see [shared/app.go:79-93](../../shared/app.go#L79-L93))
+- Migration system (see [database/migrations.go](../../database/migrations.go))
+- Seeding functionality (see [database/seeds/](../../database/seeds/))
+- Factory implementations (see [database/factories/](../../database/factories/))
