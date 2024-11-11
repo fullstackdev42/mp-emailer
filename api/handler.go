@@ -18,7 +18,7 @@ type Handler struct {
 	campaignService campaign.ServiceInterface
 	userService     user.ServiceInterface
 	logger          loggo.LoggerInterface
-	errorHandler    *shared.ErrorHandler
+	errorHandler    shared.ErrorHandlerInterface
 	jwtExpiry       int
 }
 
