@@ -67,13 +67,6 @@
   - [ ] Test deadlock scenarios
   - [ ] Test query timeouts
 
-### Performance Testing
-- [ ] Load Testing
-  - [ ] Test query performance
-  - [ ] Test connection pool settings
-  - [ ] Test concurrent access
-  - [ ] Test large dataset handling
-
 ## Implementation References
 - Database connection retry logic (see shared/app.go:79-93)
 - Migration system (see database/migrations.go)

@@ -6,7 +6,7 @@
   - [x] POST /api/user/login endpoint
   - [x] Basic login functionality
   - [ ] Password hashing/validation
-  - [ ] Session handling
+  - [ ] Session handling (see security.md for implementation details)
 
 ### Registration Flow
 - [ ] User Registration

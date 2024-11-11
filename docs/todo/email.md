@@ -17,10 +17,10 @@
 
 ### Testing Requirements
 - [ ] Template Rendering Tests
-  - [ ] Test variable substitution
-  - [ ] Test conditional blocks
-  - [ ] Test nested templates
-  - [ ] Test error cases
+  # See validation.md for template validation requirements
+
+### Rate Limiting
+# See security.md for rate limiting implementation
 
 ## Provider Integration
 ### Mailgun Provider

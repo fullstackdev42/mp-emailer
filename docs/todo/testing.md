@@ -30,11 +30,7 @@
 
 ### API Layer
 - [ ] Campaign Endpoints
-  - [ ] Test GET /api/campaigns
-  - [ ] Test GET /api/campaign/:id
-  - [ ] Test POST /api/campaign
-  - [ ] Test PUT /api/campaign/:id
-  - [ ] Test DELETE /api/campaign/:id
+  # See campaign.md for detailed campaign testing requirements
 
 ### External Services
 - [ ] Email Provider Integration
@@ -47,6 +43,15 @@
   - [ ] Test concurrent users
   - [ ] Test response times
   - [ ] Test resource usage
+  - [ ] Test database operations
+    - [ ] Query performance
+    - [ ] Connection pool settings
+    - [ ] Concurrent access
+    - [ ] Large dataset handling
+  - [ ] Test campaign operations
+    - [ ] Concurrent operations
+    - [ ] Bulk operations
+    - [ ] Response times
 
 - [ ] Stress Testing
   - [ ] Test system limits

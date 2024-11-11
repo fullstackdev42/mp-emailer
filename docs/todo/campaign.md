@@ -40,13 +40,6 @@
   - [ ] Test deletion rules
   - [ ] Test sharing functionality
 
-### Performance
-- [ ] Load Testing
-  - [ ] Test concurrent campaign operations
-  - [ ] Test bulk operations
-  - [ ] Test response times
-  - [ ] Monitor resource usage
-
 ## Implementation References
 - Campaign handlers (see campaign/handler.go)
 - Campaign repository (see campaign/repository.go)
