@@ -1,6 +1,15 @@
 package database
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/cenkalti/backoff/v4"
+	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/jonesrussell/loggo"
+	"go.uber.org/fx"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -227,4 +236,87 @@ func (m *customMigrator) Up() error {
 	// Since GORM's migrator doesn't have an Up method directly,
 	// we'll treat AutoMigrate as our "up" operation
 	return m.AutoMigrate()
+}
+
+type RetryConfig struct {
+	InitialInterval      time.Duration
+	MaxInterval          time.Duration
+	MaxElapsedTime       time.Duration
+	MultiplicationFactor float64
+}
+
+func NewDefaultRetryConfig() *RetryConfig {
+	return &RetryConfig{
+		InitialInterval:      100 * time.Millisecond,
+		MaxInterval:          10 * time.Second,
+		MaxElapsedTime:       1 * time.Minute,
+		MultiplicationFactor: 2.0,
+	}
+}
+
+func ConnectWithRetry(cfg *config.Config, retryConfig *RetryConfig, logger loggo.LoggerInterface) (*gorm.DB, error) {
+	var db *gorm.DB
+
+	operation := func() error {
+		var err error
+		db, err = Connect(cfg)
+		if err != nil {
+			logger.Error("Failed to connect to database", err)
+			return err
+		}
+		return nil
+	}
+
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = retryConfig.InitialInterval
+	expBackoff.MaxInterval = retryConfig.MaxInterval
+	expBackoff.MaxElapsedTime = retryConfig.MaxElapsedTime
+	expBackoff.Multiplier = retryConfig.MultiplicationFactor
+
+	err := backoff.Retry(operation, expBackoff)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database after retries: %w", err)
+	}
+
+	logger.Info("Successfully connected to database after retry")
+	return db, nil
+}
+
+// Update the existing fx provider
+func ProvideDatabase(lc fx.Lifecycle, cfg *config.Config, logger loggo.LoggerInterface) (*gorm.DB, error) {
+	retryConfig := NewDefaultRetryConfig()
+	db, err := ConnectWithRetry(cfg, retryConfig, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	lc.Append(fx.Hook{
+		OnStop: func(_ context.Context) error {
+			sqlDB, err := db.DB()
+			if err != nil {
+				return err
+			}
+			return sqlDB.Close()
+		},
+	})
+
+	return db, nil
+}
+
+func Connect(cfg *config.Config) (*gorm.DB, error) {
+	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return db, nil
 }

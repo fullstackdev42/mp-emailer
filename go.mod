@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0
+	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/go-faker/faker/v4 v4.5.0
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/go-sql-driver/mysql v1.8.1
