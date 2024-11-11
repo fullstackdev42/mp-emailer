@@ -24,10 +24,20 @@ tasks:
     cmds:
       - |
         bash -c '
-          trap "kill 0" SIGINT SIGTERM
+          # Improved signal handling
+          cleanup() {
+            echo "Shutting down development environment..."
+            kill $(jobs -p) 2>/dev/null
+            wait
+            echo "Cleanup complete"
+          }
+          
+          trap cleanup SIGINT SIGTERM
+          
           (cd web && npm run dev) & 
           (cd web && npx browser-sync start --config bs-config.js) &
           air & 
+          
           wait
         '
     method: none

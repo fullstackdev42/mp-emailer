@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -21,6 +20,28 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
+
+type customFxLogger struct {
+	logger loggo.LoggerInterface
+}
+
+func (l *customFxLogger) LogEvent(event fxevent.Event) {
+	switch e := event.(type) {
+	case *fxevent.OnStartExecuting:
+		l.logger.Info("Starting", "caller", e.FunctionName)
+	case *fxevent.OnStopExecuting:
+		l.logger.Info("Stopping", "caller", e.FunctionName)
+	case *fxevent.Provided:
+		l.logger.Info("Provided constructor",
+			"constructor", e.ConstructorName,
+			"types", e.OutputTypeNames,
+			"module", e.ModuleName,
+			"private", e.Private)
+		if e.Err != nil {
+			l.logger.Error("Constructor provision failed", e.Err)
+		}
+	}
+}
 
 func main() {
 	// Check for required configuration before starting the application
@@ -41,8 +62,8 @@ func main() {
 			appMiddleware.Module,
 			fx.Invoke(registerRoutes, startServer),
 		),
-		fx.WithLogger(func() fxevent.Logger {
-			return &fxevent.ConsoleLogger{W: os.Stdout}
+		fx.WithLogger(func(logger loggo.LoggerInterface) fxevent.Logger {
+			return &customFxLogger{logger: logger}
 		}),
 	)
 
@@ -93,9 +114,6 @@ func registerHandlers(
 
 // startServer configures the server and starts it
 func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface, handler server.HandlerInterface) {
-	// Create a channel to signal shutdown
-	shutdown := make(chan struct{})
-
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			// Register health check endpoint
@@ -111,42 +129,14 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logger.Info("Initiating graceful shutdown")
-
-			// Signal shutdown status
-			close(shutdown)
+			logger.Info("Shutting down server")
 
 			// Set shutting down status for health checks
 			if h, ok := handler.(*server.Handler); ok {
 				h.IsShuttingDown = true
 			}
 
-			// Create shutdown context with timeout
-			shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-
-			// Perform cleanup procedures
-			cleanup := make(chan bool)
-			go func() {
-				// Add your cleanup procedures here
-				logger.Info("Running cleanup procedures")
-
-				// Example: Wait for active requests to complete
-				time.Sleep(2 * time.Second)
-
-				cleanup <- true
-			}()
-
-			// Wait for cleanup or timeout
-			select {
-			case <-cleanup:
-				logger.Info("Cleanup completed successfully")
-			case <-shutdownCtx.Done():
-				logger.Warn("Cleanup timed out")
-			}
-
-			// Shutdown the server
-			if err := e.Shutdown(shutdownCtx); err != nil {
+			if err := e.Shutdown(ctx); err != nil {
 				logger.Error("Error during shutdown", err)
 				return err
 			}
