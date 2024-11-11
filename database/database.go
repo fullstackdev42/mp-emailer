@@ -200,7 +200,6 @@ func (db *DB) Order(value interface{}) Interface {
 	return &DB{GormDB: db.GormDB.Order(value)}
 }
 
-// Add Or method implementation
 func (db *DB) Or(query interface{}, args ...interface{}) Interface {
 	return &DB{GormDB: db.GormDB.Or(query, args...)}
 }
