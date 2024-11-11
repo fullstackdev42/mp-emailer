@@ -5,9 +5,9 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	dbconfig "github.com/fullstackdev42/mp-emailer/database/config"
 	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/fullstackdev42/mp-emailer/database/decorators"
 	"github.com/fullstackdev42/mp-emailer/email"
@@ -16,8 +16,6 @@ import (
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 // App provides the shared application modules
@@ -55,16 +53,17 @@ var App = fx.Options(
 // Provide a new database connection
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, error) {
 	logger.Info("Initializing database connection")
-	dsn := cfg.DSN()
 
-	db, err := connectToDB(dsn, logger)
+	// Use the proper retry configuration
+	retryConfig := dbconfig.NewDefaultRetryConfig()
+	db, err := dbconfig.ConnectWithRetry(cfg, retryConfig, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	// Wrap the DB in a decorator that implements the correct interface
 	decorated := &decorators.LoggingDecorator{
-		Database: db,
+		Database: &core.DB{GormDB: db},
 		Logger:   logger,
 	}
 
@@ -74,23 +73,6 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, er
 	}
 
 	return decorated, nil
-}
-
-// connectToDB attempts to connect to the database with retries
-func connectToDB(dsn string, logger loggo.LoggerInterface) (core.Interface, error) {
-	var err error
-	for retries := 5; retries > 0; retries-- {
-		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-		if err == nil {
-			sqlDB, err := db.DB()
-			if err == nil && sqlDB.Ping() == nil {
-				return &core.DB{GormDB: db}, nil
-			}
-		}
-		logger.Warn("Failed to connect to database, retrying...", "error", err)
-		time.Sleep(5 * time.Second)
-	}
-	return nil, err
 }
 
 // Provide a new session store
