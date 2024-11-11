@@ -1,44 +1,44 @@
 # Email Service Tasks
 
-## Service Decorators
+## Core Service
 ### Current Implementation
-- [ ] Add logging before and after email sending
-- [ ] Log any errors that occur
-- [ ] Preserve the original email service interface
-- [ ] Follow decorator pattern for clean separation of concerns
+- [x] Basic Email Sending
+  - [x] Test successful sending
+  - [x] Test sending failures
+  - [ ] Test retry mechanism
+  - [ ] Test rate limiting
 
-### Future Enhancements
-- [ ] Rate limiting decorator
-  - Implement token bucket or sliding window algorithm
-  - Configure limits per email domain/recipient
-  - Handle rate limit exceeded scenarios
+## Template System
+### Current Implementation
+- [ ] Template Preprocessing
+  - [ ] Cache compiled templates
+  - [ ] Handle template rendering errors
+  - [ ] Implement template versioning
 
-- [ ] Retry decorator with backoff
-  - Implement exponential backoff strategy
-  - Configure max retry attempts
-  - Handle permanent vs temporary failures
+### Testing Requirements
+- [ ] Template Rendering Tests
+  - [ ] Test variable substitution
+  - [ ] Test conditional blocks
+  - [ ] Test nested templates
+  - [ ] Test error cases
 
-- [ ] Metrics collection decorator
-  - Track success/failure rates
-  - Measure response times
-  - Monitor rate limit usage
-  - Export Prometheus metrics
+## Provider Integration
+### Mailgun Provider
+- [x] Basic Integration
+  - [x] Test API interaction
+  - [x] Test error handling
+  - [ ] Test rate limiting
+  - [ ] Test webhook handling
 
-- [ ] Email validation decorator
-  - Validate email format
-  - Check for disposable email domains
-  - Implement DNS MX record validation
-  - Handle validation failures gracefully
+### Mailpit Provider (Development)
+- [x] Basic Integration
+  - [x] Test local sending
+  - [x] Test SMTP interaction
+  - [ ] Test debugging features
 
-- [ ] Template preprocessing decorator
-  - Cache compiled templates
-  - Validate template variables
-  - Handle template rendering errors
-  - Implement template versioning
-
-### Implementation Notes
+## Implementation Notes
 - Each decorator should be independently configurable
 - Consider using builder pattern for decorator chain setup
 - Implement proper context handling for timeouts/cancellation
 - Add appropriate test coverage for each decorator
-- Document failure modes and recovery strategies 
+- Document failure modes and recovery strategies
