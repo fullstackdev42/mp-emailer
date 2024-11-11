@@ -18,30 +18,7 @@ import (
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
-	"go.uber.org/fx/fxevent"
 )
-
-type customFxLogger struct {
-	logger loggo.LoggerInterface
-}
-
-func (l *customFxLogger) LogEvent(event fxevent.Event) {
-	switch e := event.(type) {
-	case *fxevent.OnStartExecuting:
-		l.logger.Info("Starting", "caller", e.FunctionName)
-	case *fxevent.OnStopExecuting:
-		l.logger.Info("Stopping", "caller", e.FunctionName)
-	case *fxevent.Provided:
-		l.logger.Info("Provided constructor",
-			"constructor", e.ConstructorName,
-			"types", e.OutputTypeNames,
-			"module", e.ModuleName,
-			"private", e.Private)
-		if e.Err != nil {
-			l.logger.Error("Constructor provision failed", e.Err)
-		}
-	}
-}
 
 func main() {
 	// Check for required configuration before starting the application
@@ -62,9 +39,7 @@ func main() {
 			appMiddleware.Module,
 			fx.Invoke(registerRoutes, startServer),
 		),
-		fx.WithLogger(func(logger loggo.LoggerInterface) fxevent.Logger {
-			return &customFxLogger{logger: logger}
-		}),
+		fx.WithLogger(shared.NewCustomFxLogger),
 	)
 
 	app.Run()
