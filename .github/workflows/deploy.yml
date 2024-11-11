@@ -34,12 +34,15 @@ jobs:
       # Deploy to DO droplet
       - name: Deploy to DigitalOcean
         uses: appleboy/ssh-action@master
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
             doctl registry login
-            docker pull $(echo $REGISTRY)/$(echo $IMAGE_NAME):latest
+            docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose down
-            docker compose up -d 
+            docker compose up -d
