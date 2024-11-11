@@ -22,6 +22,9 @@
   - [ ] Configure limits per endpoint
   - [ ] Add metrics collection
   - [ ] Implement proper error responses
+  - [ ] Test email service rate limiting
+  - [ ] Test API endpoint rate limiting
+  - [ ] Monitor rate limit metrics
 
 ### Request Processing
 - [ ] Core Security Middleware

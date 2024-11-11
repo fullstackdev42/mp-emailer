@@ -12,8 +12,6 @@
 - [x] Basic Email Functionality
   - [x] Test successful sending
   - [x] Test sending failures
-  - [ ] Test retry mechanism
-  - [ ] Test rate limiting
 
 ## Infrastructure Testing
 ### Database Operations

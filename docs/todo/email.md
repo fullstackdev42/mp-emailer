@@ -6,7 +6,7 @@
   - [x] Test successful sending
   - [x] Test sending failures
   - [ ] Test retry mechanism
-  - [ ] Test rate limiting
+  # Rate limiting moved to security.md
 
 ## Template System
 ### Current Implementation
