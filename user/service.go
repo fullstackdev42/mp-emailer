@@ -2,11 +2,11 @@ package user
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/fx"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,22 +25,27 @@ type Service struct {
 	cfg      *config.Config
 }
 
-// Config is the configuration for the UserService
-type Config struct {
-	JWTSecret string
-	JWTExpiry time.Duration
-}
-
 // Explicitly implement the ServiceInterface
 var _ ServiceInterface = (*Service)(nil)
 
-// RegisterUserServiceParams for registering a user
-type RegisterUserServiceParams struct {
-	Username string
-	Email    string
-	Password string
+// ServiceParams for dependency injection
+type ServiceParams struct {
+	fx.In
+	Repo     RepositoryInterface
+	Validate *validator.Validate
+	Cfg      *config.Config
 }
 
+// NewService creates a new user service
+func NewService(params ServiceParams) ServiceInterface {
+	return &Service{
+		repo:     params.Repo,
+		validate: params.Validate,
+		cfg:      params.Cfg,
+	}
+}
+
+// RegisterUser registers a new user and returns the user DTO
 func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 	// Validate the DTO
 	if err := s.validate.Struct(params); err != nil {
@@ -59,17 +64,16 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 	}
 
 	// Create the user with the hashed password
-	user, err := s.repo.CreateUser(&CreateDTO{
-		Username: params.Username,
-		Email:    params.Email,
-		Password: string(hashedPassword),
-	})
-	if err != nil {
-		return nil, err
+	user := User{
+		Username:     params.Username,
+		Email:        params.Email,
+		PasswordHash: string(hashedPassword),
+	}
+	if err := s.repo.Create(&user); err != nil {
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
 	return &DTO{
-		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
@@ -79,8 +83,14 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 
 // LoginUser logs in a user and returns a JWT token
 func (s *Service) LoginUser(params *LoginDTO) (string, error) {
-	// Check if user exists and password is correct
-	user, err := s.repo.GetUserByUsername(params.Username)
+	if params.Username == "" {
+		return "", fmt.Errorf("username cannot be empty")
+	}
+	if params.Password == "" {
+		return "", fmt.Errorf("password cannot be empty")
+	}
+
+	user, err := s.repo.FindByUsername(params.Username)
 	if err != nil {
 		return "", fmt.Errorf("invalid username or password")
 	}
@@ -90,24 +100,15 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid username or password")
 	}
-	// Generate JWT token
-	expiry, err := time.ParseDuration(s.cfg.JWTExpiry)
-	if err != nil {
-		return "", fmt.Errorf("invalid JWT expiry duration: %w", err)
-	}
-	token, err := shared.GenerateToken(params.Username, s.cfg.JWTSecret, int(expiry.Minutes()))
-	if err != nil {
-		return "", fmt.Errorf("error generating token")
-	}
 
-	return token, nil
+	return params.Username, nil
 }
 
 // GetUser retrieves a user by their username
 func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
-	user, err := s.repo.GetUserByUsername(params.Username)
+	user, err := s.repo.FindByUsername(params.Username)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying user: %w", err)
 	}
 	return &DTO{
 		ID:        user.ID,

@@ -3,48 +3,32 @@ package campaign
 import (
 	"errors"
 	"testing"
-	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/mocks"
+	mocksDatabase "github.com/fullstackdev42/mp-emailer/mocks/database"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	mock       sqlmock.Sqlmock
-	db         database.Interface
-	repo       *Repository
-	mockLogger *mocks.MockLoggerInterface
+	mockDB *mocksDatabase.MockInterface
+	repo   *Repository
 }
 
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
-	sqlDB, mock, err := sqlmock.New()
-	assert.NoError(s.T(), err)
-
-	s.mock = mock
-	s.mockLogger = new(mocks.MockLoggerInterface)
-
-	// Setup expected logger calls
-	s.mockLogger.On("Debug", "Connecting to database", []interface{}{}).Return(nil)
-
-	// Create a new DB instance directly
-	db := &database.DB{
-		SQL:    sqlDB,
-		Logger: s.mockLogger,
-	}
-
-	s.db = db
-	s.repo = &Repository{db: s.db}
+	s.mockDB = mocksDatabase.NewMockInterface(s.T())
+	s.repo = NewRepository(s.mockDB).(*Repository)
 }
 
 // TearDownTest tears down the test environment
 func (s *RepositoryTestSuite) TearDownTest() {
-	s.mock.ExpectClose()
-	s.db.(*database.DB).SQL.Close()
+	// Clean up database connection
+	if s.mockDB != nil {
+		s.mockDB.AssertExpectations(s.T())
+	}
 }
 
 // TestRepositoryTestSuite runs the Repository test suite
@@ -56,37 +40,39 @@ func TestRepositoryTestSuite(t *testing.T) {
 func (s *RepositoryTestSuite) TestCreate() {
 	tests := []struct {
 		name    string
-		dto     *CreateCampaignDTO
 		setup   func()
+		dto     *CreateCampaignDTO
 		wantErr bool
 	}{
 		{
 			name: "successful creation",
+			setup: func() {
+				s.mockDB.On("Create", mock.AnythingOfType("*campaign.Campaign")).
+					Return(nil)
+			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
-				OwnerID:     "123e4567-e89b-12d3-a456-426614174000",
-			},
-			setup: func() {
-				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", "123e4567-e89b-12d3-a456-426614174000").
-					WillReturnResult(sqlmock.NewResult(1, 1))
+				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "database error",
+			setup: func() {
+				s.mockDB.On("Create", mock.MatchedBy(func(campaign *Campaign) bool {
+					return campaign.Name == "Test Campaign" &&
+						campaign.Description == "Test Description" &&
+						campaign.Template == "Test Template" &&
+						campaign.OwnerID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+				})).Return(errors.New("db error"))
+			},
 			dto: &CreateCampaignDTO{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
-				OwnerID:     "123e4567-e89b-12d3-a456-426614174000",
-			},
-			setup: func() {
-				s.mock.ExpectExec("INSERT INTO campaigns").
-					WithArgs("Test Campaign", "Test Description", "Test Template", "123e4567-e89b-12d3-a456-426614174000").
-					WillReturnError(errors.New("database error"))
+				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
 			wantErr: true,
 		},
@@ -94,9 +80,11 @@ func (s *RepositoryTestSuite) TestCreate() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
 			campaign, err := s.repo.Create(tt.dto)
+
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 				assert.Nil(s.T(), campaign)
@@ -105,8 +93,6 @@ func (s *RepositoryTestSuite) TestCreate() {
 				assert.NotNil(s.T(), campaign)
 				assert.Equal(s.T(), tt.dto.Name, campaign.Name)
 			}
-
-			assert.NoError(s.T(), s.mock.ExpectationsWereMet())
 		})
 	}
 }
@@ -122,10 +108,20 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "successful retrieval",
 			setup: func() {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "template", "owner_id", "created_at", "updated_at"}).
-					AddRow(1, "Campaign 1", "Desc 1", "Template 1", 1, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05")).
-					AddRow(2, "Campaign 2", "Desc 2", "Template 2", 1, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
-				s.mock.ExpectQuery("SELECT (.+) FROM campaigns").WillReturnRows(rows)
+				mockResult := &mocksDatabase.MockResult{}
+				mockResult.On("Error").Return(nil)
+				mockResult.On("Scan", mock.AnythingOfType("*[]campaign.Campaign")).
+					Run(func(args mock.Arguments) {
+						dest := args.Get(0).(*[]Campaign)
+						*dest = []Campaign{
+							{Name: "Campaign 1"},
+							{Name: "Campaign 2"},
+						}
+					}).
+					Return(mockResult)
+
+				s.mockDB.On("Query", "SELECT * FROM campaigns").
+					Return(mockResult)
 			},
 			wantCount: 2,
 			wantErr:   false,
@@ -133,8 +129,13 @@ func (s *RepositoryTestSuite) TestGetAll() {
 		{
 			name: "database error",
 			setup: func() {
-				s.mock.ExpectQuery("SELECT (.+) FROM campaigns").
-					WillReturnError(errors.New("database error"))
+				mockResult := &mocksDatabase.MockResult{}
+				mockResult.On("Error").Return(errors.New("db error"))
+				mockResult.On("Scan", mock.AnythingOfType("*[]campaign.Campaign")).
+					Return(mockResult)
+
+				s.mockDB.On("Query", "SELECT * FROM campaigns").
+					Return(mockResult)
 			},
 			wantCount: 0,
 			wantErr:   true,
@@ -143,6 +144,7 @@ func (s *RepositoryTestSuite) TestGetAll() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
 			campaigns, err := s.repo.GetAll()
@@ -153,8 +155,6 @@ func (s *RepositoryTestSuite) TestGetAll() {
 				assert.NoError(s.T(), err)
 				assert.Len(s.T(), campaigns, tt.wantCount)
 			}
-
-			assert.NoError(s.T(), s.mock.ExpectationsWereMet())
 		})
 	}
 }

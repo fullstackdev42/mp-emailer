@@ -65,14 +65,9 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 	return s.repo.Update(dto)
 }
 
-// GetCampaignParams defines parameters for fetching a campaign
-type GetCampaignParams struct {
-	ID int
-}
-
 // GetCampaignByID retrieves a campaign by ID
 func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+	campaign, err := s.repo.GetByID(GetCampaignDTO(params))
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
 			return nil, err // Pass through standard errors
@@ -112,7 +107,7 @@ func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
 
 // FetchCampaign retrieves a campaign by parameters
 func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetCampaign(GetCampaignDTO{ID: params.ID})
+	campaign, err := s.repo.GetByID(GetCampaignDTO(params))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound

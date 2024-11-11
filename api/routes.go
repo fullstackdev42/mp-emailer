@@ -1,10 +1,11 @@
 package api
 
 import (
+	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(h *Handler, e *echo.Echo, jwtSecret string) {
+func RegisterRoutes(h *Handler, e *echo.Echo, middlewareManager *middleware.Manager) {
 	api := e.Group("/api")
 
 	// Public routes
@@ -13,7 +14,7 @@ func RegisterRoutes(h *Handler, e *echo.Echo, jwtSecret string) {
 
 	// Protected routes
 	protected := api.Group("")
-	protected.Use(JWTMiddleware(jwtSecret))
+	protected.Use(middlewareManager.JWTMiddleware())
 
 	// Campaign routes
 	campaigns := protected.Group("/campaign")

@@ -1,17 +1,27 @@
 package campaign
 
-import "time"
+import (
+	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 // Campaign represents an email campaign.
 type Campaign struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Template    string    `json:"template"`
-	OwnerID     string    `json:"owner_id"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Tokens      []string  `json:"tokens"`
+	shared.BaseModel
+	Name        string    `gorm:"type:varchar(255);not null" json:"name"`
+	Description string    `gorm:"type:text;not null" json:"description"`
+	Template    string    `gorm:"type:text;not null" json:"template"`
+	OwnerID     uuid.UUID `gorm:"type:uuid;not null" json:"owner_id"`
+	Owner       user.User `gorm:"foreignKey:OwnerID" json:"-"`
+	Tokens      []string  `gorm:"-" json:"tokens"`
+}
+
+// BeforeCreate is a GORM hook that is triggered before a new record is inserted into the database
+func (c *Campaign) BeforeCreate(_ *gorm.DB) error {
+	c.ID = uuid.New()
+	return nil
 }
 
 // Representative represents a government representative.

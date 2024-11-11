@@ -1,64 +1,29 @@
 # TODO
 
-## main.go
+## main
 
-### Middleware Registration: 
+### Server Start and Stop
+- [x] Implement non-blocking server start
+- [x] Add graceful shutdown with timeout
+- [ ] Enhance shutdown process
+  - [ ] Add connection draining
+  - [ ] Add cleanup procedures
+  - [ ] Add shutdown status logging
+  - [ ] Add health check endpoint
 
-The middleware for setting the logger and session store could be combined into a single middleware for efficiency, or ideally, these should be set up in a way that they're part of the initial Echo setup or through a custom middleware group.
+### Type Assertions
+- [ ] Improve context value handling
+  - [ ] Add type assertion error handling
+  - [ ] Add default values
+  - [ ] Add validation
+  - [ ] Add logging for missing values
+  - [ ] Consider using strongly typed context values
 
-### Config Handling: 
-
-You're passing config.Config around quite a bit. Consider if this configuration could be injected into structs once rather than passed around, especially for route handlers.
-
-### Error Handling in Middleware: 
-
-The rate limiter middleware doesn't handle the error case. You might want to add error handling there or ensure the middleware knows how to handle rate limit exceedances.
-
-### Session Store: 
-
-There's no error handling when setting the session store in the middleware. This should be checked to ensure the session store can actually be accessed:
-
-```go
-e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-    return func(c echo.Context) error {
-        if sessionStore != nil {
-            c.Set("store", sessionStore)
-        } else {
-            return errors.New("session store not available")
-        }
-        return next(c)
-    }
-})
-```
-
-### Server Start and Stop: 
-
-The server starts in a goroutine, which is good for non-blocking start. However, you might want to add some form of timeout for graceful shutdown to prevent indefinite waits.
-
-```go
-OnStop: func(ctx context.Context) error {
-    shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-    defer cancel()
-    return e.Shutdown(shutdownCtx)
-},
-```
-
-### Type Assertions: 
-
-When using context.Context to retrieve values set by middleware, remember that value retrieval can return nil. In your handlers, ensure you handle this scenario properly.
-
+### Implementation References
+- Server startup (see main.go:startServer)
+- Route registration (see main.go:registerRoutes)
 
 ## shared/app.go
-
-### Session Secret Management:
-
-Hardcoding the session secret in newSessionStore might not be ideal. Consider loading this from configuration or environment variables:
-
-```go
-func newSessionStore(cfg *config.Config) sessions.Store {
-    return sessions.NewCookieStore([]byte(cfg.SessionSecret))
-}
-```
 
 ### Database Connection Attempts:
 
@@ -76,27 +41,9 @@ for retries := 5; retries > 0; retries-- {
 }
 ```
 
-### Template Loading:
-
-The ProvideTemplates function doesn't handle errors in a very descriptive way. Perhaps adding more context about which template caused the error would be helpful:
-
-```go
-tmpl, err := tmpl.ParseFiles(templates...)
-if err != nil {
-    return nil, fmt.Errorf("failed to parse one or more templates: %w", err)
-}
-```
-
 ### Environment Specific Configuration:
 
 If email.NewMailpitEmailService is for development or testing, consider making this environment-dependent or configurable.
-
-### Testing Considerations:
-While there's no test code here, the design does facilitate testing by providing functions for creating instances. However, the use of real database connections and file system operations in ProvideTemplates might complicate testing. Mocking these would be necessary.
-
-### Redundancy in Logger Creation:
-
-There's a possibility of creating multiple loggers if config.Load is called multiple times. Ensure this doesn't happen or that there's a mechanism to reuse or ensure a singleton logger.
 
 ### Additional Observations:
 
@@ -151,19 +98,19 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 
 ## Campaigns
 
-### Observations and Suggestions
-
-3. **Time Parsing**
-   - Using `shared.ParseDateTime`, which is fine as long as potential parsing errors are handled appropriately. However, ensure that `ParseDateTime` properly handles all possible date/time formats you might encounter.
-
 ## Testing Plan
 
 ### Priority Areas
 
 #### 1. Core Business Logic
-- [ ] Campaign utils and handlers
-- [ ] User authentication and management
-- [ ] Email sending functionality
+- [x] Campaign utils and handlers
+- [-] User authentication and management
+  - [x] Basic login functionality
+  - [ ] User registration
+  - [ ] Password reset
+  - [ ] Account management
+  - [ ] Session handling
+- [x] Email sending functionality
 
 #### 2. Infrastructure
 - [ ] Database operations
@@ -175,37 +122,13 @@ Make sure config.SessionSecret is secure and not hardcoded or exposed in any way
 - [ ] Form handling
 - [ ] Session management
 
-### Test Files to Create
-
-```plaintext
-tests/
-├── campaign/
-│   ├── handler_test.go
-│   ├── repository_test.go
-│   ├── service_test.go
-│   └── lookup_service_test.go
-├── user/
-│   ├── handler_test.go
-│   ├── repository_test.go
-│   ├── auth_test.go
-│   └── service_test.go
-├── email/
-│   ├── template_test.go
-│   └── service_test.go
-├── config/
-│   └── config_test.go
-└── shared/
-    ├── template_test.go
-    └── session_test.go
-```
-
 ### Package Testing Requirements
 
 #### Campaign Package
-- [ ] Expand existing tests in `campaign/utils_test.go`
-- [ ] Test campaign handlers
-- [ ] Test campaign repository methods
-- [ ] Test campaign service layer
+- [x] Expand existing tests in `campaign/utils_test.go`
+- [x] Test campaign handlers
+- [x] Test campaign repository methods
+- [x] Test campaign service layer
 - [ ] Test representative lookup service
 
 #### User Package
@@ -215,16 +138,19 @@ tests/
 - [ ] User repository methods
 
 #### Email Package
+- [x] Email sending failures (mailgun_test.go, mailpit_test.go)
 - [ ] Email template rendering
-- [ ] Email sending failures
 - [ ] Rate limiting
 - [ ] Email validation
 
 #### Database Package
-- [ ] Database connection handling
+- [x] Database connection handling
+- [x] Migration testing
 - [ ] Query methods
 - [ ] Transaction handling
 - [ ] Error scenarios
+- [x] Seeding functionality
+- [x] Factory implementations
 
 #### Config Package
 - [ ] Environment variable loading
@@ -241,45 +167,319 @@ tests/
 ### Testing Guidelines
 
 #### 1. Table-Driven Tests
-- [ ] Use table-driven tests for comprehensive coverage
-- [ ] Include edge cases and boundary conditions
-- [ ] Test both valid and invalid inputs
+- Use table-driven tests for comprehensive coverage (see migrations_test.go)
+- Include edge cases and boundary conditions  
+- Test both valid and invalid inputs
 
 #### 2. Mocking
-- [ ] Use testify/mock for external dependencies
-- [ ] Create mock implementations of interfaces
-- [ ] Test interaction between components
+- Use testify/mock for external dependencies (see mocks/)
+- Create mock implementations of interfaces
+- Test interaction between components
 
 #### 3. Error Handling
-- [ ] Test error conditions
-- [ ] Verify error messages
-- [ ] Test error propagation
+- Test error conditions
+- Verify error messages
+- Test error propagation
 
-#### 4. Integration Testing
-- [ ] Test critical user flows
-- [ ] Test API endpoints
-- [ ] Test database interactions
+#### 4. Integration Testing  
+- Test critical user flows
+- Test API endpoints
+- Test database interactions
 
 #### 5. Test Coverage
-- [ ] Aim for 80% code coverage in critical packages
-- [ ] Use `go test -cover` to measure coverage
-- [ ] Identify and test edge cases
+- Aim for 80% code coverage in critical packages
+- Use `go test -cover` to measure coverage
+- Identify and test edge cases
 
 #### 6. Best Practices
-- [ ] Write clear test descriptions
-- [ ] Use test helpers for common operations
-- [ ] Keep tests maintainable and readable
-- [ ] Follow Go testing conventions
-
-### Notes
+- Write clear test descriptions
+- Use test helpers for common operations 
+- Keep tests maintainable and readable
+- Follow Go testing conventions
 - Use `testify/assert` for assertions
 - Avoid global state in tests
 - Use test fixtures where appropriate
 - Document complex test scenarios
 - Consider adding benchmarks for performance-critical code
 
-### Resources
-- Go testing documentation
-- Testify documentation
-- Echo framework testing guide
-- Go testing best practices
+### CLI Flags
+
+#### Configuration Priority
+- Command line flags (highest)
+- Environment variables
+- Configuration file (Viper)
+- Default values (lowest)
+
+#### Core Flags
+- [ ] `--config` - Path to configuration file
+- [ ] `--db-dsn` - Database connection string
+- [ ] `--port` - Server port
+- [ ] `--env` - Environment (dev/prod)
+- [ ] `--log-level` - Logging level
+
+#### Implementation Notes
+- Use Cobra for CLI framework
+- Implement Viper for config management
+- All flags should have:
+  - Corresponding env var (e.g., `MP_DB_DSN`)
+  - Config file key (e.g., `database.dsn`)
+  - Sensible default value
+  - Help text explaining all configuration methods
+
+#### Example Usage
+```shell
+# Using flags
+mp-emailer --port=8080 --env=dev
+
+# Using env vars
+export MP_DB_DSN="user:pass@tcp(localhost:3306)/db"
+mp-emailer
+
+# Using config file
+mp-emailer --config=/etc/mp-emailer/config.yaml
+```
+
+#### Testing Requirements
+- [ ] Test configuration priority order
+- [ ] Test default values
+- [ ] Test environment variable loading
+- [ ] Test config file parsing
+- [ ] Test flag validation
+
+## API Authentication
+
+### JWT Implementation
+- [ ] Move JWT handling to API layer
+  - [ ] Create JWT middleware for API routes
+  - [ ] Implement token generation in API handlers
+  - [ ] Configure JWT secret and expiry via environment variables
+  - [ ] Add refresh token functionality
+  - [ ] Implement token revocation
+
+### Testing Requirements
+- [ ] Test JWT token generation
+- [ ] Test token validation
+- [ ] Test token expiry
+- [ ] Test invalid token scenarios
+- [ ] Test refresh token flow
+
+## Testing
+- [x] Implement user service tests
+  - [x] Test user login functionality
+  - [ ] Test user registration
+  - [ ] Test password validation
+  - [ ] Test edge cases (empty username/password)
+  - [ ] Test password hashing
+- [ ] Implement repository tests
+- [ ] Implement API handler tests
+
+#### 2. Infrastructure
+
+##### Database Package
+- [ ] Connection Management
+  - [ ] Test retry mechanism with exponential backoff
+  - [ ] Test connection timeouts
+  - [ ] Test connection failures
+  - [ ] Test successful connections
+
+- [ ] Migration System
+  - [x] Test migration execution
+  - [x] Test migration failures
+  - [x] Test migration rollbacks
+  - [ ] Test migration version tracking
+
+- [ ] Seeding System
+  - [x] Test user seeder
+  - [x] Test campaign seeder
+  - [ ] Test data relationships
+  - [ ] Test seeding failures
+  - [ ] Test data validation
+
+- [ ] Factory System
+  - [x] Test user factory generation
+  - [x] Test campaign factory generation
+  - [ ] Test factory relationships
+  - [ ] Test custom factory attributes
+  - [ ] Test factory validation rules
+
+##### Config Package
+- [ ] Environment Variables
+  - [ ] Test required env vars validation
+  - [ ] Test default values
+  - [ ] Test sensitive data handling
+  - [ ] Test config overrides
+
+- [ ] JWT Configuration
+  - [ ] Test secret key management
+  - [ ] Test token expiration settings
+  - [ ] Test token validation rules
+
+- [ ] Email Provider Configuration
+  - [ ] Test SMTP settings
+  - [ ] Test Mailgun settings
+  - [ ] Test provider switching
+  - [ ] Test credentials validation
+
+##### Shared Package
+- [ ] Template System
+  - [ ] Test template loading
+  - [ ] Test template parsing
+  - [ ] Test custom functions
+  - [ ] Test error handling
+  - [ ] Test template caching
+
+- [ ] Session Management
+  - [ ] Test session store initialization
+  - [ ] Test session data persistence
+  - [ ] Test session expiration
+  - [ ] Test session security
+
+- [ ] JWT Implementation
+  - [ ] Test token generation
+  - [ ] Test token validation
+  - [ ] Test claims handling
+  - [ ] Test error scenarios
+
+#### Implementation References
+- Database connection retry logic (see shared/app.go:79-93)
+- Session store configuration (see middleware/store.go)
+- Template rendering system (see shared/app.go:101-124)
+- JWT token handling (see shared/jwt.go)
+- Middleware management (see middleware/middleware.go)
+
+#### Testing Guidelines
+- Use table-driven tests for configuration scenarios
+- Implement mocks for external dependencies
+- Test both success and failure paths
+- Ensure proper cleanup in teardown
+- Test configuration validation rules
+- Verify security-sensitive operations
+
+## API Layer
+
+### Handler Implementation
+- [x] Campaign endpoints
+  - [x] GET /api/campaigns
+  - [x] GET /api/campaign/:id
+  - [x] POST /api/campaign
+  - [x] PUT /api/campaign/:id
+  - [x] DELETE /api/campaign/:id
+- [x] User endpoints
+  - [x] POST /api/user/register
+  - [x] POST /api/user/login
+  - [x] GET /api/user/:username
+
+### Authentication & Authorization
+- [x] JWT middleware implementation (see api/middleware.go)
+- [x] Protected route group setup
+- [ ] Rate limiting
+- [ ] Request validation
+- [ ] Response validation
+- [ ] Error handling standardization
+
+### Testing Requirements
+- [ ] Handler Tests
+  - [ ] Test campaign endpoints
+  - [ ] Test user endpoints
+  - [ ] Test authentication flows
+  - [ ] Test error scenarios
+  - [ ] Test input validation
+  - [ ] Test response formats
+
+- [ ] Middleware Tests
+  - [ ] Test JWT validation
+  - [ ] Test authorization failures
+  - [ ] Test token expiration
+  - [ ] Test invalid tokens
+  - [ ] Test missing tokens
+
+### Error Handling
+- [ ] Implement consistent error responses
+- [ ] Add error codes
+- [ ] Add error messages
+- [ ] Add validation errors
+- [ ] Add logging for errors
+
+### Security
+- [ ] Input sanitization
+- [ ] CORS configuration
+- [ ] Rate limiting
+- [ ] Request size limits
+- [ ] Security headers
+
+### Documentation
+- [ ] API documentation
+- [ ] Swagger/OpenAPI specs
+- [ ] Authentication documentation
+- [ ] Error codes documentation
+- [ ] Example requests/responses
+
+### Monitoring & Logging
+- [ ] Request logging
+- [ ] Error logging
+- [ ] Performance metrics
+- [ ] Health checks
+- [ ] Audit logging
+
+### Code Quality
+- [x] Reduce config.Config passing
+  - [x] Implement DI for route handlers
+  - [x] Use struct injection
+- [ ] Improve context value handling
+  - [ ] Type assertion error handling
+  - [ ] Default values
+  - [ ] Validation
+- [x] Review template error handling in ProvideTemplates for more descriptive errors
+
+## API Testing Progress
+
+### Campaign Endpoints
+- [x] Test GET /api/campaigns
+  - [x] Successful fetch
+  - [x] Service error handling
+- [ ] Test GET /api/campaign/:id
+  - [ ] Valid ID
+  - [ ] Invalid ID format
+  - [ ] Not found error
+- [ ] Test POST /api/campaign
+  - [ ] Valid input
+  - [ ] Invalid input
+  - [ ] Validation errors
+- [ ] Test PUT /api/campaign/:id
+  - [ ] Valid update
+  - [ ] Invalid ID
+  - [ ] Not found error
+  - [ ] Validation errors
+- [ ] Test DELETE /api/campaign/:id
+  - [ ] Successful deletion
+  - [ ] Invalid ID
+  - [ ] Not found error
+
+### User Endpoints
+- [ ] Test POST /api/user/register
+  - [ ] Valid registration
+  - [ ] Duplicate user
+  - [ ] Invalid input
+- [ ] Test POST /api/user/login
+  - [ ] Successful login
+  - [ ] Invalid credentials
+  - [ ] Missing fields
+- [ ] Test GET /api/user/:username
+  - [ ] Valid username
+  - [ ] User not found
+  - [ ] Invalid format
+
+### Test Structure
+- [x] Implement APITestSuite
+- [x] Setup mock interfaces
+- [x] Implement teardown
+- [x] Table-driven tests
+- [x] Status code verification
+- [x] Response body validation
+
+### Next Steps
+- [ ] Add authentication tests
+- [ ] Add request validation tests
+- [ ] Add response format tests
+- [ ] Add error handling tests
+- [ ] Add middleware tests

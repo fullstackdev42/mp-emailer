@@ -1,7 +1,10 @@
 package user
 
 import (
+	"encoding/gob"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -9,6 +12,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func init() {
+	// Register UUID type with gob encoder for session serialization
+	gob.Register(uuid.UUID{})
+}
 
 // RegisterRoutes registers the user routes
 func RegisterRoutes(h *Handler, e *echo.Echo) {
@@ -92,15 +100,21 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	user, err := h.repo.GetUserByUsername(params.Username)
+	user, err := h.repo.FindByUsername(params.Username)
 	if err != nil || user == nil {
 		h.service.Info("Login failed - user not found", "username", params.Username)
-		return h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password")
+		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
+			Title: "Login",
+			Error: "Invalid username or password",
+		})
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
 		h.service.Info("Login failed - invalid password", "username", params.Username)
-		return h.flashHandler.SetFlashAndSaveSession(c, "Invalid username or password")
+		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
+			Title: "Login",
+			Error: "Invalid username or password",
+		})
 	}
 
 	sess, err := h.Store.Get(c.Request(), h.SessionName)

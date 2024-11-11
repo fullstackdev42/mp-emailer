@@ -46,14 +46,6 @@ type RepositoryParams struct {
 	Logger loggo.LoggerInterface
 }
 
-// NewRepository creates a new campaign repository
-func NewRepository(params RepositoryParams) (RepositoryInterface, error) {
-	repo := &Repository{
-		db: params.DB,
-	}
-	return repo, nil
-}
-
 // ClientParams for dependency injection
 type ClientParams struct {
 	fx.In

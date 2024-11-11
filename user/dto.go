@@ -1,6 +1,10 @@
 package user
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // CreateDTO represents the data needed to create a new user
 type CreateDTO struct {
@@ -17,7 +21,7 @@ type LoginDTO struct {
 
 // DTO represents the user data returned to the client
 type DTO struct {
-	ID        string    `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`

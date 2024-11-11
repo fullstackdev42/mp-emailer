@@ -19,6 +19,8 @@
 			"userGid": "automatic"
 		},
 		"ghcr.io/devcontainers/features/node:1": {
+			"nodeGypDependencies": true,
+			"installYarnUsingApt": true,
 			"version": "lts",
 			"pnpmVersion": "latest",
 			"nvmVersion": "latest"
@@ -27,7 +29,8 @@
 			"installDirectlyFromGitHubRelease": true,
 			"version": "latest"
 		},
-		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {}
+		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {},
+		"ghcr.io/stuartleeks/dev-container-features/shell-history:0": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -43,5 +46,5 @@
 			]
 		}
 	},
-	"forwardPorts": [8080, 8025]
+	"forwardPorts": [3000, 3001, 8080, 8025]
 }

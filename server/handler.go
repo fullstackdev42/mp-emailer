@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
@@ -17,15 +18,17 @@ type Handler struct {
 	Store           sessions.Store
 	templateManager shared.TemplateRendererInterface
 	campaignService campaign.ServiceInterface
-	errorHandler    *shared.ErrorHandler
+	errorHandler    shared.ErrorHandlerInterface
 	EmailService    email.Service
 	logger          loggo.LoggerInterface
+	IsShuttingDown  bool
 }
 
 // HandlerInterface defines the base logging interface for handlers
 type HandlerInterface interface {
 	shared.HandlerLoggable
-	HandleIndex(c echo.Context) error
+	IndexGET(c echo.Context) error
+	HealthCheck(c echo.Context) error
 }
 
 // HandlerParams defines the input parameters for Handler
@@ -34,7 +37,7 @@ type HandlerParams struct {
 	Store           sessions.Store
 	TemplateManager shared.TemplateRendererInterface
 	CampaignService campaign.ServiceInterface
-	ErrorHandler    *shared.ErrorHandler
+	ErrorHandler    shared.ErrorHandlerInterface
 	EmailService    email.Service
 	Logger          loggo.LoggerInterface
 }
@@ -66,11 +69,20 @@ func (h *Handler) Error(message string, err error, params ...interface{}) {
 	h.logger.Error(message, err, params...)
 }
 
-// HandleIndex page handler
-func (h *Handler) HandleIndex(c echo.Context) error {
+// IndexGET page handler
+func (h *Handler) IndexGET(c echo.Context) error {
 	campaigns, err := h.campaignService.GetCampaigns()
 	if err != nil {
-		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", 500)
+		h.Error("Error fetching campaigns", err)
+		// Render error page and return the error
+		renderErr := c.Render(http.StatusInternalServerError, "error", &shared.Data{
+			Error:      "Error fetching campaigns",
+			StatusCode: http.StatusInternalServerError,
+		})
+		if renderErr != nil {
+			return renderErr
+		}
+		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
 
 	return c.Render(http.StatusOK, "home", &shared.Data{
@@ -80,4 +92,20 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 			"Campaigns": campaigns,
 		},
 	})
+}
+
+// HealthCheck health check endpoint
+func (h *Handler) HealthCheck(c echo.Context) error {
+	status := http.StatusOK
+	response := map[string]interface{}{
+		"status": "healthy",
+		"time":   time.Now().UTC(),
+	}
+
+	if h.IsShuttingDown {
+		status = http.StatusServiceUnavailable
+		response["status"] = "shutting_down"
+	}
+
+	return c.JSON(status, response)
 }

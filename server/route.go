@@ -33,8 +33,8 @@ func ApplyRoutes(e *echo.Echo, routes []Route) {
 func RegisterRoutes(handler HandlerInterface, e *echo.Echo) {
 	// Create routes
 	routes := []Route{
-		NewRoute("GET", "/", handler.HandleIndex),
-		// Add more routes as needed
+		NewRoute("GET", "/", handler.IndexGET),
+		NewRoute("GET", "/health", handler.HealthCheck),
 	}
 
 	// Apply routes

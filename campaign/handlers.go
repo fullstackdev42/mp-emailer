@@ -1,33 +1,34 @@
 package campaign
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/user"
-
+	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 // CampaignGET handles GET requests for campaign details
 func (h *Handler) CampaignGET(c echo.Context) error {
 	h.Logger.Debug("CampaignGET: Starting")
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+	campaignID, err := uuid.Parse(id)
 	if err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Debug("CampaignGET: Parsed ID", "id", id)
-	campaignParams := GetCampaignParams{ID: id}
+	h.Logger.Debug("CampaignGET: Parsed ID", "id", campaignID)
+	campaignParams := GetCampaignParams{ID: campaignID}
 	campaign, err := h.service.FetchCampaign(campaignParams)
 	if err != nil {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", id)
+	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
 
 	data := map[string]interface{}{
 		"Title":    "Campaign Details",
@@ -48,7 +49,7 @@ func (h *Handler) GetCampaigns(c echo.Context) error {
 	}
 	h.Logger.Debug("Rendering all campaigns", "count", len(campaigns))
 	data := shared.Data{
-		Title:    "All Campaigns",
+		Title:    "Campaigns",
 		PageName: "campaigns",
 		Content: map[string]interface{}{
 			"Campaigns": campaigns,
@@ -71,7 +72,13 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	userID, err := GetUserIDFromSession(c, h.Config.SessionName)
+	// Get the middleware manager from context
+	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
+	if !ok {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	}
+
+	userID, err := manager.GetOwnerIDFromSession(c)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
 		status, msg := h.mapError(ErrUnauthorizedAccess)
@@ -82,7 +89,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		Name:        strings.TrimSpace(c.FormValue("name")),
 		Description: strings.TrimSpace(c.FormValue("description")),
 		Template:    strings.TrimSpace(c.FormValue("template")),
-		OwnerID:     userID,
+		OwnerID:     uuid.Must(uuid.Parse(userID)), // Convert string to UUID
 	}
 
 	// Enhanced validation with specific error messages
@@ -136,7 +143,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		"campaignID", campaign.ID,
 		"ownerID", userID)
 
-	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(campaign.ID))
+	return c.Redirect(http.StatusSeeOther, "/campaign/"+campaign.ID.String())
 }
 
 // DeleteCampaign handles DELETE requests for deleting a campaign
@@ -158,13 +165,14 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 // EditCampaignForm handles GET requests for the campaign edit form
 func (h *Handler) EditCampaignForm(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaignForm request")
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+	campaignID, err := uuid.Parse(id)
 	if err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: id})
+	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: campaignID})
 	if err != nil {
 		if err == ErrCampaignNotFound {
 			return h.ErrorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
@@ -173,9 +181,19 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	ownerID, err := user.GetOwnerIDFromSession(c)
-	if err != nil || campaign.OwnerID != ownerID {
+	// Get the middleware manager from context
+	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
+	if !ok {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	}
+
+	ownerID, err := manager.GetOwnerIDFromSession(c)
+	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
+	}
+
+	if campaign.OwnerID.String() != ownerID {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("unauthorized"), "Unauthorized", http.StatusUnauthorized)
 	}
 
 	return c.Render(http.StatusOK, "campaign_edit", shared.Data{
@@ -193,12 +211,13 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 
 	// Get campaign ID from URL parameter
 	params := EditParams{}
-	var err error
-	params.ID, err = strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+	campaignID, err := uuid.Parse(id)
 	if err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
+	params.ID = campaignID
 
 	// Get form values
 	params.Name = c.FormValue("name")
@@ -230,7 +249,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	h.Logger.Info("Campaign updated successfully", "campaignID", params.ID)
 
 	// Redirect to campaign details page
-	return c.Redirect(http.StatusSeeOther, "/campaign/"+strconv.Itoa(params.ID))
+	return c.Redirect(http.StatusSeeOther, "/campaign/"+params.ID.String())
 }
 
 // ComposeEmail handles the initial postal code submission and email composition

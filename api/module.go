@@ -18,7 +18,7 @@ type HandlerParams struct {
 	CampaignService campaign.ServiceInterface
 	UserService     user.ServiceInterface
 	Logger          loggo.LoggerInterface
-	ErrorHandler    *shared.ErrorHandler
+	ErrorHandler    shared.ErrorHandlerInterface
 	JWTExpiry       int
 }
 

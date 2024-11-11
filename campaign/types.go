@@ -1,6 +1,10 @@
 package campaign
 
-import "html/template"
+import (
+	"html/template"
+
+	"github.com/google/uuid"
+)
 
 // TemplateData provides a consistent structure for all template rendering
 type TemplateData struct {
@@ -14,21 +18,26 @@ type TemplateData struct {
 
 // CreateCampaignParams defines the parameters for creating a campaign
 type CreateCampaignParams struct {
-	Name        string `form:"name"`
-	Description string `form:"description"`
-	Template    string `form:"template"`
-	OwnerID     string // This will be set from the session
+	Name        string    `form:"name"`
+	Description string    `form:"description"`
+	Template    string    `form:"template"`
+	OwnerID     uuid.UUID `param:"owner_id"`
 }
 
 // EditParams defines the parameters for editing a campaign
 type EditParams struct {
-	ID       int
-	Name     string
-	Template string
+	ID       uuid.UUID `param:"id"`
+	Name     string    `param:"name"`
+	Template string    `param:"template"`
 }
 
 // SendCampaignParams defines the parameters for sending a campaign
 type SendCampaignParams struct {
-	ID         int    `param:"id"`
-	PostalCode string `form:"postal_code"`
+	ID         uuid.UUID `param:"id"`
+	PostalCode string    `param:"postal_code"`
+}
+
+// GetCampaignParams represents parameters for fetching a campaign
+type GetCampaignParams struct {
+	ID uuid.UUID `param:"id"`
 }

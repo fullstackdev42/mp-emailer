@@ -25,7 +25,7 @@ type HandlerParams struct {
 	RepresentativeLookupService RepresentativeLookupServiceInterface
 	EmailService                email.Service
 	Client                      ClientInterface
-	ErrorHandler                *shared.ErrorHandler
+	ErrorHandler                shared.ErrorHandlerInterface
 	TemplateRenderer            shared.TemplateRendererInterface
 }
 

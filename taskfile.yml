@@ -1,109 +1,128 @@
 version: '3'
 
+# Load environment variables from .env file
 dotenv: ['.env']
 
+# Global variables used across tasks
 vars:
   BINARY_NAME: mp-emailer
   GO_FILES: '$(find . -name "*.go" -type f -not -path "./vendor/*")'
   BIN_DIR: bin
   DB_URL: mysql://{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}
-  MIGRATIONS: "{{.MIGRATIONS_DIR}}"
+  MIGRATIONS: "{{.MIGRATIONS_PATH}}"
 
+# Task groups for better organization
 tasks:
+  # Development workflow tasks
   default:
+    desc: Start development environment
     cmds:
-      - task: run
+      - task: dev
 
+  dev:
+    desc: Run development environment with hot reload
+    cmds:
+      - |
+        bash -c '
+          trap "kill 0" SIGINT SIGTERM
+          (cd web && npm run dev) & 
+          (cd web && npx browser-sync start --config bs-config.js) &
+          air & 
+          wait
+        '
+    method: none
+
+  # Build and run tasks
   build:
-    desc: Build the application
+    desc: Build the Go application
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} main.go
 
   run:
-    desc: Run the application
+    desc: Build and run the application
     deps: [build]
     cmds:
       - ./{{.BIN_DIR}}/{{.BINARY_NAME}}
 
-  test:
-    desc: Run tests
-    cmds:
-      - go test ./... -v
-
+  # Code quality tasks
   lint:
-    desc: Lint the code
+    desc: Run linters and format code
     cmds:
+      - echo "Running linters..."
       - golangci-lint run
-
-  fmt:
-    desc: Format the code
-    cmds:
+      - echo "Formatting code..."
       - gofmt -s -w {{.GO_FILES}}
 
+  test:
+    desc: Run tests with coverage
+    cmds:
+      - echo "Running tests..."
+      - go test -v -race -cover ./...
+
+  test:watch:
+    desc: Run tests in watch mode
+    cmds:
+      - reflex -r '\.go$' go test -v ./...
+
+  # Cleanup tasks
   clean:
-    desc: Clean build artifacts
+    desc: Clean build artifacts and cache
     cmds:
       - rm -rf {{.BIN_DIR}}
+      - go clean -cache -testcache
 
+  # Database tasks
+  migrate:
+    desc: "Manage database migrations"
+    summary: |
+      Usage: task migrate -- <command> [args]
+      Commands:
+        up        - Apply all migrations
+        down      - Rollback last migration
+        force     - Force set version
+        version   - Show current version
+    cmds:
+      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} {{.CLI_ARGS}}
+
+  # Frontend tasks
+  frontend:
+    desc: "Manage frontend tasks"
+    summary: |
+      Usage: task frontend -- <command>
+      Commands:
+        install   - Install dependencies
+        build     - Build for production
+        dev      - Start development server
+    dir: web
+    cmds:
+      - |
+        case "{{.CLI_ARGS}}" in
+          "install") npm install ;;
+          "build") npm run build ;;
+          "dev") npm run dev ;;
+          *) echo "See: task frontend --list" ;;
+        esac
+
+  # Composite tasks
   all:
-    desc: Run all tasks (lint, test, build)
+    desc: Run all quality checks and build
     cmds:
       - task: lint
-      - task: build
       - task: test
+      - task: build
 
-  migrate-up:
-    desc: Run all up migrations
+  # CI tasks
+  ci:
+    desc: Run continuous integration tasks
     cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} up
+      - task: lint
+      - task: test
+      - task: build
+      - task: frontend -- build
 
-  migrate-down:
-    desc: Run all down migrations
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} down {{.CLI_ARGS}}
-
-  migrate-up-one:
-    desc: Run one up migration
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} up 1
-
-  migrate-down-one:
-    desc: Run one down migration
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} down 1
-
-  migrate-force:
-    desc: Force set migration version
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} force {{.CLI_ARGS}}
-
-  migrate-version:
-    desc: Show current migration version
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} version
-
-  mailpit-logs:
-    desc: View Mailpit logs
-    cmds:
-      - docker-compose -f .devcontainer/docker-compose.yml logs -f mailpit
-
-  dev:
-    desc: Run the application with live reloading
-    cmds:
-      - air
-
-  frontend-install:
-    dir: web
-    cmds:
-      - npm install
-
-  frontend-build:
-    dir: web
-    cmds:
-      - npm run build
-
-  frontend-dev:
-    dir: web
-    cmds:
-      - npm run dev
+  # Other potential tasks:
+  # - deploy: Deploy the application to production
+  # - benchmark: Run performance benchmarks
+  # - security-scan: Scan for security vulnerabilities
+  

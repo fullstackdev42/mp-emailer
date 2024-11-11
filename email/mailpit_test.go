@@ -3,20 +3,14 @@ package email
 import (
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestMailpitEmailService_SendEmail(t *testing.T) {
-	// Create mocks
-	mockLogger := new(mocks.MockLoggerInterface)
+	// Create mock SMTP client
 	mockSMTP := new(mocksEmail.MockSMTPClient)
-
-	// Set up logger expectations
-	mockLogger.On("Debug", "HTML Body content", "body", "Test Body").Return()
-	mockLogger.On("Debug", "Full message", "message", mock.AnythingOfType("string")).Return()
 
 	// Set up SMTP client expectations
 	mockSMTP.On("SendMail",
@@ -27,7 +21,7 @@ func TestMailpitEmailService_SendEmail(t *testing.T) {
 		mock.AnythingOfType("[]uint8"),
 	).Return(nil)
 
-	// Create service with mocks
+	// Create service with mock SMTP client
 	service := NewMailpitEmailService(
 		"localhost",
 		"1025",
@@ -39,6 +33,5 @@ func TestMailpitEmailService_SendEmail(t *testing.T) {
 	err := service.SendEmail("recipient@example.com", "Test Subject", "Test Body", true)
 
 	assert.NoError(t, err)
-	mockLogger.AssertExpectations(t)
 	mockSMTP.AssertExpectations(t)
 }

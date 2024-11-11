@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/google/uuid"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/mocks"
@@ -65,7 +66,22 @@ func setupHandlerTest(t *testing.T) *handlerTestSuite {
 	return suite
 }
 
+func (s *handlerTestSuite) tearDown() {
+	// Clear all mock expectations and handlers
+	s.mockService = nil
+	s.mockLookupService = nil
+	s.mockEmailService = nil
+	s.mockClient = nil
+	s.mockLogger = nil
+	s.mockErrorHandler = nil
+	s.mockTemplateRenderer = nil
+	s.handler = nil
+}
+
 func TestCampaignGET(t *testing.T) {
+	// Declare campaignID at the test function level
+	campaignID := uuid.New()
+
 	tests := []struct {
 		name           string
 		setupMocks     func(*handlerTestSuite)
@@ -77,12 +93,18 @@ func TestCampaignGET(t *testing.T) {
 			name: "successful campaign fetch",
 			setupMocks: func(s *handlerTestSuite) {
 				s.mockLogger.EXPECT().Debug("CampaignGET: Starting")
-				s.mockLogger.EXPECT().Debug("CampaignGET: Parsed ID", "id", 1)
-				s.mockLogger.EXPECT().Debug("CampaignGET: Campaign fetched successfully", "id", 1)
+				s.mockLogger.EXPECT().Debug("CampaignGET: Parsed ID", "id", campaignID)
+				s.mockLogger.EXPECT().Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
 
-				campaignTest := &campaign.Campaign{ID: 1, Name: "Test Campaign"}
+				campaignTest := &campaign.Campaign{
+					Name: "Test Campaign",
+					BaseModel: shared.BaseModel{
+						ID: campaignID,
+					},
+				}
+
 				s.mockService.EXPECT().FetchCampaign(
-					campaign.GetCampaignParams{ID: 1},
+					campaign.GetCampaignParams{ID: campaignID},
 				).Return(campaignTest, nil)
 
 				s.mockTemplateRenderer.EXPECT().Render(
@@ -97,7 +119,7 @@ func TestCampaignGET(t *testing.T) {
 					mock.Anything,
 				).Return(nil)
 			},
-			campaignID:     "1",
+			campaignID:     campaignID.String(),
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -121,6 +143,8 @@ func TestCampaignGET(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suite := setupHandlerTest(t)
+			defer suite.tearDown()
+
 			tt.setupMocks(suite)
 
 			req := httptest.NewRequest(http.MethodGet, "/campaign/"+tt.campaignID, nil)
@@ -158,26 +182,29 @@ func TestGetCampaigns(t *testing.T) {
 		{
 			name: "successful campaigns fetch",
 			setupMocks: func(s *handlerTestSuite) {
-				campaigns := []campaign.Campaign{{ID: 1, Name: "Test Campaign"}}
+				campaigns := []campaign.Campaign{{
+					Name:      "Test Campaign",
+					BaseModel: shared.BaseModel{ID: uuid.New()},
+				}}
 
 				s.mockLogger.EXPECT().Debug("Handling GetCampaigns request")
 				s.mockLogger.EXPECT().Debug("Rendering all campaigns", "count", 1)
 
 				s.mockService.EXPECT().GetCampaigns().Return(campaigns, nil)
 
-				// Update mock expectation to match the actual Data structure
+				// Update the mock expectation to use proper parameter matching
 				s.mockTemplateRenderer.EXPECT().Render(
 					mock.Anything,
 					"campaigns",
 					mock.MatchedBy(func(data interface{}) bool {
+						// Less strict matching that focuses on essential fields
 						if d, ok := data.(shared.Data); ok {
-							content, ok := d.Content.(map[string]interface{})
-							if !ok {
-								return false
+							if content, ok := d.Content.(map[string]interface{}); ok {
+								_, hasCampaigns := content["Campaigns"]
+								return d.PageName == "campaigns" &&
+									d.Title == "Campaigns" &&
+									hasCampaigns
 							}
-							return d.Title == "All Campaigns" &&
-								d.PageName == "campaigns" &&
-								content["Campaigns"] != nil
 						}
 						return false
 					}),
@@ -191,6 +218,8 @@ func TestGetCampaigns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suite := setupHandlerTest(t)
+			defer suite.tearDown()
+
 			tt.setupMocks(suite)
 
 			e := echo.New()
@@ -198,7 +227,6 @@ func TestGetCampaigns(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			// Important: Set the renderer on the context
 			e.Renderer = suite.mockTemplateRenderer
 
 			err := suite.handler.GetCampaigns(c)

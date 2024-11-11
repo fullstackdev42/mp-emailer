@@ -1,92 +1,231 @@
 package database
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-
-	// Import the MySQL driver for database/sql
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jonesrussell/loggo"
-	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // Interface defines the contract for database operations
 type Interface interface {
-	UserExists(username, email string) (bool, error)
-	CreateUser(id, username, email, passwordHash string) error
-	LoginUser(username, password string) (string, error)
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	Exists(model interface{}, query string, args ...interface{}) (bool, error)
+	Create(value interface{}) error
+	FindOne(model interface{}, query string, args ...interface{}) error
+	Exec(query string, args ...interface{}) error
+	Query(query string, args ...interface{}) Result
+	Delete(value interface{}) error
+	Unscoped() Interface
+	WithTrashed() Interface
+	Preload(query string, args ...interface{}) Interface
+	Association(column string) AssociationInterface
+	Where(query interface{}, args ...interface{}) Interface
+	Or(query interface{}, args ...interface{}) Interface
+	Not(query interface{}, args ...interface{}) Interface
+	Order(value interface{}) Interface
+	Group(query string) Interface
+	Having(query string, args ...interface{}) Interface
+	Joins(query string, args ...interface{}) Interface
+	Limit(limit int) Interface
+	Offset(offset int) Interface
+	AutoMigrate(dst ...interface{}) error
+	Migrator() Migrator
+}
+
+// Result represents the interface for database query results
+type Result interface {
+	Scan(dest interface{}) Result
+	Error() error
 }
 
 type DB struct {
-	SQL    *sql.DB
-	Logger loggo.LoggerInterface
+	GormDB *gorm.DB
 }
 
-func NewDB(dsn string, logger loggo.LoggerInterface) (Interface, error) {
-	logger.Debug("Attempting to connect to database with DSN: " + dsn)
-
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("error opening database: %w", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		logger.Error("error connecting to database", err)
-		return nil, fmt.Errorf("error connecting to database: %w", err)
-	}
-
-	logger.Info("Successfully connected to database")
-
-	return &DB{SQL: db, Logger: logger}, nil
+// gormResult wraps gorm.DB to implement the Result interface
+type gormResult struct {
+	db *gorm.DB
 }
 
-func (db *DB) UserExists(username, email string) (bool, error) {
-	query := "SELECT COUNT(*) FROM users WHERE username = ? OR email = ?"
-	var count int
-	err := db.SQL.QueryRow(query, username, email).Scan(&count)
+func (r *gormResult) Scan(dest interface{}) Result {
+	r.db = r.db.Scan(dest)
+	return r
+}
+
+func (r *gormResult) Error() error {
+	return r.db.Error
+}
+
+var _ Interface = (*DB)(nil)
+
+// NewDB creates a new database instance with the provided gorm.DB
+func NewDB(gormDB *gorm.DB) Interface {
+	if gormDB == nil {
+		panic("gormDB cannot be nil")
+	}
+	return &DB{
+		GormDB: gormDB,
+	}
+}
+
+// Implement the generic interface
+func (db *DB) Exists(model interface{}, query string, args ...interface{}) (bool, error) {
+	var count int64
+	err := db.GormDB.Model(model).Where(query, args...).Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("error checking user existence: %w", err)
+		return false, err
 	}
 	return count > 0, nil
 }
 
-func (db *DB) CreateUser(id, username, email, passwordHash string) error {
-	query := "INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)"
-	_, err := db.SQL.Exec(query, id, username, email, passwordHash)
-	if err != nil {
-		return fmt.Errorf("error creating user: %w", err)
-	}
+func (db *DB) Create(value interface{}) error {
+	return db.GormDB.Create(value).Error
+}
+
+func (db *DB) FindOne(model interface{}, query string, args ...interface{}) error {
+	return db.GormDB.Where(query, args...).First(model).Error
+}
+
+func (db *DB) Exec(query string, args ...interface{}) error {
+	return db.GormDB.Exec(query, args...).Error
+}
+
+func (db *DB) Query(query string, args ...interface{}) Result {
+	return &gormResult{db: db.GormDB.Raw(query, args...)}
+}
+
+func (db *DB) Delete(value interface{}) error {
+	return db.GormDB.Delete(value).Error
+}
+
+func (db *DB) Unscoped() Interface {
+	return &DB{GormDB: db.GormDB.Unscoped()}
+}
+
+func (db *DB) WithTrashed() Interface {
+	return db
+}
+
+func (db *DB) Preload(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Preload(query, args...)}
+}
+
+func (db *DB) Association(column string) AssociationInterface {
+	return &gormAssociation{association: db.GormDB.Association(column)}
+}
+
+type AssociationInterface interface {
+	Find(out interface{}) error
+	Append(values ...interface{}) error
+	Replace(values ...interface{}) error
+	Delete(values ...interface{}) error
+	Clear() error
+	Count() int64
+}
+
+type gormAssociation struct {
+	association *gorm.Association
+}
+
+func (a *gormAssociation) Find(out interface{}) error {
+	return a.association.Find(out)
+}
+
+func (a *gormAssociation) Append(values ...interface{}) error {
+	return a.association.Append(values...)
+}
+
+func (a *gormAssociation) Replace(values ...interface{}) error {
+	return a.association.Replace(values...)
+}
+
+func (a *gormAssociation) Delete(values ...interface{}) error {
+	return a.association.Delete(values...)
+}
+
+func (a *gormAssociation) Clear() error {
+	return a.association.Clear()
+}
+
+func (a *gormAssociation) Count() int64 {
+	return a.association.Count()
+}
+
+func (db *DB) AutoMigrate(dst ...interface{}) error {
+	return db.GormDB.AutoMigrate(dst...)
+}
+
+func (db *DB) Migrator() Migrator {
+	gormMigrator := db.GormDB.Migrator()
+	return &customMigrator{migrator: gormMigrator}
+}
+
+func (db *DB) Group(query string) Interface {
+	return &DB{GormDB: db.GormDB.Group(query)}
+}
+
+func (db *DB) Having(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Having(query, args...)}
+}
+
+// Add custom migrator type
+type customMigrator struct {
+	migrator gorm.Migrator
+}
+
+func (m *customMigrator) AutoMigrate(dst ...interface{}) error {
+	return m.migrator.AutoMigrate(dst...)
+}
+
+func (m *customMigrator) Close() error {
+	// Implement any cleanup if needed
 	return nil
 }
 
-func (db *DB) LoginUser(username, password string) (string, error) {
-	var storedHash, userID string
-	query := "SELECT id, password_hash FROM users WHERE username = ?"
-	err := db.SQL.QueryRow(query, username).Scan(&userID, &storedHash)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", fmt.Errorf("invalid username or password")
-		}
-		return "", fmt.Errorf("error querying user: %w", err)
-	}
-	if err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password)); err != nil {
-		return "", fmt.Errorf("invalid username or password")
-	}
-	return userID, nil
+// Add Joins method implementation
+func (db *DB) Joins(query string, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Joins(query, args...)}
 }
 
-func (db *DB) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return db.SQL.Exec(query, args...)
+func (db *DB) Limit(limit int) Interface {
+	return &DB{GormDB: db.GormDB.Limit(limit)}
 }
 
-func (db *DB) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	return db.SQL.Query(query, args...)
+func (db *DB) Offset(offset int) Interface {
+	return &DB{GormDB: db.GormDB.Offset(offset)}
 }
 
-func (db *DB) QueryRow(query string, args ...interface{}) *sql.Row {
-	return db.SQL.QueryRow(query, args...)
+func (db *DB) Not(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Not(query, args...)}
+}
+
+func (db *DB) Order(value interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Order(value)}
+}
+
+// Add Or method implementation
+func (db *DB) Or(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Or(query, args...)}
+}
+
+// Add missing methods to customMigrator
+func (m *customMigrator) CreateTable(dst ...interface{}) error {
+	return m.migrator.CreateTable(dst...)
+}
+
+func (m *customMigrator) DropTable(dst ...interface{}) error {
+	return m.migrator.DropTable(dst...)
+}
+
+func (m *customMigrator) HasTable(dst interface{}) bool {
+	return m.migrator.HasTable(dst)
+}
+
+// Add Where method implementation
+func (db *DB) Where(query interface{}, args ...interface{}) Interface {
+	return &DB{GormDB: db.GormDB.Where(query, args...)}
+}
+
+// Add Up method to customMigrator
+func (m *customMigrator) Up() error {
+	// Since GORM's migrator doesn't have an Up method directly,
+	// we'll treat AutoMigrate as our "up" operation
+	return m.AutoMigrate()
 }

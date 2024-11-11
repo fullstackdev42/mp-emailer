@@ -1,97 +1,83 @@
 package campaign
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/database"
-	"github.com/fullstackdev42/mp-emailer/shared"
 )
 
-// RepositoryInterface defines the methods that a campaign repository must implement
+// RepositoryInterface defines the contract for campaign repository operations
 type RepositoryInterface interface {
 	Create(dto *CreateCampaignDTO) (*Campaign, error)
 	GetAll() ([]Campaign, error)
 	Update(dto *UpdateCampaignDTO) error
 	Delete(dto DeleteCampaignDTO) error
 	GetByID(dto GetCampaignDTO) (*Campaign, error)
-	GetCampaign(dto GetCampaignDTO) (*Campaign, error)
 }
 
-// Ensure that Repository implements RepositoryInterface
-var _ RepositoryInterface = (*Repository)(nil)
-
-// Repository handles CRUD operations for campaigns
+// Repository implements the RepositoryInterface
 type Repository struct {
 	db database.Interface
 }
 
+// NewRepository creates a new instance of Repository
+func NewRepository(db database.Interface) RepositoryInterface {
+	return &Repository{db: db}
+}
+
 // Create creates a new campaign in the database
 func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
-	query := `INSERT INTO campaigns (name, description, template, owner_id) VALUES (?, ?, ?, ?)`
-	result, err := r.db.Exec(query, dto.Name, dto.Description, dto.Template, dto.OwnerID)
-	if err != nil {
-		return nil, fmt.Errorf("error creating campaign: %w", err)
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("error getting last insert ID: %w", err)
-	}
 	campaign := &Campaign{
-		ID:          int(id),
 		Name:        dto.Name,
 		Description: dto.Description,
 		Template:    dto.Template,
 		OwnerID:     dto.OwnerID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+	}
+
+	if err := r.db.Create(campaign); err != nil {
+		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
 	return campaign, nil
 }
 
 // GetAll retrieves all campaigns from the database
 func (r *Repository) GetAll() ([]Campaign, error) {
-	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns"
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("error querying campaigns: %w", err)
-	}
-	defer rows.Close()
-
 	var campaigns []Campaign
-	for rows.Next() {
-		var c Campaign
-		var createdAt, updatedAt sql.NullString
-		err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning campaign: %w", err)
-		}
-		c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
-		c.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
-		campaigns = append(campaigns, c)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating campaigns: %w", err)
+	result := r.db.Query("SELECT * FROM campaigns")
+	if err := result.Scan(&campaigns).Error(); err != nil {
+		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
 	return campaigns, nil
 }
 
 // Update updates an existing campaign in the database
 func (r *Repository) Update(dto *UpdateCampaignDTO) error {
-	query := "UPDATE campaigns SET name = ?, description = ?, template = ?, updated_at = NOW() WHERE id = ?"
-	_, err := r.db.Exec(query, dto.Name, dto.Description, dto.Template, dto.ID)
+	exists, err := r.db.Exists(&Campaign{}, "id = ?", dto.ID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrCampaignNotFound
+	}
+
+	err = r.db.Exec("UPDATE campaigns SET name = ?, description = ?, template = ? WHERE id = ?", dto.Name, dto.Description, dto.Template, dto.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
 	return nil
 }
 
-// Delete deletes a campaign from the database
+// Delete removes a campaign from the database
 func (r *Repository) Delete(dto DeleteCampaignDTO) error {
-	query := "DELETE FROM campaigns WHERE id = ?"
-	_, err := r.db.Exec(query, dto.ID)
+	exists, err := r.db.Exists(&Campaign{}, "id = ?", dto.ID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrCampaignNotFound
+	}
+
+	err = r.db.Exec("DELETE FROM campaigns WHERE id = ?", dto.ID)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
@@ -100,23 +86,10 @@ func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 
 // GetByID retrieves a campaign by its ID
 func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
-	query := "SELECT id, name, description, template, owner_id, created_at, updated_at FROM campaigns WHERE id = ?"
-	row := r.db.QueryRow(query, dto.ID)
-	var c Campaign
-	var createdAt, updatedAt sql.NullString
-	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.Template, &c.OwnerID, &createdAt, &updatedAt)
+	var campaign Campaign
+	err := r.db.FindOne(&campaign, "id = ?", dto.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrCampaignNotFound
-		}
-		return nil, fmt.Errorf("%w: %v", ErrDatabaseOperation, err)
+		return nil, fmt.Errorf("error retrieving campaign: %w", err)
 	}
-	c.CreatedAt, _ = shared.ParseDateTime(createdAt.String)
-	c.UpdatedAt, _ = shared.ParseDateTime(updatedAt.String)
-	return &c, nil
-}
-
-// GetCampaign retrieves a campaign by its parameters
-func (r *Repository) GetCampaign(dto GetCampaignDTO) (*Campaign, error) {
-	return r.GetByID(dto)
+	return &campaign, nil
 }

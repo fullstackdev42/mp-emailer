@@ -15,6 +15,8 @@ import (
 	"github.com/jonesrussell/loggo"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 // App provides the shared application modules
@@ -52,15 +54,24 @@ var App = fx.Options(
 // Provide a new database connection
 func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
 	logger.Info("Initializing database connection")
-	dsn := cfg.DatabaseDSN()
+	dsn := cfg.DSN()
 
 	db, err := connectToDB(dsn, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database after multiple attempts: %w", err)
 	}
 
-	// Wrap the base DB with the logging decorator
-	decorated := database.NewLoggingDBDecorator(db, logger)
+	// Wrap the DB in a decorator that implements the correct interface
+	decorated := &database.LoggingDBDecorator{
+		DB:     db,
+		Logger: logger,
+	}
+
+	// Ensure database migrations are run
+	if err := decorated.AutoMigrate(); err != nil {
+		return nil, fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
 	return decorated, nil
 }
 
@@ -68,9 +79,12 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 func connectToDB(dsn string, logger loggo.LoggerInterface) (database.Interface, error) {
 	var err error
 	for retries := 5; retries > 0; retries-- {
-		db, err := database.NewDB(dsn, logger)
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err == nil {
-			return db, nil
+			sqlDB, _ := db.DB()
+			if err = sqlDB.Ping(); err == nil {
+				return &database.DB{GormDB: db}, nil
+			}
 		}
 		logger.Warn("Failed to connect to database, retrying...", "error", err)
 		time.Sleep(5 * time.Second)

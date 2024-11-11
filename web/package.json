@@ -4,14 +4,16 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tailwindcss -i ./web/src/css/input.css -o ./web/public/css/styles.css --minify",
-    "dev": "npx tailwindcss -i ./web/src/css/input.css -o ./web/public/css/styles.css --watch"
+    "build": "npx tailwindcss -i ./src/css/input.css -o ./public/css/styles.css --minify",
+    "dev": "npx tailwindcss -i ./src/css/input.css -o ./public/css/styles.css --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "browser-sync": "^3.0.3",
+    "dotenv": "^16.4.5",
     "tailwindcss": "^3.4.13"
   }
 }
