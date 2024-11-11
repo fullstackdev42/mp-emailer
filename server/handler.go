@@ -27,8 +27,8 @@ type Handler struct {
 // HandlerInterface defines the base logging interface for handlers
 type HandlerInterface interface {
 	shared.HandlerLoggable
-	HandleIndex(c echo.Context) error
-	HandleHealthCheck(c echo.Context) error
+	IndexGET(c echo.Context) error
+	HealthCheck(c echo.Context) error
 }
 
 // HandlerParams defines the input parameters for Handler
@@ -69,8 +69,8 @@ func (h *Handler) Error(message string, err error, params ...interface{}) {
 	h.logger.Error(message, err, params...)
 }
 
-// HandleIndex page handler
-func (h *Handler) HandleIndex(c echo.Context) error {
+// IndexGET page handler
+func (h *Handler) IndexGET(c echo.Context) error {
 	campaigns, err := h.campaignService.GetCampaigns()
 	if err != nil {
 		h.Error("Error fetching campaigns", err)
@@ -94,8 +94,8 @@ func (h *Handler) HandleIndex(c echo.Context) error {
 	})
 }
 
-// HandleHealthCheck health check endpoint
-func (h *Handler) HandleHealthCheck(c echo.Context) error {
+// HealthCheck health check endpoint
+func (h *Handler) HealthCheck(c echo.Context) error {
 	status := http.StatusOK
 	response := map[string]interface{}{
 		"status": "healthy",

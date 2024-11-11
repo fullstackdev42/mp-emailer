@@ -73,7 +73,7 @@ func TestHandlerTestSuite(t *testing.T) {
 	suite.Run(t, new(HandlerTestSuite))
 }
 
-func (suite *HandlerTestSuite) TestHandleIndex() {
+func (suite *HandlerTestSuite) TestIndexGET() {
 	testCases := []struct {
 		name           string
 		setupMocks     func()
@@ -147,7 +147,7 @@ func (suite *HandlerTestSuite) TestHandleIndex() {
 			tc.setupMocks()
 
 			// Execute
-			err := suite.handler.HandleIndex(suite.echoContext)
+			err := suite.handler.IndexGET(suite.echoContext)
 
 			// Assert
 			if tc.expectedError {

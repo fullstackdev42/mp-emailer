@@ -99,7 +99,7 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			// Register health check endpoint
-			e.GET("/health", handler.HandleHealthCheck)
+			e.GET("/health", handler.HealthCheck)
 
 			go func() {
 				addr := fmt.Sprintf("%s:%d", cfg.AppHost, cfg.AppPort)

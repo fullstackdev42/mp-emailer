@@ -44,21 +44,21 @@ func (d *LoggingHandlerDecorator[T]) Error(message string, err error, params ...
 	d.Handler.Error(message, err, params...)
 }
 
-// HandleIndex forwards the handler method while adding logging
-func (d *LoggingHandlerDecorator[T]) HandleIndex(c echo.Context) error {
+// IndexGET forwards the handler method while adding logging
+func (d *LoggingHandlerDecorator[T]) IndexGET(c echo.Context) error {
 	d.Logger.Info("Handling index request", "path", c.Path())
-	// Type assertion to access the HandleIndex method
-	if handler, ok := interface{}(d.Handler).(interface{ HandleIndex(echo.Context) error }); ok {
-		return handler.HandleIndex(c)
+	// Type assertion to access the IndexGET method
+	if handler, ok := interface{}(d.Handler).(interface{ IndexGET(echo.Context) error }); ok {
+		return handler.IndexGET(c)
 	}
 	return echo.ErrMethodNotAllowed
 }
 
-func (d *LoggingHandlerDecorator[T]) HandleHealthCheck(c echo.Context) error {
+func (d *LoggingHandlerDecorator[T]) HealthCheck(c echo.Context) error {
 	d.Logger.Info("Health check requested")
-	// Type assertion using interface{} conversion first, like HandleIndex
-	if handler, ok := interface{}(d.Handler).(interface{ HandleHealthCheck(echo.Context) error }); ok {
-		return handler.HandleHealthCheck(c)
+	// Type assertion using interface{} conversion first, like IndexGET
+	if handler, ok := interface{}(d.Handler).(interface{ HealthCheck(echo.Context) error }); ok {
+		return handler.HealthCheck(c)
 	}
 	return echo.ErrMethodNotAllowed
 }
