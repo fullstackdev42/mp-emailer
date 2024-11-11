@@ -1,7 +1,7 @@
 package factories
 
 import (
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/go-faker/faker/v4"
 )
@@ -10,7 +10,7 @@ type UserFactory struct {
 	BaseFactory
 }
 
-func NewUserFactory(db database.Interface) *UserFactory {
+func NewUserFactory(db core.Interface) *UserFactory {
 	return &UserFactory{BaseFactory{DBInterface: db}}
 }
 

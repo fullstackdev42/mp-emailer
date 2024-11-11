@@ -1,6 +1,6 @@
 package factories
 
-import "github.com/fullstackdev42/mp-emailer/database"
+import "github.com/fullstackdev42/mp-emailer/database/core"
 
 type Factory interface {
 	Make() interface{}
@@ -8,5 +8,5 @@ type Factory interface {
 }
 
 type BaseFactory struct {
-	DBInterface database.Interface
+	DBInterface core.Interface
 }

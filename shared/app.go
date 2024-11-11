@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
+	"github.com/fullstackdev42/mp-emailer/database/decorators"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
@@ -34,7 +35,7 @@ var App = fx.Options(
 		},
 		fx.Annotate(
 			newDB,
-			fx.As(new(database.Interface)),
+			fx.As(new(core.Interface)),
 		),
 		echo.New,
 		newSessionStore,
@@ -52,7 +53,7 @@ var App = fx.Options(
 )
 
 // Provide a new database connection
-func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface, error) {
+func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, error) {
 	logger.Info("Initializing database connection")
 	dsn := cfg.DSN()
 
@@ -62,9 +63,9 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 	}
 
 	// Wrap the DB in a decorator that implements the correct interface
-	decorated := &database.LoggingDBDecorator{
-		DB:     db,
-		Logger: logger,
+	decorated := &decorators.LoggingDecorator{
+		Database: db,
+		Logger:   logger,
 	}
 
 	// Ensure database migrations are run
@@ -76,14 +77,14 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (database.Interface
 }
 
 // connectToDB attempts to connect to the database with retries
-func connectToDB(dsn string, logger loggo.LoggerInterface) (database.Interface, error) {
+func connectToDB(dsn string, logger loggo.LoggerInterface) (core.Interface, error) {
 	var err error
 	for retries := 5; retries > 0; retries-- {
 		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err == nil {
-			sqlDB, _ := db.DB()
-			if err = sqlDB.Ping(); err == nil {
-				return &database.DB{GormDB: db}, nil
+			sqlDB, err := db.DB()
+			if err == nil && sqlDB.Ping() == nil {
+				return &core.DB{GormDB: db}, nil
 			}
 		}
 		logger.Warn("Failed to connect to database, retrying...", "error", err)

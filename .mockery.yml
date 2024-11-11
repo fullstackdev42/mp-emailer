@@ -14,9 +14,20 @@ packages:
       ClientInterface:
       RepositoryInterface:
 
-  github.com/fullstackdev42/mp-emailer/database:
+  github.com/fullstackdev42/mp-emailer/database/core:
     interfaces:
       Interface:
+      Result:
+      AssociationInterface:
+      Migrator:
+
+  github.com/fullstackdev42/mp-emailer/database/factories:
+    interfaces:
+      Factory:
+
+  github.com/fullstackdev42/mp-emailer/database/seeders:
+    interfaces:
+      Seeder:
 
   github.com/fullstackdev42/mp-emailer/email:
     interfaces:

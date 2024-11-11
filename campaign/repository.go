@@ -3,7 +3,7 @@ package campaign
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
 )
 
 // RepositoryInterface defines the contract for campaign repository operations
@@ -17,11 +17,11 @@ type RepositoryInterface interface {
 
 // Repository implements the RepositoryInterface
 type Repository struct {
-	db database.Interface
+	db core.Interface
 }
 
 // NewRepository creates a new instance of Repository
-func NewRepository(db database.Interface) RepositoryInterface {
+func NewRepository(db core.Interface) RepositoryInterface {
 	return &Repository{db: db}
 }
 

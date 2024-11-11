@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	database "github.com/fullstackdev42/mp-emailer/database"
+	core "github.com/fullstackdev42/mp-emailer/database/core"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -66,19 +66,19 @@ func (_c *MockResult_Error_Call) RunAndReturn(run func() error) *MockResult_Erro
 }
 
 // Scan provides a mock function with given fields: dest
-func (_m *MockResult) Scan(dest interface{}) database.Result {
+func (_m *MockResult) Scan(dest interface{}) core.Result {
 	ret := _m.Called(dest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Scan")
 	}
 
-	var r0 database.Result
-	if rf, ok := ret.Get(0).(func(interface{}) database.Result); ok {
+	var r0 core.Result
+	if rf, ok := ret.Get(0).(func(interface{}) core.Result); ok {
 		r0 = rf(dest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(database.Result)
+			r0 = ret.Get(0).(core.Result)
 		}
 	}
 
@@ -103,12 +103,12 @@ func (_c *MockResult_Scan_Call) Run(run func(dest interface{})) *MockResult_Scan
 	return _c
 }
 
-func (_c *MockResult_Scan_Call) Return(_a0 database.Result) *MockResult_Scan_Call {
+func (_c *MockResult_Scan_Call) Return(_a0 core.Result) *MockResult_Scan_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockResult_Scan_Call) RunAndReturn(run func(interface{}) database.Result) *MockResult_Scan_Call {
+func (_c *MockResult_Scan_Call) RunAndReturn(run func(interface{}) core.Result) *MockResult_Scan_Call {
 	_c.Call.Return(run)
 	return _c
 }

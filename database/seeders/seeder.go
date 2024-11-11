@@ -3,7 +3,7 @@ package seeders
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
 )
 
 type Seeder interface {
@@ -11,7 +11,7 @@ type Seeder interface {
 }
 
 type BaseSeeder struct {
-	DB database.Interface
+	DB core.Interface
 }
 
 func RunSeeders(seeders ...Seeder) error {

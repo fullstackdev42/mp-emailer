@@ -1,7 +1,7 @@
 package campaign
 
 import (
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
 )
@@ -42,7 +42,7 @@ var Module = fx.Options(
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     database.Interface
+	DB     core.Interface
 	Logger loggo.LoggerInterface
 }
 

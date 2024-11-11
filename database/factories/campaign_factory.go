@@ -2,7 +2,7 @@ package factories
 
 import (
 	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/database"
+	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/go-faker/faker/v4"
 	"github.com/google/uuid"
 )
@@ -12,7 +12,7 @@ type CampaignFactory struct {
 	UserID string
 }
 
-func NewCampaignFactory(db database.Interface, userID string) *CampaignFactory {
+func NewCampaignFactory(db core.Interface, userID string) *CampaignFactory {
 	return &CampaignFactory{
 		BaseFactory: BaseFactory{DBInterface: db},
 		UserID:      userID,
