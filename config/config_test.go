@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -102,6 +103,13 @@ func TestDefaultValues(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err)
 
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Construct the expected log file path dynamically
+	expectedLogFilePath := fmt.Sprintf("%s/storage/logs/app.log", cwd)
+
 	// Test default values
 	assert.Equal(t, false, cfg.AppDebug)
 	assert.Equal(t, "localhost", cfg.AppHost)
@@ -109,6 +117,6 @@ func TestDefaultValues(t *testing.T) {
 	assert.Equal(t, 3306, cfg.DBPort)
 	assert.Equal(t, "smtp", string(cfg.EmailProvider))
 	assert.Equal(t, "24h", cfg.JWTExpiry)
-	assert.Equal(t, "storage/logs/app.log", cfg.LogFile)
+	assert.Equal(t, expectedLogFilePath, cfg.LogFile) // Use the dynamic path here
 	assert.Equal(t, "info", cfg.LogLevel)
 }
