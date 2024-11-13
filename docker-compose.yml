@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   app:
-    image: registry.digitalocean.com/your-registry/mp-emailer:latest
+    image: registry.digitalocean.com/directdiary/mp-emailer:latest
     restart: always
     ports:
       - "8080:8080"
@@ -11,20 +9,20 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      # Add other env vars
+      - SESSION_SECRET=${SESSION_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - db
 
   db:
-    image: mysql:8
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
+    image: mariadb:10.11
+    restart: unless-stopped
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mariadb-data:/var/lib/mysql
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
 
 volumes:
-  mysql_data: 
+  mariadb-data:
