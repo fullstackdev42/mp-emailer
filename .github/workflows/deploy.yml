@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY: "registry.digitalocean.com/your-registry"
+  REGISTRY: "registry.digitalocean.com/directdiary"
   IMAGE_NAME: "mp-emailer"
 
 jobs:
