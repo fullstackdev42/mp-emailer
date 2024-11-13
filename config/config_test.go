@@ -1,9 +1,11 @@
-package config
+package config_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/jonesrussell/loggo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,8 +24,7 @@ DB_USER=envfile_user
 	os.Setenv("APP_PORT", "8080")
 	defer os.Unsetenv("APP_PORT")
 
-	cfg := &Config{}
-	err = LoadConfig(cfg)
+	cfg, err := config.Load()
 	require.NoError(t, err)
 
 	// Environment variable should take precedence over .env file
@@ -39,7 +40,7 @@ func TestRequiredFieldValidation(t *testing.T) {
 	os.Unsetenv("JWT_SECRET")
 	os.Unsetenv("SESSION_SECRET")
 
-	err := CheckRequired()
+	err := config.CheckRequired()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "DB_USER")
 	assert.Contains(t, err.Error(), "DB_PASSWORD")
@@ -48,14 +49,14 @@ func TestRequiredFieldValidation(t *testing.T) {
 func TestEnvironmentValidation(t *testing.T) {
 	tests := []struct {
 		name        string
-		env         Environment
+		env         config.Environment
 		shouldBeVal bool
 	}{
-		{"Valid Development", EnvDevelopment, true},
-		{"Valid Production", EnvProduction, true},
-		{"Valid Staging", EnvStaging, true},
-		{"Valid Testing", EnvTesting, true},
-		{"Invalid Environment", Environment("invalid"), false},
+		{"Valid Development", config.EnvDevelopment, true},
+		{"Valid Production", config.EnvProduction, true},
+		{"Valid Staging", config.EnvStaging, true},
+		{"Valid Testing", config.EnvTesting, true},
+		{"Invalid Environment", config.Environment("invalid"), false},
 	}
 
 	for _, tt := range tests {
@@ -69,20 +70,19 @@ func TestLogLevelConversion(t *testing.T) {
 	tests := []struct {
 		name     string
 		logLevel string
-		want     string
+		want     loggo.Level
 	}{
-		{"Debug Level", "debug", "debug"},
-		{"Info Level", "info", "info"},
-		{"Warn Level", "warn", "warn"},
-		{"Error Level", "error", "error"},
-		{"Default Level", "invalid", "info"},
+		{"Debug Level", "debug", loggo.LevelDebug},
+		{"Info Level", "info", loggo.LevelInfo},
+		{"Warn Level", "warn", loggo.LevelWarn},
+		{"Error Level", "error", loggo.LevelError},
+		{"Default Level", "invalid", loggo.LevelInfo},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{LogLevel: tt.logLevel}
-			level := cfg.GetLogLevel()
-			assert.Equal(t, tt.want, level.String())
+			cfg := &config.Config{LogLevel: tt.logLevel}
+			assert.Equal(t, tt.want, cfg.GetLogLevel())
 		})
 	}
 }
@@ -99,8 +99,7 @@ func TestDefaultValues(t *testing.T) {
 	os.Setenv("JWT_SECRET", "test")
 	os.Setenv("SESSION_SECRET", "test")
 
-	cfg := &Config{}
-	err := LoadConfig(cfg)
+	cfg, err := config.Load()
 	require.NoError(t, err)
 
 	// Test default values
