@@ -4,3 +4,4 @@ bin/
 tmp/
 web/node_modules/
 web/public/css/
+coverage.out

@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
@@ -88,6 +89,14 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 	}
 	if params.Password == "" {
 		return "", fmt.Errorf("password cannot be empty")
+	}
+
+	if strings.Count(params.Username, "@") > 1 {
+		return "", fmt.Errorf("invalid username format")
+	}
+
+	if len(params.Password) < 8 {
+		return "", fmt.Errorf("password too short")
 	}
 
 	user, err := s.repo.FindByUsername(params.Username)

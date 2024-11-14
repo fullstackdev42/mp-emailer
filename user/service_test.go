@@ -101,6 +101,40 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			},
 			wantErr: true,
 		},
+		{
+			name: "invalid username format",
+			setup: func() {
+				// No mock setup needed - should fail at validation
+			},
+			dto: &user.LoginDTO{
+				Username: "user@with@invalid@chars",
+				Password: "validpassword123",
+			},
+			wantErr: true,
+		},
+		{
+			name: "password too short",
+			setup: func() {
+				// No mock setup needed - should fail at validation
+			},
+			dto: &user.LoginDTO{
+				Username: "testuser",
+				Password: "short",
+			},
+			wantErr: true,
+		},
+		{
+			name: "repository error",
+			setup: func() {
+				s.mockRepo.On("FindByUsername", "testuser").
+					Return(nil, errors.New("database connection error"))
+			},
+			dto: &user.LoginDTO{
+				Username: "testuser",
+				Password: "password",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -119,4 +153,20 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			}
 		})
 	}
+}
+
+func TestPasswordHashing(t *testing.T) {
+	password := "mypassword123"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	assert.NoError(t, err)
+	assert.NotEqual(t, password, string(hashedPassword))
+
+	// Verify correct password
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	assert.NoError(t, err)
+
+	// Verify incorrect password
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte("wrongpassword"))
+	assert.Error(t, err)
 }
