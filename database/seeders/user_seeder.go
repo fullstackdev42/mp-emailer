@@ -3,16 +3,11 @@ package seeders
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/fullstackdev42/mp-emailer/database/factories"
 )
 
 type UserSeeder struct {
 	BaseSeeder
-}
-
-func NewUserSeeder(db core.Interface) *UserSeeder {
-	return &UserSeeder{BaseSeeder{DB: db}}
 }
 
 func (s *UserSeeder) Seed() error {

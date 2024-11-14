@@ -9,13 +9,6 @@ type GormMigrator struct {
 	migrator gorm.Migrator
 }
 
-// NewGormMigrator creates a new GormMigrator instance
-func NewGormMigrator(db *gorm.DB) *GormMigrator {
-	return &GormMigrator{
-		migrator: db.Migrator(),
-	}
-}
-
 func (m *GormMigrator) Up() error {
 	// This is a no-op since GORM handles migrations differently
 	return nil

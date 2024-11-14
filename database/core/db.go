@@ -10,10 +10,6 @@ type DB struct {
 	GormDB *gorm.DB
 }
 
-func NewDB(db *gorm.DB) Interface {
-	return &DB{GormDB: db}
-}
-
 func (db *DB) DB() *gorm.DB {
 	return db.GormDB
 }
