@@ -1,6 +1,8 @@
 package config_test
+package config_test
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -73,8 +75,14 @@ func TestEnvironmentValidation(t *testing.T) {
 	tests := []struct {
 		name        string
 		env         config.Environment
+		env         config.Environment
 		shouldBeVal bool
 	}{
+		{"Valid Development", config.EnvDevelopment, true},
+		{"Valid Production", config.EnvProduction, true},
+		{"Valid Staging", config.EnvStaging, true},
+		{"Valid Testing", config.EnvTesting, true},
+		{"Invalid Environment", config.Environment("invalid"), false},
 		{"Valid Development", config.EnvDevelopment, true},
 		{"Valid Production", config.EnvProduction, true},
 		{"Valid Staging", config.EnvStaging, true},
@@ -94,7 +102,13 @@ func TestLogLevelConversion(t *testing.T) {
 		name     string
 		logLevel string
 		want     loggo.Level
+		want     loggo.Level
 	}{
+		{"Debug Level", "debug", loggo.LevelDebug},
+		{"Info Level", "info", loggo.LevelInfo},
+		{"Warn Level", "warn", loggo.LevelWarn},
+		{"Error Level", "error", loggo.LevelError},
+		{"Default Level", "invalid", loggo.LevelInfo},
 		{"Debug Level", "debug", loggo.LevelDebug},
 		{"Info Level", "info", loggo.LevelInfo},
 		{"Warn Level", "warn", loggo.LevelWarn},
@@ -125,6 +139,14 @@ func TestDefaultValues(t *testing.T) {
 
 	cfg, err := config.Load()
 	require.NoError(t, err)
+
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	cfg, err := config.Load()
+	require.NoError(t, err)
+
+	// Construct the expected log file path dynamically
+	expectedLogFilePath := fmt.Sprintf("%s/storage/logs/app.log", cwd)
 
 	// Test default values
 	assert.Equal(t, false, cfg.AppDebug)
