@@ -76,23 +76,31 @@ func TestDatabaseRetryMechanism(t *testing.T) {
 	t.Run("max retries exceeded", func(t *testing.T) {
 		mockDB.connectAttempts = 0
 
-		// Calculate expected attempts based on retry config
+		// Use more restrictive timing to ensure a fixed number of attempts
 		retryConfig := &dbconfig.RetryConfig{
-			InitialInterval:      5 * time.Millisecond,
+			InitialInterval:      10 * time.Millisecond,
 			MaxInterval:          20 * time.Millisecond,
-			MaxElapsedTime:       100 * time.Millisecond,
+			MaxElapsedTime:       50 * time.Millisecond, // Reduced to ensure fewer attempts
 			MultiplicationFactor: 2.0,
 		}
 
-		// Set up exactly the number of expectations we need
-		expectedAttempts := 7 // Updated to match actual behavior
-		for i := 0; i < expectedAttempts; i++ {
-			mockDB.On("Connect").
-				Return(fmt.Errorf("connection error")).Once()
-		}
+		// With these settings, we'll get exactly 3 attempts:
+		// 1. t=0ms:     10ms delay
+		// 2. t=10ms:    20ms delay
+		// 3. t=30ms:    20ms delay (would end at t=50ms)
+		expectedAttempts := 3
+
+		// Clear any existing expectations
+		mockDB.ExpectedCalls = nil
+
+		// Set up mock expectations for all attempts
+		mockDB.On("Connect").
+			Return(fmt.Errorf("connection error")).
+			Times(expectedAttempts)
 
 		cfg := &config.Config{}
 		err := MockConnectWithRetry(cfg, retryConfig, logger, mockDB)
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to connect to database after retries")
 		assert.Equal(t, expectedAttempts, mockDB.connectAttempts)
