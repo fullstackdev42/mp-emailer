@@ -24,10 +24,3 @@ func (r *DatabaseResult) Scan(_ interface{}) Result {
 func (r *DatabaseResult) Error() error {
 	return r.err
 }
-
-// NewDatabaseResult creates a new DatabaseResult
-func NewDatabaseResult(db interface{}) *DatabaseResult {
-	return &DatabaseResult{
-		db: db,
-	}
-}

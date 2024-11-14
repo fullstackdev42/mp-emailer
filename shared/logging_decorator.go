@@ -17,14 +17,6 @@ type LoggingServiceDecorator struct {
 	Logger  loggo.LoggerInterface
 }
 
-// NewLoggingServiceDecorator creates a new instance of LoggingServiceDecorator
-func NewLoggingServiceDecorator(service ServiceInterface, logger loggo.LoggerInterface) *LoggingServiceDecorator {
-	return &LoggingServiceDecorator{
-		Service: service,
-		Logger:  logger,
-	}
-}
-
 func (d *LoggingServiceDecorator) Info(message string, params ...interface{}) {
 	d.Logger.Info(message, params...)
 	d.Service.Info(message, params...)
