@@ -2,11 +2,17 @@ package user_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,12 +21,17 @@ type ServiceTestSuite struct {
 	suite.Suite
 	mockRepo *mocksUser.MockRepositoryInterface
 	service  user.ServiceInterface
+	validate *validator.Validate
 }
 
 func (s *ServiceTestSuite) SetupTest() {
 	s.mockRepo = mocksUser.NewMockRepositoryInterface(s.T())
+	s.validate = validator.New()
+
 	s.service = user.NewService(user.ServiceParams{
-		Repo: s.mockRepo,
+		Repo:     s.mockRepo,
+		Validate: s.validate,
+		Cfg:      &config.Config{},
 	})
 }
 
@@ -169,4 +180,204 @@ func TestPasswordHashing(t *testing.T) {
 	// Verify incorrect password
 	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte("wrongpassword"))
 	assert.Error(t, err)
+}
+
+func (s *ServiceTestSuite) TestGetUser() {
+	tests := []struct {
+		name    string
+		setup   func()
+		dto     *user.GetDTO
+		want    *user.DTO
+		wantErr bool
+	}{
+		{
+			name: "successful get user",
+			setup: func() {
+				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
+					Username: "testuser",
+					Email:    "test@example.com",
+				}, nil)
+			},
+			dto: &user.GetDTO{
+				Username: "testuser",
+			},
+			want: &user.DTO{
+				ID:       uuid.New(),
+				Username: "testuser",
+				Email:    "test@example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "user not found",
+			setup: func() {
+				s.mockRepo.On("FindByUsername", "nonexistent").
+					Return(nil, errors.New("user not found"))
+			},
+			dto: &user.GetDTO{
+				Username: "nonexistent",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.setup()
+
+			got, err := s.service.GetUser(tt.dto)
+
+			if tt.wantErr {
+				assert.Error(s.T(), err)
+				assert.Nil(s.T(), got)
+			} else {
+				assert.NoError(s.T(), err)
+				assert.NotNil(s.T(), got)
+				assert.Equal(s.T(), tt.want.Username, got.Username)
+				assert.Equal(s.T(), tt.want.Email, got.Email)
+			}
+		})
+	}
+}
+
+func (s *ServiceTestSuite) TestRegisterUser() {
+	tests := []struct {
+		name    string
+		setup   func()
+		dto     *user.RegisterDTO
+		want    *user.DTO
+		wantErr bool
+	}{
+		{
+			name: "successful registration",
+			setup: func() {
+				s.mockRepo.On("Create", mock.AnythingOfType("*user.User")).
+					Run(func(args mock.Arguments) {
+						user := args.Get(0).(*user.User)
+						user.CreatedAt = time.Now()
+						user.UpdatedAt = time.Now()
+						assert.Equal(s.T(), "newuser", user.Username)
+						assert.Equal(s.T(), "new@example.com", user.Email)
+						assert.NotEmpty(s.T(), user.PasswordHash)
+					}).
+					Return(nil)
+			},
+			dto: &user.RegisterDTO{
+				Username:        "newuser",
+				Email:           "new@example.com",
+				Password:        "validpassword123",
+				PasswordConfirm: "validpassword123",
+			},
+			want: &user.DTO{
+				Username: "newuser",
+				Email:    "new@example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "empty username",
+			setup: func() {}, // No mock needed - validation will fail
+			dto: &user.RegisterDTO{
+				Username:        "",
+				Email:           "test@example.com",
+				Password:        "validpassword123",
+				PasswordConfirm: "validpassword123",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "invalid email format",
+			setup: func() {}, // No mock needed - validation will fail
+			dto: &user.RegisterDTO{
+				Username:        "testuser",
+				Email:           "invalid-email",
+				Password:        "validpassword123",
+				PasswordConfirm: "validpassword123",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "password too long",
+			setup: func() {}, // No mock needed - validation will fail
+			dto: &user.RegisterDTO{
+				Username:        "testuser",
+				Email:           "test@example.com",
+				Password:        strings.Repeat("a", 73),
+				PasswordConfirm: strings.Repeat("a", 73),
+			},
+			wantErr: true,
+		},
+		{
+			name:  "passwords don't match",
+			setup: func() {}, // No mock needed - validation will fail
+			dto: &user.RegisterDTO{
+				Username:        "testuser",
+				Email:           "test@example.com",
+				Password:        "validpassword123",
+				PasswordConfirm: "differentpassword123",
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate username",
+			setup: func() {
+				s.mockRepo.On("Create", mock.Anything).
+					Return(errors.New("duplicate username"))
+			},
+			dto: &user.RegisterDTO{
+				Username:        "existinguser",
+				Email:           "test@example.com",
+				Password:        "validpassword123",
+				PasswordConfirm: "validpassword123",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.setup()
+
+			got, err := s.service.RegisterUser(tt.dto)
+
+			if tt.wantErr {
+				s.Error(err)
+				s.Nil(got)
+			} else {
+				s.NoError(err)
+				s.NotNil(got)
+				s.Equal(tt.want.Username, got.Username)
+				s.Equal(tt.want.Email, got.Email)
+				// Verify timestamps are set
+				s.False(got.CreatedAt.IsZero())
+				s.False(got.UpdatedAt.IsZero())
+			}
+
+			s.mockRepo.AssertExpectations(s.T())
+		})
+	}
+}
+
+// Test the logging interface methods
+func (s *ServiceTestSuite) TestLoggingMethods() {
+	// These methods should not panic even though they're empty
+	s.Run("Info method", func() {
+		assert.NotPanics(s.T(), func() {
+			s.service.Info("test message")
+		})
+	})
+
+	s.Run("Warn method", func() {
+		assert.NotPanics(s.T(), func() {
+			s.service.Warn("test warning")
+		})
+	})
+
+	s.Run("Error method", func() {
+		assert.NotPanics(s.T(), func() {
+			s.service.Error("test error", errors.New("test error"))
+		})
+	})
 }

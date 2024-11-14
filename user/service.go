@@ -64,13 +64,13 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 		return nil, fmt.Errorf("error hashing password: %w", err)
 	}
 
-	// Create the user with the hashed password
-	user := User{
+	user := &User{
 		Username:     params.Username,
 		Email:        params.Email,
 		PasswordHash: string(hashedPassword),
 	}
-	if err := s.repo.Create(&user); err != nil {
+
+	if err := s.repo.Create(user); err != nil {
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
