@@ -1,6 +1,8 @@
 package shared
 
 import (
+	"net/http"
+
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -24,6 +26,7 @@ type BaseHandler struct {
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface
+	MapError         func(error) (int, string)
 }
 
 func NewBaseHandler(params BaseHandlerParams) BaseHandler {
@@ -33,5 +36,26 @@ func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 		ErrorHandler:     params.ErrorHandler,
 		Config:           params.Config,
 		TemplateRenderer: params.TemplateRenderer,
+		MapError:         DefaultErrorMapper,
 	}
+}
+
+// DefaultErrorMapper provides default error mapping logic
+func DefaultErrorMapper(err error) (int, string) {
+	return http.StatusInternalServerError, "Internal Server Error"
+}
+
+// Error implements HandlerLoggable interface
+func (h *BaseHandler) Error(msg string, err error, keyvals ...interface{}) {
+	h.Logger.Error(msg, err, keyvals...)
+}
+
+// Info implements HandlerLoggable interface
+func (h *BaseHandler) Info(msg string, keyvals ...interface{}) {
+	h.Logger.Info(msg, keyvals...)
+}
+
+// Warn implements HandlerLoggable interface
+func (h *BaseHandler) Warn(msg string, keyvals ...interface{}) {
+	h.Logger.Warn(msg, keyvals...)
 }

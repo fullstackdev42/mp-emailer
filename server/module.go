@@ -14,6 +14,7 @@ var Module = fx.Module("server",
 		fx.Annotate(
 			NewHandler,
 			fx.As(new(HandlerInterface)),
+			fx.As(new(shared.HandlerLoggable)),
 		),
 	),
 	fx.Decorate(
