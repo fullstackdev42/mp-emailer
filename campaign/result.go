@@ -11,7 +11,6 @@ type Result interface {
 // DatabaseResult implements the Result interface
 type DatabaseResult struct {
 	err error
-	db  interface{} // This could be your actual database interface
 }
 
 // Scan implements Result.Scan

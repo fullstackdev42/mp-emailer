@@ -21,7 +21,7 @@ func (_m *MockServiceInterface) EXPECT() *MockServiceInterface_Expecter {
 }
 
 // ComposeEmail provides a mock function with given fields: params
-func (_m *MockServiceInterface) ComposeEmail(params campaign.ComposeEmailParams) string {
+func (_m *MockServiceInterface) ComposeEmail(params campaign.ComposeEmailParams) (string, error) {
 	ret := _m.Called(params)
 
 	if len(ret) == 0 {
@@ -29,13 +29,23 @@ func (_m *MockServiceInterface) ComposeEmail(params campaign.ComposeEmailParams)
 	}
 
 	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(campaign.ComposeEmailParams) (string, error)); ok {
+		return rf(params)
+	}
 	if rf, ok := ret.Get(0).(func(campaign.ComposeEmailParams) string); ok {
 		r0 = rf(params)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(campaign.ComposeEmailParams) error); ok {
+		r1 = rf(params)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockServiceInterface_ComposeEmail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ComposeEmail'
@@ -56,12 +66,12 @@ func (_c *MockServiceInterface_ComposeEmail_Call) Run(run func(params campaign.C
 	return _c
 }
 
-func (_c *MockServiceInterface_ComposeEmail_Call) Return(_a0 string) *MockServiceInterface_ComposeEmail_Call {
-	_c.Call.Return(_a0)
+func (_c *MockServiceInterface_ComposeEmail_Call) Return(_a0 string, _a1 error) *MockServiceInterface_ComposeEmail_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockServiceInterface_ComposeEmail_Call) RunAndReturn(run func(campaign.ComposeEmailParams) string) *MockServiceInterface_ComposeEmail_Call {
+func (_c *MockServiceInterface_ComposeEmail_Call) RunAndReturn(run func(campaign.ComposeEmailParams) (string, error)) *MockServiceInterface_ComposeEmail_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -166,51 +176,6 @@ func (_c *MockServiceInterface_DeleteCampaign_Call) Return(_a0 error) *MockServi
 }
 
 func (_c *MockServiceInterface_DeleteCampaign_Call) RunAndReturn(run func(campaign.DeleteCampaignDTO) error) *MockServiceInterface_DeleteCampaign_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Error provides a mock function with given fields: message, err, params
-func (_m *MockServiceInterface) Error(message string, err error, params ...interface{}) {
-	var _ca []interface{}
-	_ca = append(_ca, message, err)
-	_ca = append(_ca, params...)
-	_m.Called(_ca...)
-}
-
-// MockServiceInterface_Error_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Error'
-type MockServiceInterface_Error_Call struct {
-	*mock.Call
-}
-
-// Error is a helper method to define mock.On call
-//   - message string
-//   - err error
-//   - params ...interface{}
-func (_e *MockServiceInterface_Expecter) Error(message interface{}, err interface{}, params ...interface{}) *MockServiceInterface_Error_Call {
-	return &MockServiceInterface_Error_Call{Call: _e.mock.On("Error",
-		append([]interface{}{message, err}, params...)...)}
-}
-
-func (_c *MockServiceInterface_Error_Call) Run(run func(message string, err error, params ...interface{})) *MockServiceInterface_Error_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(interface{})
-			}
-		}
-		run(args[0].(string), args[1].(error), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *MockServiceInterface_Error_Call) Return() *MockServiceInterface_Error_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockServiceInterface_Error_Call) RunAndReturn(run func(string, error, ...interface{})) *MockServiceInterface_Error_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -388,50 +353,6 @@ func (_c *MockServiceInterface_GetCampaigns_Call) RunAndReturn(run func() ([]cam
 	return _c
 }
 
-// Info provides a mock function with given fields: message, params
-func (_m *MockServiceInterface) Info(message string, params ...interface{}) {
-	var _ca []interface{}
-	_ca = append(_ca, message)
-	_ca = append(_ca, params...)
-	_m.Called(_ca...)
-}
-
-// MockServiceInterface_Info_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Info'
-type MockServiceInterface_Info_Call struct {
-	*mock.Call
-}
-
-// Info is a helper method to define mock.On call
-//   - message string
-//   - params ...interface{}
-func (_e *MockServiceInterface_Expecter) Info(message interface{}, params ...interface{}) *MockServiceInterface_Info_Call {
-	return &MockServiceInterface_Info_Call{Call: _e.mock.On("Info",
-		append([]interface{}{message}, params...)...)}
-}
-
-func (_c *MockServiceInterface_Info_Call) Run(run func(message string, params ...interface{})) *MockServiceInterface_Info_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-1)
-		for i, a := range args[1:] {
-			if a != nil {
-				variadicArgs[i] = a.(interface{})
-			}
-		}
-		run(args[0].(string), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *MockServiceInterface_Info_Call) Return() *MockServiceInterface_Info_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockServiceInterface_Info_Call) RunAndReturn(run func(string, ...interface{})) *MockServiceInterface_Info_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // UpdateCampaign provides a mock function with given fields: dto
 func (_m *MockServiceInterface) UpdateCampaign(dto *campaign.UpdateCampaignDTO) error {
 	ret := _m.Called(dto)
@@ -474,50 +395,6 @@ func (_c *MockServiceInterface_UpdateCampaign_Call) Return(_a0 error) *MockServi
 }
 
 func (_c *MockServiceInterface_UpdateCampaign_Call) RunAndReturn(run func(*campaign.UpdateCampaignDTO) error) *MockServiceInterface_UpdateCampaign_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Warn provides a mock function with given fields: message, params
-func (_m *MockServiceInterface) Warn(message string, params ...interface{}) {
-	var _ca []interface{}
-	_ca = append(_ca, message)
-	_ca = append(_ca, params...)
-	_m.Called(_ca...)
-}
-
-// MockServiceInterface_Warn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Warn'
-type MockServiceInterface_Warn_Call struct {
-	*mock.Call
-}
-
-// Warn is a helper method to define mock.On call
-//   - message string
-//   - params ...interface{}
-func (_e *MockServiceInterface_Expecter) Warn(message interface{}, params ...interface{}) *MockServiceInterface_Warn_Call {
-	return &MockServiceInterface_Warn_Call{Call: _e.mock.On("Warn",
-		append([]interface{}{message}, params...)...)}
-}
-
-func (_c *MockServiceInterface_Warn_Call) Run(run func(message string, params ...interface{})) *MockServiceInterface_Warn_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-1)
-		for i, a := range args[1:] {
-			if a != nil {
-				variadicArgs[i] = a.(interface{})
-			}
-		}
-		run(args[0].(string), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *MockServiceInterface_Warn_Call) Return() *MockServiceInterface_Warn_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockServiceInterface_Warn_Call) RunAndReturn(run func(string, ...interface{})) *MockServiceInterface_Warn_Call {
 	_c.Call.Return(run)
 	return _c
 }

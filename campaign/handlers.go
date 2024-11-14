@@ -287,11 +287,15 @@ func (h *Handler) ComposeEmail(c echo.Context) error {
 
 	userData := extractUserData(c)
 	representative := mp[0]
-	emailContent := h.service.ComposeEmail(ComposeEmailParams{
+	emailContent, err := h.service.ComposeEmail(ComposeEmailParams{
 		MP:       representative,
 		Campaign: campaign,
 		UserData: userData,
 	})
+	if err != nil {
+		status, msg := h.mapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
 
 	h.Logger.Info("Email composed successfully",
 		"campaignID", params.ID,

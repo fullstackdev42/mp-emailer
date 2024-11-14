@@ -17,6 +17,16 @@ func NewLoggingDecorator(service ServiceInterface, logger loggo.LoggerInterface)
 }
 
 // Info logs an info message with the given parameters
+func (d *LoggingDecorator) ComposeEmail(params ComposeEmailParams) (string, error) {
+	d.logger.Info("Composing email", "params", params)
+	email, err := d.service.ComposeEmail(params)
+	if err != nil {
+		d.logger.Error("Failed to compose email", err, "params", params)
+	}
+	return email, err
+}
+
+// Info logs an info message with the given parameters
 func (d *LoggingDecorator) Info(message string, params ...interface{}) {
 	d.logger.Info(message, params...)
 }
@@ -89,10 +99,4 @@ func (d *LoggingDecorator) FetchCampaign(params GetCampaignParams) (*Campaign, e
 		d.logger.Error("Failed to fetch campaign", err, "params", params)
 	}
 	return campaign, err
-}
-
-// ComposeEmail composes an email
-func (d *LoggingDecorator) ComposeEmail(params ComposeEmailParams) string {
-	d.logger.Info("Composing email", "params", params)
-	return d.service.ComposeEmail(params)
 }

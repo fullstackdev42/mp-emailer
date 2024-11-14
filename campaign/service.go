@@ -12,10 +12,11 @@ import (
 )
 
 // NewService creates a new campaign service
-func NewService(repo RepositoryInterface, validate *validator.Validate) ServiceInterface {
+func NewService(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) ServiceInterface {
 	return &Service{
 		repo:     repo,
 		validate: validate,
+		logger:   logger,
 	}
 }
 
@@ -27,10 +28,7 @@ type ServiceInterface interface {
 	GetCampaigns() ([]Campaign, error)
 	DeleteCampaign(params DeleteCampaignDTO) error
 	FetchCampaign(params GetCampaignParams) (*Campaign, error)
-	ComposeEmail(params ComposeEmailParams) string
-	Error(message string, err error, params ...interface{})
-	Info(message string, params ...interface{})
-	Warn(message string, params ...interface{})
+	ComposeEmail(params ComposeEmailParams) (string, error)
 }
 
 // Service implements the campaign service
@@ -45,14 +43,22 @@ var _ ServiceInterface = &Service{}
 
 // CreateCampaign creates a new campaign
 func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
-	err := s.validate.Struct(dto)
-	if err != nil {
+	if dto == nil {
+		return nil, fmt.Errorf("campaign data is required")
+	}
+
+	if err := s.validate.Struct(dto); err != nil {
+		s.logger.Debug("Invalid campaign data", "error", err)
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
+
 	campaign, err := s.repo.Create(dto)
 	if err != nil {
+		s.logger.Error("Failed to create campaign", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
+
+	s.logger.Info("Campaign created successfully", "id", campaign.ID)
 	return campaign, nil
 }
 
@@ -67,13 +73,16 @@ func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
 
 // GetCampaignByID retrieves a campaign by ID
 func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(GetCampaignDTO(params))
+	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
-			return nil, err // Pass through standard errors
+			s.logger.Debug("Campaign not found", "id", params.ID)
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get campaign with ID %d: %w", params.ID, err)
+		s.logger.Error("Failed to get campaign", err, "id", params.ID)
+		return nil, fmt.Errorf("failed to get campaign: %w", err)
 	}
+
 	return campaign, nil
 }
 
@@ -88,26 +97,28 @@ func (s *Service) GetCampaigns() ([]Campaign, error) {
 
 // DeleteCampaign deletes a campaign by ID
 func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
-	// Convert DeleteCampaignDTO to GetCampaignDTO
-	getCampaignDTO := GetCampaignDTO(params)
+	_, err := s.repo.GetByID(GetCampaignDTO(params))
+	if err != nil {
+		if errors.Is(err, ErrCampaignNotFound) {
+			s.logger.Debug("Campaign not found for deletion", "id", params.ID)
+			return err
+		}
+		s.logger.Error("Failed to fetch campaign for deletion", err, "id", params.ID)
+		return fmt.Errorf("failed to fetch campaign: %w", err)
+	}
 
-	campaign, err := s.repo.GetByID(getCampaignDTO)
-	if err != nil {
-		return fmt.Errorf("failed to get campaign for deletion: %w", err)
-	}
-	if campaign == nil {
-		return fmt.Errorf("campaign not found")
-	}
-	err = s.repo.Delete(params)
-	if err != nil {
+	if err := s.repo.Delete(params); err != nil {
+		s.logger.Error("Failed to delete campaign", err, "id", params.ID)
 		return fmt.Errorf("failed to delete campaign: %w", err)
 	}
+
+	s.logger.Info("Campaign deleted successfully", "id", params.ID)
 	return nil
 }
 
 // FetchCampaign retrieves a campaign by parameters
 func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(GetCampaignDTO(params))
+	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
@@ -125,29 +136,32 @@ type ComposeEmailParams struct {
 }
 
 // ComposeEmail composes an email using campaign data and user data
-func (s *Service) ComposeEmail(params ComposeEmailParams) string {
+func (s *Service) ComposeEmail(params ComposeEmailParams) (string, error) {
+	if params.Campaign == nil {
+		return "", fmt.Errorf("campaign is required")
+	}
+	if params.Campaign.Template == "" {
+		return "", fmt.Errorf("campaign template is required")
+	}
+
 	emailTemplate := params.Campaign.Template
+
+	// Replace user data placeholders
 	for key, value := range params.UserData {
 		placeholder := fmt.Sprintf("{{%s}}", key)
 		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
 	}
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MP's Name}}", params.MP.Name)
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{MPEmail}}", params.MP.Email)
-	emailTemplate = strings.ReplaceAll(emailTemplate, "{{Date}}", time.Now().Format("2006-01-02"))
-	return emailTemplate
-}
 
-// Error implements the ServiceInterface for logging errors
-func (s *Service) Error(message string, err error, params ...interface{}) {
-	s.logger.Error(message, err, params...)
-}
+	// Replace standard placeholders
+	replacements := map[string]string{
+		"{{MP's Name}}": params.MP.Name,
+		"{{MPEmail}}":   params.MP.Email,
+		"{{Date}}":      time.Now().Format("2006-01-02"),
+	}
 
-// Info implements the ServiceInterface for logging information
-func (s *Service) Info(message string, params ...interface{}) {
-	s.logger.Info(message, params...)
-}
+	for placeholder, value := range replacements {
+		emailTemplate = strings.ReplaceAll(emailTemplate, placeholder, value)
+	}
 
-// Warn implements the ServiceInterface for logging warnings
-func (s *Service) Warn(message string, params ...interface{}) {
-	s.logger.Warn(message, params...)
+	return emailTemplate, nil
 }
