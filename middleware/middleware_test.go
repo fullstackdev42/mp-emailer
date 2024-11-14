@@ -2,6 +2,7 @@ package middleware_test
 
 import (
 	"encoding/gob"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,12 +10,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
+	"github.com/fullstackdev42/mp-emailer/shared"
 )
 
 type MiddlewareTestSuite struct {
@@ -52,6 +55,7 @@ func (s *MiddlewareTestSuite) SetupTest() {
 func TestMiddlewareTestSuite(t *testing.T) {
 	suite.Run(t, new(MiddlewareTestSuite))
 }
+
 func (s *MiddlewareTestSuite) TestGetUserIDFromSession() {
 	s.Run("valid UUID in session", func() {
 		// Set up all expected logger calls in the correct order
@@ -94,4 +98,178 @@ func (s *MiddlewareTestSuite) TestGetUserIDFromSession() {
 		s.NoError(err)
 		s.Equal(userID.String(), result)
 	})
+}
+
+// Test session middleware
+func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
+	s.Run("successful session handling", func() {
+		// Setup
+		mockStore := new(mocksMiddleware.MockSessionStore)
+		mockLogger := new(mocks.MockLoggerInterface)
+
+		session := sessions.NewSession(mockStore, "test-session")
+
+		mockStore.On("Get", mock.Anything, "test-session").Return(session, nil)
+		mockStore.On("Save", mock.Anything, mock.Anything, session).Return(nil)
+		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := echo.New().NewContext(req, rec)
+
+		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+
+		// Execute
+		err := middleware(func(c echo.Context) error {
+			return c.String(http.StatusOK, "success")
+		})(c)
+
+		// Assert
+		s.NoError(err)
+		s.Equal(http.StatusOK, rec.Code)
+		mockStore.AssertExpectations(s.T())
+		mockLogger.AssertExpectations(s.T())
+	})
+
+	s.Run("session error", func() {
+		// Setup
+		mockStore := new(mocksMiddleware.MockSessionStore)
+		mockLogger := new(mocks.MockLoggerInterface)
+
+		expectedErr := errors.New("session error")
+		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+		mockStore.On("Get", mock.Anything, "test-session").Return(nil, expectedErr)
+		mockLogger.On("Error", "Failed to get session", expectedErr).Return()
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := echo.New().NewContext(req, rec)
+
+		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+
+		// Execute
+		handlerCalled := false
+		err := middleware(func(c echo.Context) error {
+			handlerCalled = true
+			return c.String(http.StatusOK, "success")
+		})(c)
+
+		// Assert
+		s.Error(err)
+		s.Equal(http.StatusInternalServerError, err.(*echo.HTTPError).Code)
+		s.False(handlerCalled, "Handler should not be called when session error occurs")
+		mockStore.AssertExpectations(s.T())
+		mockLogger.AssertExpectations(s.T())
+	})
+
+	s.Run("session save error", func() {
+		// Setup
+		mockStore := new(mocksMiddleware.MockSessionStore)
+		mockLogger := new(mocks.MockLoggerInterface)
+
+		session := sessions.NewSession(mockStore, "test-session")
+		expectedErr := errors.New("save error")
+
+		mockStore.On("Get", mock.Anything, "test-session").Return(session, nil)
+		mockStore.On("Save", mock.Anything, mock.Anything, session).Return(expectedErr)
+		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+
+		mockLogger.On("Error", "Failed to save session", expectedErr).Return()
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := echo.New().NewContext(req, rec)
+
+		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+
+		// Execute
+		handlerCalled := false
+		err := middleware(func(c echo.Context) error {
+			handlerCalled = true
+			return c.String(http.StatusOK, "success")
+		})(c)
+
+		// Assert
+		s.Error(err)
+		s.Equal(http.StatusInternalServerError, err.(*echo.HTTPError).Code)
+		s.True(handlerCalled, "Handler should be called before session save error")
+		mockStore.AssertExpectations(s.T())
+		mockLogger.AssertExpectations(s.T())
+	})
+}
+
+// Test JWT middleware
+func (s *MiddlewareTestSuite) TestJWTMiddleware() {
+	testCases := []struct {
+		name         string
+		setupHeader  func(*http.Request)
+		expectError  bool
+		errorMessage string
+	}{
+		{
+			name: "valid JWT token",
+			setupHeader: func(r *http.Request) {
+				// Generate token with correct parameters
+				token, _ := shared.GenerateToken("testuser", s.config.JWTSecret, 60) // 60 minutes expiration
+				r.Header.Set("Authorization", "Bearer "+token)
+			},
+			expectError: false,
+		},
+		{
+			name:         "missing authorization header",
+			setupHeader:  func(_ *http.Request) {},
+			expectError:  true,
+			errorMessage: "Missing authorization header",
+		},
+		{
+			name: "invalid authorization format",
+			setupHeader: func(r *http.Request) {
+				r.Header.Set("Authorization", "InvalidFormat token")
+			},
+			expectError:  true,
+			errorMessage: "Invalid authorization header",
+		},
+		{
+			name: "invalid token",
+			setupHeader: func(r *http.Request) {
+				r.Header.Set("Authorization", "Bearer invalid.token.here")
+			},
+			expectError:  true,
+			errorMessage: "Invalid token",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// Setup
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			tc.setupHeader(req)
+
+			// Execute middleware
+			handler := s.manager.JWTMiddleware()(func(_ echo.Context) error {
+				return nil
+			})
+
+			err := handler(c)
+
+			// Assertions
+			if tc.expectError {
+				s.Error(err)
+				httpErr, ok := err.(*echo.HTTPError)
+				s.True(ok)
+				s.Equal(http.StatusUnauthorized, httpErr.Code)
+				s.Contains(httpErr.Message.(map[string]string)["error"], tc.errorMessage)
+			} else {
+				s.NoError(err)
+				// Verify user info was set in context
+				userID := c.Get("user_id")
+				s.NotNil(userID)
+				s.Equal("testuser", userID)
+			}
+		})
+	}
 }

@@ -89,43 +89,7 @@ func (m *Manager) registerContextMiddleware(e *echo.Echo) {
 
 // SessionsMiddleware sets up session middleware
 func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			session, err := m.sessionStore.Get(c.Request(), m.cfg.SessionName)
-			if err != nil {
-				m.logger.Error("Error retrieving session", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, "Session error")
-			}
-
-			// Set secure cookie flags in production
-			if m.cfg.AppEnv == config.EnvProduction {
-				session.Options.Secure = true
-				session.Options.HttpOnly = true
-				session.Options.SameSite = http.SameSiteStrictMode
-			} else {
-				// Development settings
-				session.Options.HttpOnly = false
-				session.Options.SameSite = http.SameSiteLaxMode
-			}
-
-			// Add session ID if not present
-			if session.ID == "" {
-				session.ID = uuid.New().String()
-			}
-
-			c.Set("session", session)
-
-			err = next(c)
-
-			// Save session after handler execution
-			if err := session.Save(c.Request(), c.Response().Writer); err != nil {
-				m.logger.Error("Error saving session", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, "Session error")
-			}
-
-			return err
-		}
-	}
+	return NewSessionsMiddleware(m.sessionStore, m.logger, m.cfg.SessionName)
 }
 
 // registerLogging configures request logging
@@ -290,21 +254,28 @@ func (m *Manager) JWTMiddleware() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Missing authorization header"})
+				return echo.NewHTTPError(http.StatusUnauthorized, map[string]string{
+					"error": "Missing authorization header",
+				})
 			}
 
 			tokenParts := strings.Split(authHeader, " ")
 			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid authorization header"})
+				return echo.NewHTTPError(http.StatusUnauthorized, map[string]string{
+					"error": "Invalid authorization header",
+				})
 			}
 
 			token := tokenParts[1]
 			claims, err := shared.ValidateToken(token, m.cfg.JWTSecret)
 			if err != nil {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+				return echo.NewHTTPError(http.StatusUnauthorized, map[string]string{
+					"error": "Invalid token",
+				})
 			}
 
 			c.Set("user", claims)
+			c.Set("user_id", claims.Username)
 			return next(c)
 		}
 	}
