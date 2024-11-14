@@ -149,16 +149,21 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 // DeleteCampaign handles DELETE requests for deleting a campaign
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling DeleteCampaign request")
-	params := new(DeleteCampaignDTO)
-	if err := c.Bind(params); err != nil {
+
+	// Get ID from URL parameter instead of binding
+	id := c.Param("id")
+	campaignID, err := uuid.Parse(id)
+	if err != nil {
 		status, msg := h.mapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	if err := h.service.DeleteCampaign(DeleteCampaignDTO{ID: params.ID}); err != nil {
+
+	if err := h.service.DeleteCampaign(DeleteCampaignDTO{ID: campaignID}); err != nil {
 		status, msg := h.mapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Info("Campaign deleted successfully", "campaignID", params.ID)
+
+	h.Logger.Info("Campaign deleted successfully", "campaignID", campaignID)
 	return c.Redirect(http.StatusSeeOther, "/campaigns")
 }
 

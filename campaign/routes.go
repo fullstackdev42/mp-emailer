@@ -24,4 +24,11 @@ func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config, manager *middl
 	protected.DELETE("/:id", h.DeleteCampaign)
 	protected.POST("/:id/compose", h.ComposeEmail)
 	protected.POST("/:id/send", h.SendCampaign)
+
+	// Debug logging
+	for _, route := range e.Routes() {
+		h.Logger.Debug("Registered route",
+			"method", route.Method,
+			"path", route.Path)
+	}
 }

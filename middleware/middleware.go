@@ -71,7 +71,7 @@ func (m *Manager) Register(e *echo.Echo) {
 
 // registerContextMiddleware adds session store and logger to context
 func (m *Manager) registerContextMiddleware(e *echo.Echo) {
-	e.Use(m.sessionsMiddleware())
+	e.Use(m.SessionsMiddleware())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if m.sessionStore == nil {
@@ -87,8 +87,8 @@ func (m *Manager) registerContextMiddleware(e *echo.Echo) {
 	})
 }
 
-// sessionsMiddleware sets up session middleware
-func (m *Manager) sessionsMiddleware() echo.MiddlewareFunc {
+// SessionsMiddleware sets up session middleware
+func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			session, err := m.sessionStore.Get(c.Request(), m.cfg.SessionName)
@@ -151,6 +151,10 @@ func MethodOverride() echo.MiddlewareFunc {
 			if c.Request().Method == "POST" {
 				method := c.FormValue("_method")
 				if method != "" {
+					c.Logger().Debug("Method override",
+						"original_method", c.Request().Method,
+						"new_method", method,
+						"path", c.Request().URL.Path)
 					c.Request().Method = method
 				}
 			}
@@ -161,7 +165,7 @@ func MethodOverride() echo.MiddlewareFunc {
 
 // registerMethodOverride adds method override support
 func (m *Manager) registerMethodOverride(e *echo.Echo) {
-	e.Use(MethodOverride())
+	e.Pre(MethodOverride())
 }
 
 // GetSession retrieves the session from the context
