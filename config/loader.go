@@ -35,9 +35,17 @@ func Load() (*Config, error) {
 }
 
 func printConfig(config *Config) {
-	// Create a Log struct that masks sensitive fields
-	configLog := Log{Config: config}
-	fmt.Printf("Loaded configuration: %+v\n", configLog)
+	// Create a formatted string with relevant config fields
+	fmt.Printf("Loaded configuration:\n"+
+		"  Environment: %s\n"+
+		"  Server Port: %d\n"+
+		"  Log File: %s\n"+
+		"  Migrations Path: %s\n",
+		config.AppEnv,
+		config.AppPort,
+		config.LogFile,
+		config.MigrationsPath,
+	)
 }
 
 // CheckRequired verifies all required configuration is present before loading full config

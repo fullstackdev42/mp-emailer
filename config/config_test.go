@@ -1,11 +1,15 @@
-package config
+package config_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jonesrussell/loggo"
 )
 
 func TestConfigPriorityOrder(t *testing.T) {
@@ -13,6 +17,11 @@ func TestConfigPriorityOrder(t *testing.T) {
 	envFile := `
 APP_PORT=3000
 DB_USER=envfile_user
+DB_PASSWORD=test_password
+DB_HOST=localhost
+DB_NAME=testdb
+JWT_SECRET=test_jwt_secret
+SESSION_SECRET=test_session_secret
 `
 	err := os.WriteFile(".env", []byte(envFile), 0644)
 	require.NoError(t, err)
@@ -22,12 +31,27 @@ DB_USER=envfile_user
 	os.Setenv("APP_PORT", "8080")
 	defer os.Unsetenv("APP_PORT")
 
-	cfg := &Config{}
-	err = LoadConfig(cfg)
+	// Set required environment variables (excluding DB_USER to test .env file fallback)
+	os.Setenv("DB_PASSWORD", "test_password")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_NAME", "testdb")
+	os.Setenv("JWT_SECRET", "test_jwt_secret")
+	os.Setenv("SESSION_SECRET", "test_session_secret")
+	defer func() {
+		os.Unsetenv("DB_PASSWORD")
+		os.Unsetenv("DB_HOST")
+		os.Unsetenv("DB_NAME")
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("SESSION_SECRET")
+	}()
+
+	cfg, err := config.Load()
 	require.NoError(t, err)
 
 	// Environment variable should take precedence over .env file
 	assert.Equal(t, 8080, cfg.AppPort)
+	// Verify env file value is used when no environment variable is set
+	assert.Equal(t, "envfile_user", cfg.DBUser)
 }
 
 func TestRequiredFieldValidation(t *testing.T) {
@@ -39,7 +63,7 @@ func TestRequiredFieldValidation(t *testing.T) {
 	os.Unsetenv("JWT_SECRET")
 	os.Unsetenv("SESSION_SECRET")
 
-	err := CheckRequired()
+	_, err := config.Load()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "DB_USER")
 	assert.Contains(t, err.Error(), "DB_PASSWORD")
@@ -48,14 +72,14 @@ func TestRequiredFieldValidation(t *testing.T) {
 func TestEnvironmentValidation(t *testing.T) {
 	tests := []struct {
 		name        string
-		env         Environment
+		env         config.Environment
 		shouldBeVal bool
 	}{
-		{"Valid Development", EnvDevelopment, true},
-		{"Valid Production", EnvProduction, true},
-		{"Valid Staging", EnvStaging, true},
-		{"Valid Testing", EnvTesting, true},
-		{"Invalid Environment", Environment("invalid"), false},
+		{"Valid Development", config.EnvDevelopment, true},
+		{"Valid Production", config.EnvProduction, true},
+		{"Valid Staging", config.EnvStaging, true},
+		{"Valid Testing", config.EnvTesting, true},
+		{"Invalid Environment", config.Environment("invalid"), false},
 	}
 
 	for _, tt := range tests {
@@ -69,20 +93,20 @@ func TestLogLevelConversion(t *testing.T) {
 	tests := []struct {
 		name     string
 		logLevel string
-		want     string
+		want     loggo.Level
 	}{
-		{"Debug Level", "debug", "debug"},
-		{"Info Level", "info", "info"},
-		{"Warn Level", "warn", "warn"},
-		{"Error Level", "error", "error"},
-		{"Default Level", "invalid", "info"},
+		{"Debug Level", "debug", loggo.LevelDebug},
+		{"Info Level", "info", loggo.LevelInfo},
+		{"Warn Level", "warn", loggo.LevelWarn},
+		{"Error Level", "error", loggo.LevelError},
+		{"Default Level", "invalid", loggo.LevelInfo},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{LogLevel: tt.logLevel}
+			cfg := &config.Config{LogLevel: tt.logLevel}
 			level := cfg.GetLogLevel()
-			assert.Equal(t, tt.want, level.String())
+			assert.Equal(t, tt.want, level)
 		})
 	}
 }
@@ -99,8 +123,7 @@ func TestDefaultValues(t *testing.T) {
 	os.Setenv("JWT_SECRET", "test")
 	os.Setenv("SESSION_SECRET", "test")
 
-	cfg := &Config{}
-	err := LoadConfig(cfg)
+	cfg, err := config.Load()
 	require.NoError(t, err)
 
 	// Test default values
@@ -110,6 +133,6 @@ func TestDefaultValues(t *testing.T) {
 	assert.Equal(t, 3306, cfg.DBPort)
 	assert.Equal(t, "smtp", string(cfg.EmailProvider))
 	assert.Equal(t, "24h", cfg.JWTExpiry)
-	assert.Equal(t, "storage/logs/app.log", cfg.LogFile)
+	assert.True(t, strings.HasSuffix(cfg.LogFile, "storage/logs/app.log"))
 	assert.Equal(t, "info", cfg.LogLevel)
 }
