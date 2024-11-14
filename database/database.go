@@ -8,9 +8,8 @@ import (
 	"github.com/jonesrussell/loggo"
 )
 
-func ProvideDatabase(cfg *config.Config, logger loggo.LoggerInterface) (core.Interface, error) {
-	retryConfig := dbconfig.NewDefaultRetryConfig()
-	gormDB, err := dbconfig.ConnectWithRetry(cfg, retryConfig, logger)
+func ProvideDatabase(cfg *config.Config, logger loggo.LoggerInterface, retryConfig *dbconfig.RetryConfig, connector dbconfig.DatabaseConnector) (core.Interface, error) {
+	gormDB, err := dbconfig.ConnectWithRetry(cfg, retryConfig, logger, connector)
 	if err != nil {
 		return nil, err
 	}

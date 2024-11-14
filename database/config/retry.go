@@ -7,6 +7,7 @@ type RetryConfig struct {
 	MaxInterval          time.Duration
 	MaxElapsedTime       time.Duration
 	MultiplicationFactor float64
+	MaxAttempts          int
 }
 
 func NewDefaultRetryConfig() *RetryConfig {
@@ -15,5 +16,6 @@ func NewDefaultRetryConfig() *RetryConfig {
 		MaxInterval:          10 * time.Second,
 		MaxElapsedTime:       1 * time.Minute,
 		MultiplicationFactor: 2.0,
+		MaxAttempts:          5,
 	}
 }

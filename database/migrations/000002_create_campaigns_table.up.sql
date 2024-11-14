@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS campaigns (
-    id CHAR(36) PRIMARY KEY DEFAULT UUID(),
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     template TEXT NOT NULL,
@@ -9,5 +9,10 @@ CREATE TABLE IF NOT EXISTS campaigns (
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
+
+CREATE TRIGGER before_campaigns_insert 
+BEFORE INSERT ON campaigns
+FOR EACH ROW
+SET NEW.id = UUID();
 
 CREATE INDEX idx_campaigns_deleted_at ON campaigns(deleted_at); 

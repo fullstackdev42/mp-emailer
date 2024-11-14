@@ -39,7 +39,6 @@ func main() {
 			appMiddleware.Module,
 			fx.Invoke(registerRoutes, startServer),
 		),
-		fx.WithLogger(shared.NewCustomFxLogger),
 	)
 
 	app.Run()

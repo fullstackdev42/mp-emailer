@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-    id CHAR(36) PRIMARY KEY DEFAULT UUID(),
+    id CHAR(36) PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -8,4 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMP NULL
 );
 
-CREATE INDEX idx_users_deleted_at ON users(deleted_at); 
+CREATE TRIGGER before_users_insert 
+BEFORE INSERT ON users
+FOR EACH ROW
+SET NEW.id = UUID();
+
+CREATE INDEX idx_users_deleted_at ON users(deleted_at);
