@@ -23,12 +23,12 @@ func setupTest() (*campaign.Service, *mocksCampaign.MockRepositoryInterface) {
 	// Register the UUID validator
 	err := validate.RegisterValidation("uuid4", func(fl validator.FieldLevel) bool {
 		// Simple UUID4 format check
-		uuid := fl.Field().String()
-		if len(uuid) != 36 {
+		uuidStr := fl.Field().String()
+		if len(uuidStr) != 36 {
 			return false
 		}
 		// Check for UUID4 format: 8-4-4-4-12 characters
-		parts := strings.Split(uuid, "-")
+		parts := strings.Split(uuidStr, "-")
 		if len(parts) != 5 {
 			return false
 		}
