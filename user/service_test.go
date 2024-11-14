@@ -381,3 +381,38 @@ func (s *ServiceTestSuite) TestLoggingMethods() {
 		})
 	})
 }
+
+func (s *ServiceTestSuite) TestRegisterUserValidation() {
+	tests := []struct {
+		name     string
+		dto      user.RegisterDTO
+		contains string
+	}{
+		{
+			name: "username too short",
+			dto: user.RegisterDTO{
+				Username: "a",
+				Email:    "valid@example.com",
+				Password: "validpass123",
+			},
+			contains: "validation error: Key: 'RegisterDTO.Username' Error:Field validation for 'Username' failed on the 'min' tag",
+		},
+		{
+			name: "invalid email format",
+			dto: user.RegisterDTO{
+				Username: "validuser",
+				Email:    "invalid-email",
+				Password: "validpass123",
+			},
+			contains: "validation error: Key: 'RegisterDTO.Email' Error:Field validation for 'Email' failed on the 'email' tag",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			_, err := s.service.RegisterUser(&tt.dto)
+			s.Error(err)
+			s.Contains(err.Error(), tt.contains)
+		})
+	}
+}

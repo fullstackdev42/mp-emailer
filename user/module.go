@@ -47,14 +47,14 @@ type HandlerResult struct {
 // NewHandler creates a new user handler
 func NewHandler(params HandlerParams) (HandlerResult, error) {
 	handler := &Handler{
-		service:         params.Service,
+		Service:         params.Service,
 		Store:           params.Store,
 		SessionName:     params.Config.SessionName,
 		Config:          params.Config,
-		templateManager: params.TemplateManager,
-		repo:            params.Repo,
-		errorHandler:    params.ErrorHandler,
-		flashHandler:    params.FlashHandler,
+		TemplateManager: params.TemplateManager,
+		Repo:            params.Repo,
+		ErrorHandler:    params.ErrorHandler,
+		FlashHandler:    params.FlashHandler,
 	}
 	return HandlerResult{Handler: handler}, nil
 }
