@@ -14,6 +14,9 @@ import (
 )
 
 func TestConfigPriorityOrder(t *testing.T) {
+	// First, clear any existing environment variables
+	os.Clearenv()
+
 	// Setup
 	envFile := `
 APP_PORT=3000
@@ -30,15 +33,17 @@ SESSION_SECRET=test_session_secret
 
 	// Set environment variable (highest priority)
 	os.Setenv("APP_PORT", "8080")
-	defer os.Unsetenv("APP_PORT")
+	// Don't set DB_USER to test .env file fallback
 
-	// Set required environment variables (excluding DB_USER to test .env file fallback)
+	// Set other required environment variables
 	os.Setenv("DB_PASSWORD", "test_password")
 	os.Setenv("DB_HOST", "localhost")
 	os.Setenv("DB_NAME", "testdb")
 	os.Setenv("JWT_SECRET", "test_jwt_secret")
 	os.Setenv("SESSION_SECRET", "test_session_secret")
+
 	defer func() {
+		os.Unsetenv("APP_PORT")
 		os.Unsetenv("DB_PASSWORD")
 		os.Unsetenv("DB_HOST")
 		os.Unsetenv("DB_NAME")
