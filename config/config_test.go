@@ -1,5 +1,4 @@
 package config_test
-package config_test
 
 import (
 	"fmt"
@@ -75,7 +74,6 @@ func TestEnvironmentValidation(t *testing.T) {
 	tests := []struct {
 		name        string
 		env         config.Environment
-		env         config.Environment
 		shouldBeVal bool
 	}{
 		{"Valid Development", config.EnvDevelopment, true},
@@ -101,7 +99,6 @@ func TestLogLevelConversion(t *testing.T) {
 	tests := []struct {
 		name     string
 		logLevel string
-		want     loggo.Level
 		want     loggo.Level
 	}{
 		{"Debug Level", "debug", loggo.LevelDebug},
@@ -142,7 +139,6 @@ func TestDefaultValues(t *testing.T) {
 
 	// Get the current working directory
 	cwd, err := os.Getwd()
-	cfg, err := config.Load()
 	require.NoError(t, err)
 
 	// Construct the expected log file path dynamically
@@ -155,6 +151,6 @@ func TestDefaultValues(t *testing.T) {
 	assert.Equal(t, 3306, cfg.DBPort)
 	assert.Equal(t, "smtp", string(cfg.EmailProvider))
 	assert.Equal(t, "24h", cfg.JWTExpiry)
-	assert.True(t, strings.HasSuffix(cfg.LogFile, "storage/logs/app.log"))
+	assert.True(t, strings.HasSuffix(cfg.LogFile, expectedLogFilePath))
 	assert.Equal(t, "info", cfg.LogLevel)
 }
