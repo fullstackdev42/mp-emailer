@@ -3,7 +3,7 @@ services:
     image: registry.digitalocean.com/directdiary/mp-emailer:latest
     restart: always
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     environment:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
@@ -24,8 +24,6 @@ services:
       - MARIADB_DATABASE=${DB_NAME}
       - MARIADB_USER=${DB_USER}
       - MARIADB_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "3306:3306"
 
 volumes:
   mariadb-data:
