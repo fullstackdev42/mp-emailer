@@ -107,6 +107,13 @@ jobs:
             mkdir -p ~/mp-emailer
             cd ~/mp-emailer
             
+            # Create required directories
+            mkdir -p storage/logs
+            mkdir -p database/migrations
+            
+            # Ensure proper permissions
+            chmod -R 755 storage/logs
+            
             # Export environment variables for docker compose
             export APP_PORT=${APP_PORT:-8080}
             export DB_HOST=${DB_HOST:-db}
@@ -122,5 +129,11 @@ jobs:
             else
               git pull
             fi
+            
+            # Copy migrations if they exist in the repo
+            if [ -d database/migrations ]; then
+              cp -r database/migrations/* ~/mp-emailer/database/migrations/
+            fi
+            
             docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose up -d
