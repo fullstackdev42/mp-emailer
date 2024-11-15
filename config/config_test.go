@@ -151,7 +151,7 @@ func TestDefaultValues(t *testing.T) {
 
 	// Test default values
 	assert.Equal(t, false, cfg.AppDebug)
-	assert.Equal(t, "localhost", cfg.AppHost)
+	assert.Equal(t, "0.0.0.0", cfg.AppHost)
 	assert.Equal(t, 8080, cfg.AppPort)
 	assert.Equal(t, 3306, cfg.DBPort)
 	assert.Equal(t, "smtp", string(cfg.EmailProvider))
