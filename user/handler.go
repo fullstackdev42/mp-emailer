@@ -6,11 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func init() {
@@ -30,14 +27,10 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 
 // Handler for user routes
 type Handler struct {
-	Service         ServiceInterface
-	ErrorHandler    shared.ErrorHandlerInterface
-	FlashHandler    *shared.FlashHandler
-	Store           sessions.Store
-	SessionName     string
-	Config          *config.Config
-	TemplateManager shared.TemplateRendererInterface
-	Repo            RepositoryInterface
+	shared.BaseHandler
+	Service      ServiceInterface
+	FlashHandler *shared.FlashHandler
+	Repo         RepositoryInterface
 }
 
 // RegisterGET handler for the register page
@@ -68,7 +61,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 				"PasswordConfirm": params.PasswordConfirm,
 			},
 		}
-		return h.TemplateManager.Render(c.Response().Writer, "register", data, c)
+		return h.TemplateRenderer.Render(c.Response().Writer, "register", data, c)
 	}
 
 	_, err := h.Service.RegisterUser(params)
@@ -89,61 +82,47 @@ func (h *Handler) LoginGET(c echo.Context) error {
 		Title:   "Login",
 		Content: nil,
 	}
-	return h.TemplateManager.Render(c.Response().Writer, "login", pageData, c)
+	return h.TemplateRenderer.Render(c.Response().Writer, "login", pageData, c)
 }
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
 	params := new(LoginDTO)
-	h.Service.Info("Starting login attempt", "username", params.Username)
-
 	if err := c.Bind(params); err != nil {
-		h.Service.Error("Login binding error", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	user, err := h.Repo.FindByUsername(params.Username)
-	if err != nil || user == nil {
-		h.Service.Info("Login failed - user not found", "username", params.Username)
+	authenticated, user, err := h.Service.AuthenticateUser(params.Username, params.Password)
+	if err != nil || !authenticated {
 		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
 			Title: "Login",
 			Error: "Invalid username or password",
 		})
 	}
 
-	h.Service.Info("User found, attempting password verification", "username", params.Username)
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
-		h.Service.Info("Password verification failed", "username", params.Username)
-		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
-			Title: "Login",
-			Error: "Invalid username or password",
-		})
+	if err := h.createUserSession(c, user); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error managing session", http.StatusInternalServerError)
 	}
 
-	h.Service.Info("Password verified successfully", "username", params.Username)
+	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+	}
 
-	sess, err := h.Store.Get(c.Request(), h.SessionName)
+	return c.Redirect(http.StatusSeeOther, "/")
+}
+
+// createUserSession handles session creation for authenticated users
+func (h *Handler) createUserSession(c echo.Context, user *User) error {
+	sess, err := h.Store.Get(c.Request(), h.Config.SessionName)
 	if err != nil {
-		h.Service.Error("Session error", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		return err
 	}
+
 	sess.Values["user_id"] = user.ID
 	sess.Values["username"] = user.Username
 	sess.Values["authenticated"] = true
 
-	if err := sess.Save(c.Request(), c.Response().Writer); err != nil {
-		h.Service.Error("Session save error", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
-	}
-
-	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
-		h.Service.Error("Flash message error", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
-	}
-
-	h.Service.Info("Login successful", "username", user.Username)
-	return c.Redirect(http.StatusSeeOther, "/")
+	return sess.Save(c.Request(), c.Response().Writer)
 }
 
 // LogoutGET handler for the logout page

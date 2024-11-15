@@ -15,7 +15,7 @@ type FlashHandler struct {
 	Store        sessions.Store
 	SessionName  string
 	Logger       loggo.LoggerInterface
-	ErrorHandler *ErrorHandler
+	ErrorHandler ErrorHandlerInterface
 }
 
 // FlashHandlerParams for dependency injection
@@ -24,7 +24,7 @@ type FlashHandlerParams struct {
 	Store        sessions.Store
 	Config       *config.Config // To get SessionName
 	Logger       loggo.LoggerInterface
-	ErrorHandler *ErrorHandler
+	ErrorHandler ErrorHandlerInterface
 }
 
 // NewFlashHandler creates a new FlashHandler with dependency injection

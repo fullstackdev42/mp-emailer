@@ -62,3 +62,13 @@ func (d *LoggingDecorator) RegisterUser(dto *RegisterDTO) (*DTO, error) {
 	}
 	return user, err
 }
+
+// AuthenticateUser authenticates a user with logging
+func (d *LoggingDecorator) AuthenticateUser(username, password string) (bool, *User, error) {
+	d.logger.Info("Authenticating user", "username", username)
+	authenticated, user, err := d.service.AuthenticateUser(username, password)
+	if err != nil {
+		d.logger.Error("Failed to authenticate user", err, "username", username)
+	}
+	return authenticated, user, err
+}

@@ -17,6 +17,7 @@ type ServiceInterface interface {
 	GetUser(params *GetDTO) (*DTO, error)
 	RegisterUser(params *RegisterDTO) (*DTO, error)
 	LoginUser(params *LoginDTO) (string, error)
+	AuthenticateUser(username, password string) (bool, *User, error)
 }
 
 // Service is the implementation of the UserServiceInterface
@@ -84,29 +85,16 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 
 // LoginUser logs in a user and returns a JWT token
 func (s *Service) LoginUser(params *LoginDTO) (string, error) {
-	if params.Username == "" {
-		return "", fmt.Errorf("username cannot be empty")
-	}
-	if params.Password == "" {
-		return "", fmt.Errorf("password cannot be empty")
+	if len(params.Password) < 8 {
+		return "", fmt.Errorf("password too short")
 	}
 
 	if strings.Count(params.Username, "@") > 1 {
 		return "", fmt.Errorf("invalid username format")
 	}
 
-	if len(params.Password) < 8 {
-		return "", fmt.Errorf("password too short")
-	}
-
-	user, err := s.repo.FindByUsername(params.Username)
-	if err != nil {
-		return "", fmt.Errorf("invalid username or password")
-	}
-
-	// Compare the provided password with the stored hashed password
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password))
-	if err != nil {
+	authenticated, _, err := s.AuthenticateUser(params.Username, params.Password)
+	if err != nil || !authenticated {
 		return "", fmt.Errorf("invalid username or password")
 	}
 
@@ -141,4 +129,23 @@ func (s *Service) Warn(_ string, _ ...interface{}) {
 // Error logs an error message with the given parameters
 func (s *Service) Error(_ string, _ error, _ ...interface{}) {
 	// Empty implementation as logging is handled by the decorator
+}
+
+// AuthenticateUser validates the username and password combination
+func (s *Service) AuthenticateUser(username, password string) (bool, *User, error) {
+	if username == "" || password == "" {
+		return false, nil, fmt.Errorf("username and password required")
+	}
+
+	user, err := s.repo.FindByUsername(username)
+	if err != nil {
+		return false, nil, fmt.Errorf("authentication failed")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return false, nil, fmt.Errorf("authentication failed")
+	}
+
+	return true, user, nil
 }

@@ -1,9 +1,7 @@
 package user
 
 import (
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
 )
@@ -29,13 +27,10 @@ var Module = fx.Options(
 // HandlerParams for dependency injection
 type HandlerParams struct {
 	fx.In
-	Config          *config.Config
-	Service         ServiceInterface
-	Store           sessions.Store
-	TemplateManager shared.TemplateRendererInterface
-	Repo            RepositoryInterface
-	ErrorHandler    shared.ErrorHandlerInterface
-	FlashHandler    *shared.FlashHandler
+	shared.BaseHandlerParams
+	Service      ServiceInterface
+	FlashHandler *shared.FlashHandler
+	Repo         RepositoryInterface
 }
 
 // HandlerResult is the output struct for NewHandler
@@ -47,14 +42,10 @@ type HandlerResult struct {
 // NewHandler creates a new user handler
 func NewHandler(params HandlerParams) (HandlerResult, error) {
 	handler := &Handler{
-		Service:         params.Service,
-		Store:           params.Store,
-		SessionName:     params.Config.SessionName,
-		Config:          params.Config,
-		TemplateManager: params.TemplateManager,
-		Repo:            params.Repo,
-		ErrorHandler:    params.ErrorHandler,
-		FlashHandler:    params.FlashHandler,
+		BaseHandler:  shared.NewBaseHandler(params.BaseHandlerParams),
+		Service:      params.Service,
+		FlashHandler: params.FlashHandler,
+		Repo:         params.Repo,
 	}
 	return HandlerResult{Handler: handler}, nil
 }

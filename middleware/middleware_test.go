@@ -17,22 +17,25 @@ import (
 	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/fullstackdev42/mp-emailer/mocks"
 	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
+	mocksShared "github.com/fullstackdev42/mp-emailer/mocks/shared"
 	"github.com/fullstackdev42/mp-emailer/shared"
 )
 
 type MiddlewareTestSuite struct {
 	suite.Suite
-	echo       *echo.Echo
-	mockLogger *mocks.MockLoggerInterface
-	mockStore  *mocksMiddleware.MockSessionStore
-	manager    *middleware.Manager
-	config     *config.Config
+	echo           *echo.Echo
+	mockLogger     *mocks.MockLoggerInterface
+	mockStore      *mocksMiddleware.MockSessionStore
+	mockErrHandler *mocksShared.MockErrorHandlerInterface
+	manager        *middleware.Manager
+	config         *config.Config
 }
 
 func (s *MiddlewareTestSuite) SetupTest() {
 	s.echo = echo.New()
 	s.mockLogger = mocks.NewMockLoggerInterface(s.T())
 	s.mockStore = mocksMiddleware.NewMockSessionStore(s.T())
+	s.mockErrHandler = mocksShared.NewMockErrorHandlerInterface(s.T())
 
 	// Add this line to register UUID type with gob
 	gob.Register(uuid.UUID{})
@@ -48,6 +51,7 @@ func (s *MiddlewareTestSuite) SetupTest() {
 		SessionStore: s.mockStore,
 		Logger:       s.mockLogger,
 		Cfg:          s.config,
+		ErrorHandler: s.mockErrHandler,
 	})
 	s.Require().NoError(err)
 }
@@ -106,6 +110,7 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		// Setup
 		mockStore := new(mocksMiddleware.MockSessionStore)
 		mockLogger := new(mocks.MockLoggerInterface)
+		mockErrHandler := new(mocksShared.MockErrorHandlerInterface)
 
 		session := sessions.NewSession(mockStore, "test-session")
 
@@ -117,7 +122,12 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+		middleware := middleware.NewSessionsMiddleware(
+			mockStore,
+			mockLogger,
+			"test-session",
+			mockErrHandler,
+		)
 
 		// Execute
 		err := middleware(func(c echo.Context) error {
@@ -135,17 +145,29 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		// Setup
 		mockStore := new(mocksMiddleware.MockSessionStore)
 		mockLogger := new(mocks.MockLoggerInterface)
+		mockErrHandler := new(mocksShared.MockErrorHandlerInterface)
 
 		expectedErr := errors.New("session error")
 		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
 		mockStore.On("Get", mock.Anything, "test-session").Return(nil, expectedErr)
-		mockLogger.On("Error", "Failed to get session", expectedErr).Return()
+
+		mockErrHandler.On("HandleHTTPError",
+			mock.Anything,
+			expectedErr,
+			"Error getting session",
+			http.StatusInternalServerError,
+		).Return(echo.NewHTTPError(http.StatusInternalServerError))
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+		middleware := middleware.NewSessionsMiddleware(
+			mockStore,
+			mockLogger,
+			"test-session",
+			mockErrHandler,
+		)
 
 		// Execute
 		handlerCalled := false
@@ -166,6 +188,7 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		// Setup
 		mockStore := new(mocksMiddleware.MockSessionStore)
 		mockLogger := new(mocks.MockLoggerInterface)
+		mockErrHandler := new(mocksShared.MockErrorHandlerInterface)
 
 		session := sessions.NewSession(mockStore, "test-session")
 		expectedErr := errors.New("save error")
@@ -174,13 +197,23 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		mockStore.On("Save", mock.Anything, mock.Anything, session).Return(expectedErr)
 		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
 
-		mockLogger.On("Error", "Failed to save session", expectedErr).Return()
+		mockErrHandler.On("HandleHTTPError",
+			mock.Anything,
+			expectedErr,
+			"Error saving session",
+			http.StatusInternalServerError,
+		).Return(echo.NewHTTPError(http.StatusInternalServerError))
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(mockStore, mockLogger, "test-session")
+		middleware := middleware.NewSessionsMiddleware(
+			mockStore,
+			mockLogger,
+			"test-session",
+			mockErrHandler,
+		)
 
 		// Execute
 		handlerCalled := false

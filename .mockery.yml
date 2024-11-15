@@ -43,6 +43,7 @@ packages:
   github.com/fullstackdev42/mp-emailer/user:
     interfaces:
       RepositoryInterface:
+      ServiceInterface:
 
   github.com/fullstackdev42/mp-emailer/middleware:
     interfaces:

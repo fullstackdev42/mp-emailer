@@ -20,6 +20,72 @@ func (_m *MockServiceInterface) EXPECT() *MockServiceInterface_Expecter {
 	return &MockServiceInterface_Expecter{mock: &_m.Mock}
 }
 
+// AuthenticateUser provides a mock function with given fields: username, password
+func (_m *MockServiceInterface) AuthenticateUser(username string, password string) (bool, *user.User, error) {
+	ret := _m.Called(username, password)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthenticateUser")
+	}
+
+	var r0 bool
+	var r1 *user.User
+	var r2 error
+	if rf, ok := ret.Get(0).(func(string, string) (bool, *user.User, error)); ok {
+		return rf(username, password)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = rf(username, password)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) *user.User); ok {
+		r1 = rf(username, password)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*user.User)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(string, string) error); ok {
+		r2 = rf(username, password)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockServiceInterface_AuthenticateUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthenticateUser'
+type MockServiceInterface_AuthenticateUser_Call struct {
+	*mock.Call
+}
+
+// AuthenticateUser is a helper method to define mock.On call
+//   - username string
+//   - password string
+func (_e *MockServiceInterface_Expecter) AuthenticateUser(username interface{}, password interface{}) *MockServiceInterface_AuthenticateUser_Call {
+	return &MockServiceInterface_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", username, password)}
+}
+
+func (_c *MockServiceInterface_AuthenticateUser_Call) Run(run func(username string, password string)) *MockServiceInterface_AuthenticateUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockServiceInterface_AuthenticateUser_Call) Return(_a0 bool, _a1 *user.User, _a2 error) *MockServiceInterface_AuthenticateUser_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *MockServiceInterface_AuthenticateUser_Call) RunAndReturn(run func(string, string) (bool, *user.User, error)) *MockServiceInterface_AuthenticateUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Error provides a mock function with given fields: message, err, params
 func (_m *MockServiceInterface) Error(message string, err error, params ...interface{}) {
 	var _ca []interface{}

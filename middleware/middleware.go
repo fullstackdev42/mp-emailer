@@ -32,6 +32,7 @@ type Manager struct {
 	sessionStore sessions.Store
 	logger       loggo.LoggerInterface
 	cfg          *config.Config
+	errorHandler shared.ErrorHandlerInterface
 }
 
 // ManagerParams for dependency injection
@@ -40,6 +41,7 @@ type ManagerParams struct {
 	SessionStore sessions.Store
 	Logger       loggo.LoggerInterface
 	Cfg          *config.Config
+	ErrorHandler shared.ErrorHandlerInterface
 }
 
 // NewManager creates a new middleware manager
@@ -53,11 +55,15 @@ func NewManager(params ManagerParams) (*Manager, error) {
 	if params.Cfg == nil {
 		return nil, errors.New("config cannot be nil")
 	}
+	if params.ErrorHandler == nil {
+		return nil, errors.New("error handler cannot be nil")
+	}
 
 	return &Manager{
 		sessionStore: params.SessionStore,
 		logger:       params.Logger,
 		cfg:          params.Cfg,
+		errorHandler: params.ErrorHandler,
 	}, nil
 }
 
@@ -89,7 +95,12 @@ func (m *Manager) registerContextMiddleware(e *echo.Echo) {
 
 // SessionsMiddleware sets up session middleware
 func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
-	return NewSessionsMiddleware(m.sessionStore, m.logger, m.cfg.SessionName)
+	return NewSessionsMiddleware(
+		m.sessionStore,
+		m.logger,
+		m.cfg.SessionName,
+		m.errorHandler,
+	)
 }
 
 // registerLogging configures request logging

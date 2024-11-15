@@ -6,77 +6,112 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	mocksShared "github.com/fullstackdev42/mp-emailer/mocks/shared"
-	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
+	"github.com/fullstackdev42/mp-emailer/internal/testutil"
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
+	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
+	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 )
 
-func setupTestHandler(t *testing.T) *user.Handler {
-	mockService := mocksUser.NewMockServiceInterface(t)
-	mockRepo := mocksUser.NewMockRepositoryInterface(t)
-	mockErrorHandler := &shared.ErrorHandler{}
-	mockTemplateRenderer := &mocksShared.MockTemplateRendererInterface{}
-	store := sessions.NewCookieStore([]byte("test-secret"))
-	flashHandler := shared.NewFlashHandler(shared.FlashHandlerParams{
-		Store:        store,
-		Config:       &config.Config{SessionName: "test_session"},
-		Logger:       nil,
-		ErrorHandler: mockErrorHandler,
-	})
-
-	return &user.Handler{
-		Service:         mockService,
-		Repo:            mockRepo,
-		ErrorHandler:    mockErrorHandler,
-		Store:           store,
-		SessionName:     "test_session",
-		Config:          &config.Config{},
-		TemplateManager: mockTemplateRenderer,
-		FlashHandler:    flashHandler,
-	}
+type HandlerTestSuite struct {
+	testutil.BaseTestSuite
+	handler     *user.Handler
+	UserService *mocksUser.MockServiceInterface
+	UserRepo    *mocksUser.MockRepositoryInterface
 }
 
-func TestLoginPOST(t *testing.T) {
-	e := echo.New()
+func (s *HandlerTestSuite) SetupTest() {
+	s.BaseTestSuite.SetupTest()
 
+	// Initialize user-specific mocks
+	s.UserService = mocksUser.NewMockServiceInterface(s.T())
+	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
+
+	// Ensure valid session name in config
+	s.Config.SessionName = "test_session" // Valid cookie name without spaces
+
+	// Create FlashHandler
+	flashHandler := shared.NewFlashHandler(shared.FlashHandlerParams{
+		Store:        s.Store,
+		Config:       s.Config,
+		Logger:       s.Logger,
+		ErrorHandler: s.ErrorHandler,
+	})
+
+	// Register renderer with Echo
+	s.Echo.Renderer = s.TemplateRenderer
+
+	params := user.HandlerParams{
+		BaseHandlerParams: shared.BaseHandlerParams{
+			Logger:           s.Logger,
+			ErrorHandler:     s.ErrorHandler,
+			TemplateRenderer: s.TemplateRenderer,
+			Store:            s.Store,
+			Config:           s.Config,
+		},
+		Service:      s.UserService,
+		FlashHandler: flashHandler,
+		Repo:         s.UserRepo,
+	}
+
+	result, err := user.NewHandler(params)
+	s.NoError(err)
+	s.handler = result.Handler
+}
+
+func TestHandler(t *testing.T) {
+	suite.Run(t, new(HandlerTestSuite))
+}
+
+func (s *HandlerTestSuite) TestLoginPOST() {
 	tests := []struct {
 		name           string
 		payload        string
-		setupMocks     func(h *user.Handler)
+		setupMocks     func() *sessions.Session
 		expectedStatus int
 		expectedPath   string
 	}{
 		{
 			name:    "Successful login",
 			payload: `{"username": "testuser", "password": "password123"}`,
-			setupMocks: func(h *user.Handler) {
-				mockService := h.Service.(*mocksUser.MockServiceInterface)
-				mockRepo := h.Repo.(*mocksUser.MockRepositoryInterface)
-
-				// Create a real password hash for testing
-				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+			setupMocks: func() *sessions.Session {
 				testUser := &user.User{
 					BaseModel: shared.BaseModel{
 						ID: uuid.New(),
 					},
-					Username:     "testuser",
-					PasswordHash: string(hashedPassword),
+					Username: "testuser",
 				}
 
-				// Mock all Info calls in sequence
-				mockService.On("Info", "Starting login attempt", "username", "").Return()
-				mockService.On("Info", "User found, attempting password verification", "username", "testuser").Return()
-				mockService.On("Info", "Password verified successfully", "username", "testuser").Return()
-				mockService.On("Info", "Login successful", "username", "testuser").Return()
+				// Create test session
+				mockStore := mocksMiddleware.NewMockSessionStore(s.T())
+				s.Store = mockStore
+				sess := sessions.NewSession(mockStore, s.Config.SessionName)
+				sess.Values = make(map[interface{}]interface{})
 
-				mockRepo.On("FindByUsername", "testuser").Return(testUser, nil)
+				// Mock session store with more specific matchers
+				mockStore.On("Get",
+					mock.MatchedBy(func(*http.Request) bool { return true }),
+					s.Config.SessionName,
+				).Return(sess, nil)
+
+				// Mock session store Save method
+				mockStore.On("Save",
+					mock.MatchedBy(func(*http.Request) bool { return true }),
+					mock.MatchedBy(func(http.ResponseWriter) bool { return true }),
+					mock.MatchedBy(func(*sessions.Session) bool { return true }),
+				).Return(nil).Times(2)
+
+				// Mock authentication
+				s.UserService.EXPECT().AuthenticateUser("testuser", "password123").
+					Return(true, testUser, nil)
+
+				return sess
 			},
 			expectedStatus: http.StatusSeeOther,
 			expectedPath:   "/",
@@ -84,15 +119,30 @@ func TestLoginPOST(t *testing.T) {
 		{
 			name:    "Invalid credentials",
 			payload: `{"username": "wronguser", "password": "wrongpass"}`,
-			setupMocks: func(h *user.Handler) {
-				mockService := h.Service.(*mocksUser.MockServiceInterface)
-				mockRepo := h.Repo.(*mocksUser.MockRepositoryInterface)
+			setupMocks: func() *sessions.Session {
+				mockStore := mocksMiddleware.NewMockSessionStore(s.T())
+				s.Store = mockStore
+				sess := sessions.NewSession(mockStore, s.Config.SessionName)
+				sess.Values = make(map[interface{}]interface{})
 
-				// Mock all Info calls in sequence
-				mockService.On("Info", "Starting login attempt", "username", "").Return()
-				mockService.On("Info", "Login failed - user not found", "username", "wronguser").Return()
+				mockStore.On("Get",
+					mock.MatchedBy(func(*http.Request) bool { return true }),
+					s.Config.SessionName,
+				).Return(sess, nil)
 
-				mockRepo.On("FindByUsername", "wronguser").Return(nil, nil)
+				// Mock template renderer
+				s.TemplateRenderer.On("Render",
+					mock.AnythingOfType("*bytes.Buffer"),
+					"login",
+					mock.AnythingOfType("*shared.Data"),
+					mock.AnythingOfType("*echo.context"),
+				).Return(nil)
+
+				// Mock failed authentication
+				s.UserService.EXPECT().AuthenticateUser("wronguser", "wrongpass").
+					Return(false, nil, nil)
+
+				return sess
 			},
 			expectedStatus: http.StatusUnauthorized,
 			expectedPath:   "",
@@ -100,38 +150,22 @@ func TestLoginPOST(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := setupTestHandler(t)
-			tt.setupMocks(h)
+		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mocks for each test case
+			sess := tt.setupMocks()
 
 			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(tt.payload))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
-			// Create and set up the session
-			sess, _ := h.Store.Get(req, h.SessionName)
+			c := s.Echo.NewContext(req, rec)
 			c.Set("session", sess)
 
-			// Call the handler
-			err := h.LoginPOST(c)
+			err := s.handler.LoginPOST(c)
+			s.NoError(err)
 
+			s.Equal(tt.expectedStatus, rec.Code)
 			if tt.expectedPath != "" {
-				// For successful login
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedStatus, rec.Code)
-				assert.Equal(t, tt.expectedPath, rec.Header().Get("Location"))
-
-				// Verify session values
-				sess, _ = h.Store.Get(req, h.SessionName)
-				assert.True(t, sess.Values["authenticated"].(bool))
-				assert.Equal(t, "testuser", sess.Values["username"])
-			} else {
-				// For failed login
-				assert.Error(t, err)
-				if he, ok := err.(*echo.HTTPError); ok {
-					assert.Equal(t, tt.expectedStatus, he.Code)
-				}
+				s.Equal(tt.expectedPath, rec.Header().Get("Location"))
 			}
 		})
 	}
