@@ -70,6 +70,7 @@ jobs:
           envs: REGISTRY,IMAGE_NAME
           script: |
             cd ~/mp-emailer
-            docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose down
+            git pull
+            docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose up -d
