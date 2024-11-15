@@ -8,6 +8,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 func init() {
@@ -28,9 +29,30 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 // Handler for user routes
 type Handler struct {
 	shared.BaseHandler
-	Service      ServiceInterface
-	FlashHandler *shared.FlashHandler
-	Repo         RepositoryInterface
+	Service        ServiceInterface
+	FlashHandler   shared.FlashHandlerInterface
+	Repo           RepositoryInterface
+	SessionManager SessionManager
+}
+
+type HandlerParams struct {
+	fx.In
+	shared.BaseHandlerParams
+	Service        ServiceInterface
+	FlashHandler   shared.FlashHandlerInterface
+	Repo           RepositoryInterface
+	SessionManager SessionManager
+}
+
+// NewHandler creates a new user handler
+func NewHandler(params HandlerParams) *Handler {
+	return &Handler{
+		BaseHandler:    shared.NewBaseHandler(params.BaseHandlerParams),
+		Service:        params.Service,
+		FlashHandler:   params.FlashHandler,
+		Repo:           params.Repo,
+		SessionManager: params.SessionManager,
+	}
 }
 
 // RegisterGET handler for the register page
@@ -87,48 +109,56 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
+	sess, err := h.SessionManager.GetSession(c)
+	if err != nil {
+		if err := h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError); err != nil {
+			return err
+		}
+		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
+	}
+
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
 	authenticated, user, err := h.Service.AuthenticateUser(params.Username, params.Password)
-	if err != nil || !authenticated {
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
+	}
+
+	if !authenticated || user == nil {
 		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
 			Title: "Login",
 			Error: "Invalid username or password",
 		})
 	}
 
-	if err := h.createUserSession(c, user); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error managing session", http.StatusInternalServerError)
+	h.SessionManager.SetSessionValues(sess, user)
+
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
 	}
 
 	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+		h.Logger.Error("Failed to set flash message", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
-// createUserSession handles session creation for authenticated users
-func (h *Handler) createUserSession(c echo.Context, user *User) error {
-	sess, err := h.Store.Get(c.Request(), h.Config.SessionName)
-	if err != nil {
-		return err
-	}
-
-	sess.Values["user_id"] = user.ID
-	sess.Values["username"] = user.Username
-	sess.Values["authenticated"] = true
-
-	return sess.Save(c.Request(), c.Response().Writer)
-}
-
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
-	if err := h.FlashHandler.ClearSession(c); err != nil {
-		return err
+	sess, err := h.SessionManager.GetSession(c)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
 	}
+
+	h.SessionManager.ClearSession(sess)
+
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", http.StatusInternalServerError)
+	}
+
 	return c.Redirect(http.StatusSeeOther, "/")
 }

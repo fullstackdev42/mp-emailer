@@ -10,6 +10,12 @@ import (
 	"go.uber.org/fx"
 )
 
+// FlashHandlerInterface defines the methods that a flash handler must implement
+type FlashHandlerInterface interface {
+	SetFlashAndSaveSession(c echo.Context, message string) error
+	ClearSession(c echo.Context) error
+}
+
 // FlashHandler handles flash messages and session operations
 type FlashHandler struct {
 	Store        sessions.Store
@@ -59,3 +65,6 @@ func (f *FlashHandler) ClearSession(c echo.Context) error {
 	sess.Options.MaxAge = -1
 	return sess.Save(c.Request(), c.Response())
 }
+
+// Ensure FlashHandler implements FlashHandlerInterface
+var _ FlashHandlerInterface = (*FlashHandler)(nil)

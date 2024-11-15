@@ -1,7 +1,8 @@
 package user
 
 import (
-	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"go.uber.org/fx"
 )
@@ -15,6 +16,7 @@ var Module = fx.Options(
 			fx.As(new(ServiceInterface)),
 		),
 		NewHandler,
+		ProvideSessionManager,
 	),
 	// Add module-level decoration
 	fx.Decorate(
@@ -24,28 +26,13 @@ var Module = fx.Options(
 	),
 )
 
-// HandlerParams for dependency injection
-type HandlerParams struct {
-	fx.In
-	shared.BaseHandlerParams
-	Service      ServiceInterface
-	FlashHandler *shared.FlashHandler
-	Repo         RepositoryInterface
-}
-
 // HandlerResult is the output struct for NewHandler
 type HandlerResult struct {
 	fx.Out
 	Handler *Handler
 }
 
-// NewHandler creates a new user handler
-func NewHandler(params HandlerParams) (HandlerResult, error) {
-	handler := &Handler{
-		BaseHandler:  shared.NewBaseHandler(params.BaseHandlerParams),
-		Service:      params.Service,
-		FlashHandler: params.FlashHandler,
-		Repo:         params.Repo,
-	}
-	return HandlerResult{Handler: handler}, nil
+// Provide session manager
+func ProvideSessionManager(store sessions.Store, cfg *config.Config) SessionManager {
+	return NewSessionManager(store, cfg)
 }

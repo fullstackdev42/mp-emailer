@@ -39,11 +39,13 @@ packages:
     interfaces:
       ErrorHandlerInterface:
       TemplateRendererInterface:
+      FlashHandlerInterface:
 
   github.com/fullstackdev42/mp-emailer/user:
     interfaces:
       RepositoryInterface:
       ServiceInterface:
+      SessionManager:
 
   github.com/fullstackdev42/mp-emailer/middleware:
     interfaces:

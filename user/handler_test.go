@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,28 +16,26 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
 	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
 )
 
 type HandlerTestSuite struct {
 	testutil.BaseTestSuite
-	handler     *user.Handler
-	UserService *mocksUser.MockServiceInterface
-	UserRepo    *mocksUser.MockRepositoryInterface
+	handler        *user.Handler
+	UserService    *mocksUser.MockServiceInterface
+	UserRepo       *mocksUser.MockRepositoryInterface
+	SessionManager *mocksUser.MockSessionManager
 }
 
 func (s *HandlerTestSuite) SetupTest() {
 	s.BaseTestSuite.SetupTest()
 
-	// Initialize user-specific mocks
 	s.UserService = mocksUser.NewMockServiceInterface(s.T())
 	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
+	s.SessionManager = mocksUser.NewMockSessionManager(s.T())
 
-	// Ensure valid session name in config
-	s.Config.SessionName = "test_session" // Valid cookie name without spaces
+	s.Config.SessionName = "test_session"
 
-	// Create FlashHandler
 	flashHandler := shared.NewFlashHandler(shared.FlashHandlerParams{
 		Store:        s.Store,
 		Config:       s.Config,
@@ -44,7 +43,6 @@ func (s *HandlerTestSuite) SetupTest() {
 		ErrorHandler: s.ErrorHandler,
 	})
 
-	// Register renderer with Echo
 	s.Echo.Renderer = s.TemplateRenderer
 
 	params := user.HandlerParams{
@@ -55,24 +53,30 @@ func (s *HandlerTestSuite) SetupTest() {
 			Store:            s.Store,
 			Config:           s.Config,
 		},
-		Service:      s.UserService,
-		FlashHandler: flashHandler,
-		Repo:         s.UserRepo,
+		Service:        s.UserService,
+		FlashHandler:   flashHandler,
+		Repo:           s.UserRepo,
+		SessionManager: s.SessionManager,
 	}
 
-	result, err := user.NewHandler(params)
-	s.NoError(err)
-	s.handler = result.Handler
+	s.handler = user.NewHandler(params)
 }
 
 func TestHandler(t *testing.T) {
 	suite.Run(t, new(HandlerTestSuite))
 }
 
+func (s *HandlerTestSuite) debugResponse(rec *httptest.ResponseRecorder) {
+	s.T().Logf("Response Status: %d", rec.Code)
+	s.T().Logf("Response Headers: %v", rec.Header())
+	s.T().Logf("Response Body: %s", rec.Body.String())
+}
+
 func (s *HandlerTestSuite) TestLoginPOST() {
 	tests := []struct {
-		name           string
-		payload        string
+		name    string
+		payload string
+
 		setupMocks     func() *sessions.Session
 		expectedStatus int
 		expectedPath   string
@@ -81,6 +85,9 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			name:    "Successful login",
 			payload: `{"username": "testuser", "password": "password123"}`,
 			setupMocks: func() *sessions.Session {
+				sess := sessions.NewSession(s.Store, "test_session")
+				sess.Values = make(map[interface{}]interface{})
+
 				testUser := &user.User{
 					BaseModel: shared.BaseModel{
 						ID: uuid.New(),
@@ -88,26 +95,10 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					Username: "testuser",
 				}
 
-				// Create test session
-				mockStore := mocksMiddleware.NewMockSessionStore(s.T())
-				s.Store = mockStore
-				sess := sessions.NewSession(mockStore, s.Config.SessionName)
-				sess.Values = make(map[interface{}]interface{})
+				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
+				s.SessionManager.On("SetSessionValues", sess, testUser)
+				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(nil)
 
-				// Mock session store with more specific matchers
-				mockStore.On("Get",
-					mock.MatchedBy(func(*http.Request) bool { return true }),
-					s.Config.SessionName,
-				).Return(sess, nil)
-
-				// Mock session store Save method
-				mockStore.On("Save",
-					mock.MatchedBy(func(*http.Request) bool { return true }),
-					mock.MatchedBy(func(http.ResponseWriter) bool { return true }),
-					mock.MatchedBy(func(*sessions.Session) bool { return true }),
-				).Return(nil).Times(2)
-
-				// Mock authentication
 				s.UserService.EXPECT().AuthenticateUser("testuser", "password123").
 					Return(true, testUser, nil)
 
@@ -117,20 +108,33 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			expectedPath:   "/",
 		},
 		{
+			name:    "Session store error",
+			payload: `{"username": "testuser", "password": "password123"}`,
+			setupMocks: func() *sessions.Session {
+				s.SessionManager.On("GetSession", mock.Anything).
+					Return(nil, errors.New("session store error"))
+
+				s.ErrorHandler.On("HandleHTTPError",
+					mock.MatchedBy(func(c echo.Context) bool { return true }),
+					mock.MatchedBy(func(err error) bool { return err.Error() == "session store error" }),
+					"Error getting session",
+					http.StatusInternalServerError,
+				).Return(echo.NewHTTPError(http.StatusInternalServerError))
+
+				return nil
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedPath:   "",
+		},
+		{
 			name:    "Invalid credentials",
 			payload: `{"username": "wronguser", "password": "wrongpass"}`,
 			setupMocks: func() *sessions.Session {
-				mockStore := mocksMiddleware.NewMockSessionStore(s.T())
-				s.Store = mockStore
-				sess := sessions.NewSession(mockStore, s.Config.SessionName)
+				sess := sessions.NewSession(s.Store, "test_session")
 				sess.Values = make(map[interface{}]interface{})
 
-				mockStore.On("Get",
-					mock.MatchedBy(func(*http.Request) bool { return true }),
-					s.Config.SessionName,
-				).Return(sess, nil)
+				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
 
-				// Mock template renderer
 				s.TemplateRenderer.On("Render",
 					mock.AnythingOfType("*bytes.Buffer"),
 					"login",
@@ -138,13 +142,51 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					mock.AnythingOfType("*echo.context"),
 				).Return(nil)
 
-				// Mock failed authentication
 				s.UserService.EXPECT().AuthenticateUser("wronguser", "wrongpass").
 					Return(false, nil, nil)
 
 				return sess
 			},
 			expectedStatus: http.StatusUnauthorized,
+			expectedPath:   "",
+		},
+		{
+			name:    "Session save error",
+			payload: `{"username": "testuser", "password": "password123"}`,
+			setupMocks: func() *sessions.Session {
+				sess := sessions.NewSession(s.Store, "test_session")
+				sess.Values = make(map[interface{}]interface{})
+
+				testUser := &user.User{Username: "testuser"}
+
+				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
+				s.SessionManager.On("SetSessionValues", sess, testUser)
+				s.SessionManager.On("SaveSession", mock.Anything, sess).
+					Return(errors.New("failed to save session"))
+
+				s.UserService.EXPECT().AuthenticateUser("testuser", "password123").
+					Return(true, testUser, nil)
+
+				s.ErrorHandler.On("HandleHTTPError",
+					mock.MatchedBy(func(c echo.Context) bool {
+						s.T().Logf("Matching context: %+v", c)
+						return true
+					}),
+					mock.MatchedBy(func(err error) bool {
+						s.T().Logf("Matching error: %v", err)
+						return true
+					}),
+					mock.AnythingOfType("string"),
+					http.StatusInternalServerError,
+				).Run(func(args mock.Arguments) {
+					// Set the status code on the response
+					c := args.Get(0).(echo.Context)
+					c.Response().Status = http.StatusInternalServerError
+				}).Return(echo.NewHTTPError(http.StatusInternalServerError))
+
+				return sess
+			},
+			expectedStatus: http.StatusInternalServerError,
 			expectedPath:   "",
 		},
 	}
@@ -154,19 +196,38 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			s.SetupTest() // Reset mocks for each test case
 			sess := tt.setupMocks()
 
+			// Create request with JSON payload
 			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(tt.payload))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
+
+			// Create Echo context
 			c := s.Echo.NewContext(req, rec)
-			c.Set("session", sess)
+			if sess != nil {
+				c.Set("session", sess)
+			}
 
+			// Execute handler
 			err := s.handler.LoginPOST(c)
-			s.NoError(err)
+			if err != nil {
+				s.T().Logf("Handler returned error: %v", err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					s.T().Logf("HTTP Error: code=%d, message=%v", he.Code, he.Message)
+					rec.Code = he.Code // Set the status code from the error
+				}
+			}
 
+			// Debug response
+			s.debugResponse(rec)
+
+			// Verify response
 			s.Equal(tt.expectedStatus, rec.Code)
 			if tt.expectedPath != "" {
 				s.Equal(tt.expectedPath, rec.Header().Get("Location"))
 			}
+
+			// Verify all mocks
+			s.SessionManager.AssertExpectations(s.T())
 		})
 	}
 }
