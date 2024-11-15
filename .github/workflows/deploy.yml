@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # Setup SSH Keys and known_hosts
       - name: Setup SSH Keys and known_hosts
