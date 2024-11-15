@@ -22,15 +22,6 @@ jobs:
           ssh-private-key: |
             ${{ secrets.DO_SSH_KEY }}
 
-      # Cache npm dependencies
-      - name: Cache npm dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-cache-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-cache-
-
       # Cache Go modules
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -40,17 +31,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-mod-
 
-      # Cache doctl
-      - name: Cache doctl
-        id: cache-doctl
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/doctl
-          key: ${{ runner.os }}-doctl-${{ env.DOCTL_VERSION }}
-
-      # Install doctl only if not cached
+      # Install doctl
       - name: Install doctl
-        if: steps.cache-doctl.outputs.cache-hit != 'true'
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DOAT }}
