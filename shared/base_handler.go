@@ -41,7 +41,7 @@ func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 }
 
 // DefaultErrorMapper provides default error mapping logic
-func DefaultErrorMapper(err error) (int, string) {
+func DefaultErrorMapper(_ error) (int, string) {
 	return http.StatusInternalServerError, "Internal Server Error"
 }
 
