@@ -97,23 +97,19 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER }}
+          MAILGUN_DOMAIN: ${{ vars.MAILGUN_DOMAIN }}
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
         with:
           host: ${{ vars.DO_HOST }}
           username: ${{ vars.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           port: 22
-          envs: REGISTRY,IMAGE_NAME,APP_PORT,DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,SESSION_SECRET,JWT_SECRET
+          envs: REGISTRY,IMAGE_NAME,APP_PORT,DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,SESSION_SECRET,JWT_SECRET,EMAIL_PROVIDER,MAILGUN_DOMAIN,MAILGUN_API_KEY
           script: |
             mkdir -p ~/mp-emailer
             cd ~/mp-emailer
-            
-            # Create required directories
-            mkdir -p storage/logs
-            mkdir -p database/migrations
-            
-            # Ensure proper permissions
-            chmod -R 755 storage/logs
-            
+                        
             # Export environment variables for docker compose
             export APP_PORT=${APP_PORT:-8080}
             export DB_HOST=${DB_HOST:-db}
@@ -122,6 +118,12 @@ jobs:
             export DB_NAME=${DB_NAME}
             export SESSION_SECRET=${SESSION_SECRET}
             export JWT_SECRET=${JWT_SECRET}
+            export EMAIL_PROVIDER=${EMAIL_PROVIDER:-smtp}
+            export MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+            export MAILGUN_API_KEY=${MAILGUN_API_KEY}
+
+            echo "EMAIL_PROVIDER=${EMAIL_PROVIDER}"
+            echo "MAILGUN_DOMAIN=${MAILGUN_DOMAIN}"
             
             docker compose down || true
             if [ ! -d .git ]; then
@@ -129,11 +131,6 @@ jobs:
             else
               git pull
             fi
-            
-            # Copy migrations if they exist in the repo
-            if [ -d database/migrations ]; then
-              cp -r database/migrations/* ~/mp-emailer/database/migrations/
-            fi
-            
+                        
             docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose up -d

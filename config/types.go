@@ -16,17 +16,17 @@ type Config struct {
 	JWTSecret                   string        `env:"JWT_SECRET,required"`
 	LogFile                     string        `env:"LOG_FILE" envDefault:"storage/logs/app.log"`
 	LogLevel                    string        `env:"LOG_LEVEL" envDefault:"info"`
-	MailgunAPIKey               string        `env:"MAILGUN_API_KEY"`
-	MailgunDomain               string        `env:"MAILGUN_DOMAIN"`
+	MailgunAPIKey               string        `env:"MAILGUN_API_KEY" envDefault:""`
+	MailgunDomain               string        `env:"MAILGUN_DOMAIN" envDefault:""`
 	MigrationsPath              string        `env:"MIGRATIONS_PATH" envDefault:"database/migrations"`
-	RepresentativeLookupBaseURL string        `env:"REPRESENTATIVE_LOOKUP_BASE_URL"`
+	RepresentativeLookupBaseURL string        `env:"REPRESENTATIVE_LOOKUP_BASE_URL" envDefault:"https://represent.opennorth.ca"`
 	SessionName                 string        `env:"SESSION_NAME" envDefault:"mp_emailer_session"`
 	SessionSecret               string        `env:"SESSION_SECRET,required"`
-	SMTPFrom                    string        `env:"SMTP_FROM"`
-	SMTPHost                    string        `env:"SMTP_HOST"`
-	SMTPPassword                string        `env:"SMTP_PASSWORD"`
+	SMTPFrom                    string        `env:"SMTP_FROM" envDefault:"noreply@localhost"`
+	SMTPHost                    string        `env:"SMTP_HOST" envDefault:"localhost"`
+	SMTPPassword                string        `env:"SMTP_PASSWORD" envDefault:""`
 	SMTPPort                    int           `env:"SMTP_PORT" envDefault:"587"`
-	SMTPUsername                string        `env:"SMTP_USERNAME"`
+	SMTPUsername                string        `env:"SMTP_USERNAME" envDefault:""`
 }
 
 // Log is used for logging configuration without sensitive fields
