@@ -106,6 +106,16 @@ jobs:
           script: |
             mkdir -p ~/mp-emailer
             cd ~/mp-emailer
+            
+            # Export environment variables for docker compose
+            export APP_PORT=${APP_PORT:-8080}
+            export DB_HOST=${DB_HOST:-db}
+            export DB_USER=${DB_USER}
+            export DB_PASSWORD=${DB_PASSWORD}
+            export DB_NAME=${DB_NAME}
+            export SESSION_SECRET=${SESSION_SECRET}
+            export JWT_SECRET=${JWT_SECRET}
+            
             docker compose down || true
             if [ ! -d .git ]; then
               git clone git@github.com:fullstackdev42/mp-emailer.git .
