@@ -61,13 +61,13 @@ jobs:
         run: |
           git diff --quiet HEAD^ HEAD \
             -- '*.go' \
-            -- 'database/migrations/*' \
-            -- 'web/public/**' \
+            -- 'database/migrations/*.sql' \
+            -- 'database/migrations/*.go' \
             -- 'web/templates/**' \
             -- 'web/src/**' \
-            -- '*.yml' '*.yaml' \
+            -- 'docker-compose.yml' \
             -- 'Dockerfile' \
-            -- 'go.*' \
+            -- 'go.mod' 'go.sum' \
             ':!.github/workflows' && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
 
       # Test before building
