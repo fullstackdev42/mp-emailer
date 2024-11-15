@@ -40,9 +40,10 @@ jobs:
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_KEY }}
+          key: ${{ secrets.DO_SSH_KEY_BASE64 }}
+          envs: [REGISTRY,IMAGE_NAME]
           script: |
-            doctl registry login
+            cd ~/mp-emailer
             docker pull $REGISTRY/$IMAGE_NAME:latest
             docker compose down
             docker compose up -d
