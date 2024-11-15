@@ -59,8 +59,22 @@ jobs:
       - name: Check for app changes
         id: check_changes
         run: |
-          # Check if any app-related files changed (excluding workflow files)
-          git diff --quiet HEAD^ HEAD -- . ':!.github/workflows' && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+          git diff --quiet HEAD^ HEAD \
+            -- '*.go' \
+            -- 'database/migrations/*' \
+            -- 'web/public/**' \
+            -- 'web/templates/**' \
+            -- 'web/src/**' \
+            -- '*.yml' '*.yaml' \
+            -- 'Dockerfile' \
+            -- 'go.*' \
+            ':!.github/workflows' && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      # Test before building
+      - name: Run tests
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          go test ./... -v
 
       # Build and push image only if there are changes
       - name: Build and push
