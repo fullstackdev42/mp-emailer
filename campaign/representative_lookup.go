@@ -9,6 +9,7 @@ import (
 
 	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
+	"go.uber.org/fx"
 )
 
 // RepresentativeLookupServiceInterface defines the interface for representative lookup
@@ -23,11 +24,18 @@ type RepresentativeLookupService struct {
 	baseURL string
 }
 
+type RepresentativeLookupServiceParams struct {
+	fx.In
+
+	Config *config.Config
+	Logger loggo.LoggerInterface
+}
+
 // NewRepresentativeLookupService creates a new instance of RepresentativeLookupService
-func NewRepresentativeLookupService(cfg *config.Config, logger loggo.LoggerInterface) RepresentativeLookupServiceInterface {
+func NewRepresentativeLookupService(params RepresentativeLookupServiceParams) RepresentativeLookupServiceInterface {
 	return &RepresentativeLookupService{
-		logger:  logger,
-		baseURL: cfg.RepresentativeLookupBaseURL,
+		logger:  params.Logger,
+		baseURL: params.Config.RepresentativeLookupBaseURL,
 	}
 }
 

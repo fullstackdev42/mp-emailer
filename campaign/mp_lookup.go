@@ -7,10 +7,23 @@ import (
 	"net/http"
 
 	"github.com/jonesrussell/loggo"
+	"go.uber.org/fx"
 )
+
+type MPLookupServiceParams struct {
+	fx.In
+
+	Logger loggo.LoggerInterface
+}
 
 type MPLookupService struct {
 	logger loggo.LoggerInterface
+}
+
+func NewMPLookupService(params MPLookupServiceParams) *MPLookupService {
+	return &MPLookupService{
+		logger: params.Logger,
+	}
 }
 
 func (s *MPLookupService) FetchRepresentatives(postalCode string) ([]Representative, error) {

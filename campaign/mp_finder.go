@@ -4,12 +4,29 @@ import (
 	"fmt"
 
 	"github.com/jonesrussell/loggo"
+	"go.uber.org/fx"
 )
+
+// MPFinderParams is the parameter object for the MPFinder service.
+type MPFinderParams struct {
+	fx.In
+
+	Client ClientInterface
+	Logger loggo.LoggerInterface
+}
 
 // MPFinder is a service that finds Members of Parliament (MPs) based on postal codes.
 type MPFinder struct {
 	client ClientInterface
 	logger loggo.LoggerInterface
+}
+
+// NewMPFinder is the constructor for the MPFinder service.
+func NewMPFinder(params MPFinderParams) *MPFinder {
+	return &MPFinder{
+		client: params.Client,
+		logger: params.Logger,
+	}
 }
 
 // FindMP finds the MP for a given postal code.
