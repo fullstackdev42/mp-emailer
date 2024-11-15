@@ -18,7 +18,8 @@ jobs:
       - name: Setup SSH Keys and known_hosts
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.DO_SSH_KEY }}
+          ssh-private-key: |
+            ${{ secrets.DO_SSH_KEY }}
 
       # Cache npm dependencies
       - name: Cache npm dependencies
