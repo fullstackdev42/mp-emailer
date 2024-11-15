@@ -115,7 +115,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					Return(nil, errors.New("session store error"))
 
 				s.ErrorHandler.On("HandleHTTPError",
-					mock.MatchedBy(func(c echo.Context) bool { return true }),
+					mock.MatchedBy(func(_ echo.Context) bool { return true }),
 					mock.MatchedBy(func(err error) bool { return err.Error() == "session store error" }),
 					"Error getting session",
 					http.StatusInternalServerError,
