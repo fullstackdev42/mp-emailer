@@ -56,6 +56,14 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Build frontend assets
+      - name: Build frontend
+        if: steps.check_changes.outputs.changed == 'true'
+        working-directory: ./web
+        run: |
+          npm install
+          npm run build
+
       # Test before building
       - name: Run tests
         if: steps.check_changes.outputs.changed == 'true'
