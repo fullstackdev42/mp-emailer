@@ -59,7 +59,7 @@ jobs:
       - name: Check for app changes
         id: check_changes
         run: |
-          git diff --quiet HEAD^ HEAD \
+          if git diff --quiet HEAD^ HEAD \
             -- '*.go' \
             -- 'database/migrations/*.sql' \
             -- 'database/migrations/*.go' \
@@ -68,7 +68,11 @@ jobs:
             -- 'docker-compose.yml' \
             -- 'Dockerfile' \
             -- 'go.mod' 'go.sum' \
-            ':!.github/workflows' && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+            ':!.github/workflows'; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # Test before building
       - name: Run tests
