@@ -48,7 +48,10 @@ var App = fx.Options(
 		provideEmailService,
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
-		NewFlashHandler,
+		fx.Annotate(
+			NewFlashHandler,
+			fx.As(new(FlashHandlerInterface)),
+		),
 	),
 	ErrorModule,
 )

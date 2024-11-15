@@ -34,7 +34,7 @@ type FlashHandlerParams struct {
 }
 
 // NewFlashHandler creates a new FlashHandler with dependency injection
-func NewFlashHandler(params FlashHandlerParams) *FlashHandler {
+func NewFlashHandler(params FlashHandlerParams) FlashHandlerInterface {
 	return &FlashHandler{
 		Store:        params.Store,
 		SessionName:  params.Config.SessionName,
