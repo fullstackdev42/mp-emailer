@@ -33,7 +33,7 @@ jobs:
 
       # Deploy to DO droplet
       - name: Deploy to DigitalOcean
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1.1.0
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
