@@ -7,6 +7,7 @@ on:
 env:
   REGISTRY: "registry.digitalocean.com/directdiary"
   IMAGE_NAME: "mp-emailer"
+  DOCTL_VERSION: "1.117.0"
 
 jobs:
   build-and-deploy:
@@ -39,14 +40,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-mod-
 
-      # Install doctl
+      # Cache doctl
+      - name: Cache doctl
+        id: cache-doctl
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/bin/doctl
+          key: ${{ runner.os }}-doctl-${{ env.DOCTL_VERSION }}
+
+      # Install doctl only if not cached
       - name: Install doctl
+        if: steps.cache-doctl.outputs.cache-hit != 'true'
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DOAT }}
 
-      # Build and push image
+      # Check for app changes
+      - name: Check for app changes
+        id: check_changes
+        run: |
+          # Check if any app-related files changed (excluding workflow files)
+          git diff --quiet HEAD^ HEAD -- . ':!.github/workflows' && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      # Build and push image only if there are changes
       - name: Build and push
+        if: steps.check_changes.outputs.changed == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
