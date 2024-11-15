@@ -33,14 +33,15 @@ jobs:
 
       # Deploy to DO droplet
       - name: Deploy to DigitalOcean
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.6
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_KEY_BASE64 }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: 22
           envs: REGISTRY,IMAGE_NAME
           script: |
             cd ~/mp-emailer
