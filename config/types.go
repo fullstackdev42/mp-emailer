@@ -4,7 +4,7 @@ package config
 type Config struct {
 	AppDebug                    bool          `env:"APP_DEBUG" envDefault:"false"`
 	AppEnv                      Environment   `env:"APP_ENV" envDefault:"development"`
-	AppHost                     string        `env:"APP_HOST" envDefault:"localhost"`
+	AppHost                     string        `env:"APP_HOST" envDefault:"0.0.0.0"`
 	AppPort                     int           `env:"APP_PORT" envDefault:"8080"`
 	DBUser                      string        `env:"DB_USER,required"`
 	DBPassword                  string        `env:"DB_PASSWORD,required"`
