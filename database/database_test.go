@@ -45,11 +45,13 @@ func TestProvideDatabase(t *testing.T) {
 		logger.EXPECT().Info("Successfully connected to database after retry").Return()
 
 		cfg := &config.Config{
-			DBHost:     "localhost",
-			DBPort:     3306,
-			DBUser:     "test",
-			DBPassword: "test",
-			DBName:     "testdb",
+			Database: config.DatabaseConfig{
+				Host:     "localhost",
+				Port:     3306,
+				User:     "test",
+				Password: "test",
+				Name:     "testdb",
+			},
 		}
 
 		retryConfig := dbconfig.NewDefaultRetryConfig()

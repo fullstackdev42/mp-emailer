@@ -280,7 +280,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	}
 
 	// Add success flash message
-	session, err := h.Store.Get(c.Request(), h.Config.SessionName)
+	session, err := h.Store.Get(c.Request(), h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
@@ -376,7 +376,7 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		"campaignID", c.Param("id"))
 
 	// Add success flash message
-	session, err := h.Store.Get(c.Request(), h.Config.SessionName)
+	session, err := h.Store.Get(c.Request(), h.Config.Auth.SessionName)
 	if err == nil {
 		session.AddFlash("Email sent successfully!", "messages")
 		_ = session.Save(c.Request(), c.Response().Writer)

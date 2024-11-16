@@ -42,8 +42,12 @@ func (s *MiddlewareTestSuite) SetupTest() {
 
 	// Create mock dependencies
 	s.config = &config.Config{
-		SessionName: "test_session",
-		AppEnv:      "test",
+		Auth: config.AuthConfig{
+			SessionName: "test_session",
+		},
+		App: config.AppConfig{
+			Env: "test",
+		},
 	}
 
 	var err error
@@ -243,7 +247,7 @@ func (s *MiddlewareTestSuite) TestJWTMiddleware() {
 			name: "valid JWT token",
 			setupHeader: func(r *http.Request) {
 				// Generate token with correct parameters
-				token, _ := shared.GenerateToken("testuser", s.config.JWTSecret, 60) // 60 minutes expiration
+				token, _ := shared.GenerateToken("testuser", s.config.Auth.JWTSecret, 60) // 60 minutes expiration
 				r.Header.Set("Authorization", "Bearer "+token)
 			},
 			expectError: false,

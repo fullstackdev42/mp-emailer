@@ -58,7 +58,7 @@ func NewCustomTemplateRenderer(t *template.Template, store sessions.Store, cfg *
 
 // Render method implements echo.Renderer and handles rendering templates
 func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	session, err := t.store.Get(c.Request(), t.config.SessionName)
+	session, err := t.store.Get(c.Request(), t.config.Auth.SessionName)
 	if err != nil {
 		return fmt.Errorf("failed to get session: %w", err)
 	}

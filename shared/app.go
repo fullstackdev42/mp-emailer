@@ -27,7 +27,7 @@ var App = fx.Options(
 	fx.Provide(
 		config.Load,
 		func(cfg *config.Config) (loggo.LoggerInterface, error) {
-			logger, err := loggo.NewLogger(cfg.LogFile, cfg.GetLogLevel())
+			logger, err := loggo.NewLogger(cfg.Log.File, cfg.GetLogLevel())
 			if err != nil {
 				return nil, fmt.Errorf("failed to create logger: %w", err)
 			}
@@ -74,7 +74,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, er
 	logger.Info("Database connection successful")
 
 	// List all files in migrations directory
-	files, err := os.ReadDir(cfg.MigrationsPath)
+	files, err := os.ReadDir(cfg.Server.MigrationsPath)
 	if err != nil {
 		logger.Error("Failed to read migrations directory", err)
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
@@ -86,7 +86,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, er
 			logger.Info("Found SQL migration file", "filename", file.Name())
 
 			// Optionally read and log migration content for debugging
-			content, err := os.ReadFile(filepath.Join(cfg.MigrationsPath, file.Name()))
+			content, err := os.ReadFile(filepath.Join(cfg.Server.MigrationsPath, file.Name()))
 			if err != nil {
 				logger.Error("Failed to read migration file", err, "filename", file.Name())
 			} else {
@@ -114,14 +114,14 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, er
 	}
 
 	logger.Info("Starting database migrations",
-		"migrationsPath", cfg.MigrationsPath,
+		"migrationsPath", cfg.Server.MigrationsPath,
 		"databaseName", db.Migrator().CurrentDatabase())
 
 	// Run migrations with detailed error capture
 	if err := decorated.AutoMigrate(); err != nil {
 		// Log the detailed error
 		logger.Error("Database migration failed", err,
-			"migrationsPath", cfg.MigrationsPath,
+			"migrationsPath", cfg.Server.MigrationsPath,
 			"databaseName", db.Migrator().CurrentDatabase(),
 			"error", err.Error())
 
@@ -140,7 +140,7 @@ func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, er
 
 // Provide a new session store
 func newSessionStore(cfg *config.Config) sessions.Store {
-	store := sessions.NewCookieStore([]byte(cfg.SessionSecret))
+	store := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
 
 	// Configure secure cookie options
 	store.Options = &sessions.Options{
@@ -183,14 +183,14 @@ func provideTemplates(store sessions.Store, cfg *config.Config) (TemplateRendere
 // provideEmailService creates a new email service based on the configuration
 func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (email.Service, error) {
 	emailConfig := email.Config{
-		Provider:      email.Provider(cfg.EmailProvider),
-		SMTPHost:      cfg.SMTPHost,
-		SMTPPort:      cfg.SMTPPort,
-		SMTPUsername:  cfg.SMTPUsername,
-		SMTPPassword:  cfg.SMTPPassword,
-		SMTPFrom:      cfg.SMTPFrom,
-		MailgunDomain: cfg.MailgunDomain,
-		MailgunAPIKey: cfg.MailgunAPIKey,
+		Provider:      email.Provider(cfg.Email.Provider),
+		SMTPHost:      cfg.Email.SMTP.Host,
+		SMTPPort:      cfg.Email.SMTP.Port,
+		SMTPUsername:  cfg.Email.SMTP.Username,
+		SMTPPassword:  cfg.Email.SMTP.Password,
+		SMTPFrom:      cfg.Email.SMTP.From,
+		MailgunDomain: cfg.Email.MailgunDomain,
+		MailgunAPIKey: cfg.Email.MailgunKey,
 	}
 
 	emailService, err := email.NewEmailService(email.Params{

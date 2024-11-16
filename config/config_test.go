@@ -3,7 +3,6 @@ package config_test
 import (
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/fullstackdev42/mp-emailer/config"
@@ -55,9 +54,9 @@ SESSION_SECRET=test_session_secret
 	require.NoError(t, err)
 
 	// Environment variable should take precedence over .env file
-	assert.Equal(t, 8080, cfg.AppPort)
+	assert.Equal(t, 8080, cfg.App.Port)
 	// Verify env file value is used when no environment variable is set
-	assert.Equal(t, "envfile_user", cfg.DBUser)
+	assert.Equal(t, "envfile_user", cfg.Database.User)
 }
 
 func TestRequiredFieldValidation(t *testing.T) {
@@ -68,7 +67,7 @@ func TestRequiredFieldValidation(t *testing.T) {
 	os.Unsetenv("DB_NAME")
 	os.Unsetenv("JWT_SECRET")
 	os.Unsetenv("SESSION_SECRET")
-
+	os.Unsetenv("SESSION_SECRET")
 	_, err := config.Load()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "DB_USER")
@@ -120,7 +119,7 @@ func TestLogLevelConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &config.Config{LogLevel: tt.logLevel}
+			cfg := &config.Config{Log: config.LogConfig{Level: tt.logLevel}}
 			level := cfg.GetLogLevel()
 			assert.Equal(t, tt.want, level)
 		})
@@ -150,12 +149,12 @@ func TestDefaultValues(t *testing.T) {
 	expectedLogFilePath := fmt.Sprintf("%s/storage/logs/app.log", cwd)
 
 	// Test default values
-	assert.Equal(t, false, cfg.AppDebug)
-	assert.Equal(t, "0.0.0.0", cfg.AppHost)
-	assert.Equal(t, 8080, cfg.AppPort)
-	assert.Equal(t, 3306, cfg.DBPort)
-	assert.Equal(t, "smtp", string(cfg.EmailProvider))
-	assert.Equal(t, "24h", cfg.JWTExpiry)
-	assert.True(t, strings.HasSuffix(cfg.LogFile, expectedLogFilePath))
-	assert.Equal(t, "info", cfg.LogLevel)
+	assert.Equal(t, false, cfg.App.Debug)
+	assert.Equal(t, "0.0.0.0", cfg.App.Host)
+	assert.Equal(t, 8080, cfg.App.Port)
+	assert.Equal(t, 3306, cfg.Database.Port)
+	assert.Equal(t, config.EmailProviderSMTP, cfg.Email.Provider)
+	assert.Equal(t, "24h", cfg.Auth.JWTExpiry)
+	assert.Equal(t, expectedLogFilePath, cfg.Log.File)
+	assert.Equal(t, "info", cfg.Log.Level)
 }

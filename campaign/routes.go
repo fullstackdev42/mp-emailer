@@ -14,7 +14,7 @@ func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config, manager *middl
 
 	// Protected routes (require authentication)
 	protected := e.Group("/campaign")
-	protected.Use(manager.ValidateSession(cfg.SessionName))
+	protected.Use(manager.ValidateSession(cfg.Auth.SessionName))
 
 	// Protected campaign routes
 	protected.GET("/new", h.CreateCampaignForm)

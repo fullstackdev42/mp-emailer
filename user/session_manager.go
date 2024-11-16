@@ -26,7 +26,7 @@ func NewSessionManager(store sessions.Store, cfg *config.Config) SessionManager 
 }
 
 func (sm *defaultSessionManager) GetSession(c echo.Context) (*sessions.Session, error) {
-	return sm.store.Get(c.Request(), sm.config.SessionName)
+	return sm.store.Get(c.Request(), sm.config.Auth.SessionName)
 }
 
 func (sm *defaultSessionManager) SaveSession(c echo.Context, sess *sessions.Session) error {

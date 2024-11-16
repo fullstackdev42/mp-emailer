@@ -34,7 +34,7 @@ func (s *HandlerTestSuite) SetupTest() {
 	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
 	s.SessionManager = mocksUser.NewMockSessionManager(s.T())
 
-	s.Config.SessionName = "test_session"
+	s.Config.Auth.SessionName = "test_session"
 
 	flashHandler := shared.NewFlashHandler(shared.FlashHandlerParams{
 		Store:        s.Store,
