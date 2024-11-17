@@ -13,6 +13,7 @@ import (
 	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/fullstackdev42/mp-emailer/database/decorators"
 	"github.com/fullstackdev42/mp-emailer/email"
+	"github.com/fullstackdev42/mp-emailer/version"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
@@ -26,6 +27,7 @@ import (
 var App = fx.Options(
 	fx.Provide(
 		config.Load,
+		provideVersionInfo,
 		func(cfg *config.Config) (loggo.LoggerInterface, error) {
 			logger, err := loggo.NewLogger(cfg.Log.File, cfg.GetLogLevel())
 			if err != nil {
@@ -202,4 +204,8 @@ func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (emai
 	}
 
 	return emailService, nil
+}
+
+func provideVersionInfo() version.Info {
+	return version.Get()
 }

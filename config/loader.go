@@ -46,6 +46,9 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	// Initialize version information
+	cfg.InitializeVersion()
+
 	return cfg, nil
 }
 

@@ -2,11 +2,11 @@ package server
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/fullstackdev42/mp-emailer/campaign"
 	"github.com/fullstackdev42/mp-emailer/email"
 	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/fullstackdev42/mp-emailer/version"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
@@ -17,6 +17,7 @@ type Handler struct {
 	campaignService campaign.ServiceInterface
 	EmailService    email.Service
 	IsShuttingDown  bool
+	versionInfo     version.Info
 }
 
 // HandlerInterface defines the interface for handlers
@@ -32,6 +33,7 @@ type HandlerParams struct {
 	shared.BaseHandlerParams
 	CampaignService campaign.ServiceInterface
 	EmailService    email.Service
+	VersionInfo     version.Info
 }
 
 // NewHandler creates a new Handler instance
@@ -40,6 +42,7 @@ func NewHandler(params HandlerParams) HandlerInterface {
 		BaseHandler:     shared.NewBaseHandler(params.BaseHandlerParams),
 		campaignService: params.CampaignService,
 		EmailService:    params.EmailService,
+		versionInfo:     params.VersionInfo,
 	}
 }
 
@@ -63,16 +66,10 @@ func (h *Handler) IndexGET(c echo.Context) error {
 
 // HealthCheck health check endpoint
 func (h *Handler) HealthCheck(c echo.Context) error {
-	status := http.StatusOK
-	response := map[string]interface{}{
-		"status": "healthy",
-		"time":   time.Now().UTC(),
+	status := map[string]interface{}{
+		"status":        "ok",
+		"version":       h.versionInfo.Status(),
+		"shutting_down": h.IsShuttingDown,
 	}
-
-	if h.IsShuttingDown {
-		status = http.StatusServiceUnavailable
-		response["status"] = "shutting_down"
-	}
-
-	return c.JSON(status, response)
+	return c.JSON(http.StatusOK, status)
 }

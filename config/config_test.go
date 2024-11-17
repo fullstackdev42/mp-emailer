@@ -232,3 +232,38 @@ featureFlags:
 	require.NoError(t, err, "could not load config with environment override")
 	assert.True(t, cfg.FeatureFlags.EnableMailgun, "expected EnableMailgun to be true after environment override")
 }
+
+func TestVersionConfiguration(t *testing.T) {
+	_, _, cleanup := setupTestDirectory(t)
+	defer cleanup()
+
+	// Create minimal config file
+	defaultConfig := `
+app:
+  port: 3000
+`
+	err := os.WriteFile("config.yaml", []byte(defaultConfig), 0644)
+	require.NoError(t, err, "could not write config.yaml")
+
+	os.Setenv("APP_VERSION", "1.0.0")
+	os.Setenv("BUILD_DATE", "2024-03-21T12:00:00Z")
+	os.Setenv("GIT_COMMIT", "abc123")
+
+	// Set required fields
+	os.Setenv("DB_USER", "test")
+	os.Setenv("DB_PASSWORD", "test")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_NAME", "testdb")
+	os.Setenv("JWT_SECRET", "test")
+	os.Setenv("SESSION_SECRET", "test")
+
+	cfg, err := config.Load()
+	require.NoError(t, err)
+
+	status := cfg.GetStatus()
+	version := status["version"].(map[string]string)
+
+	assert.Equal(t, "1.0.0", version["version"])
+	assert.Equal(t, "2024-03-21T12:00:00Z", version["buildDate"])
+	assert.Equal(t, "abc123", version["commit"])
+}

@@ -15,3 +15,9 @@ const (
 	EmailProviderSMTP    EmailProvider = "smtp"
 	EmailProviderMailgun EmailProvider = "mailgun"
 )
+
+type VersionConfig struct {
+	Version   string `yaml:"version" env:"APP_VERSION"`
+	BuildDate string `yaml:"build_date" env:"BUILD_DATE"`
+	Commit    string `yaml:"commit" env:"GIT_COMMIT"`
+}

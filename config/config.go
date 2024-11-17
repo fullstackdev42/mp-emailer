@@ -14,6 +14,7 @@ type Config struct {
 	Log          LogConfig      `yaml:"log"`
 	Server       ServerConfig   `yaml:"server"`
 	FeatureFlags FeatureFlags   `yaml:"feature_flags"`
+	Version      VersionConfig  `yaml:"version"`
 }
 
 type AppConfig struct {
