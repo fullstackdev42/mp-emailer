@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/caarlos0/env/v10"
 	"github.com/joho/godotenv"
@@ -30,6 +28,14 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse env vars: %w", err)
 	}
 
+	// 4. Warn if using default secrets in production
+	if cfg.App.Env == EnvProduction {
+		if cfg.Auth.JWTSecret == "dev_jwt_secret_do_not_use_in_production" ||
+			cfg.Auth.SessionSecret == "dev_session_secret_do_not_use_in_production" {
+			return nil, fmt.Errorf("cannot use default secrets in production environment")
+		}
+	}
+
 	// Handle paths
 	if err := cfg.setupPaths(); err != nil {
 		return nil, fmt.Errorf("failed to setup paths: %w", err)
@@ -41,29 +47,6 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// CheckRequired verifies all required configuration is present before loading full config
-func CheckRequired() error {
-	if err := godotenv.Load(); err != nil {
-		// Create empty config to get required vars
-		cfg := &Config{}
-		missing := []string{}
-		commands := []string{}
-
-		for envVar, command := range cfg.RequiredEnvVars() {
-			if os.Getenv(envVar) == "" {
-				missing = append(missing, envVar)
-				commands = append(commands, command)
-			}
-		}
-
-		if len(missing) > 0 {
-			return fmt.Errorf("Configuration incomplete. Missing: %v\n\nRun:\n%s",
-				missing, strings.Join(commands, "\n"))
-		}
-	}
-	return nil
 }
 
 func loadConfigFile(cfg *Config) error {
@@ -82,54 +65,10 @@ func loadYAMLConfig(path string, cfg *Config) error {
 }
 
 func (c *Config) validate() error {
-	// Check required fields
-	if err := c.validateRequired(); err != nil {
-		return err
-	}
-
 	// Check environment
 	if !c.App.Env.IsValidEnvironment() {
 		return fmt.Errorf("invalid environment: %s", c.App.Env)
 	}
 
-	// Validate paths are absolute
-	if !filepath.IsAbs(c.Log.File) {
-		return fmt.Errorf("log file path must be absolute: %s", c.Log.File)
-	}
-	if !filepath.IsAbs(c.Server.MigrationsPath) {
-		return fmt.Errorf("migrations path must be absolute: %s", c.Server.MigrationsPath)
-	}
-
-	return nil
-}
-
-func (c *Config) validateRequired() error {
-	missing := []string{}
-
-	// Database checks
-	if c.Database.User == "" {
-		missing = append(missing, "DB_USER")
-	}
-	if c.Database.Password == "" {
-		missing = append(missing, "DB_PASSWORD")
-	}
-	if c.Database.Host == "" {
-		missing = append(missing, "DB_HOST")
-	}
-	if c.Database.Name == "" {
-		missing = append(missing, "DB_NAME")
-	}
-
-	// Auth checks
-	if c.Auth.JWTSecret == "" {
-		missing = append(missing, "JWT_SECRET")
-	}
-	if c.Auth.SessionSecret == "" {
-		missing = append(missing, "SESSION_SECRET")
-	}
-
-	if len(missing) > 0 {
-		return fmt.Errorf("missing required environment variables: %v", missing)
-	}
 	return nil
 }

@@ -48,9 +48,9 @@ type SMTPConfig struct {
 
 type AuthConfig struct {
 	JWTExpiry     string `env:"JWT_EXPIRY" envDefault:"24h"`
-	JWTSecret     string `env:"JWT_SECRET,required"`
+	JWTSecret     string `env:"JWT_SECRET,required" envDefault:"dev_jwt_secret_do_not_use_in_production"`
 	SessionName   string `env:"SESSION_NAME" envDefault:"session"`
-	SessionSecret string `env:"SESSION_SECRET,required"`
+	SessionSecret string `env:"SESSION_SECRET,required" envDefault:"dev_session_secret_do_not_use_in_production"`
 }
 
 type LogConfig struct {
@@ -61,8 +61,8 @@ type LogConfig struct {
 }
 
 type ServerConfig struct {
-	MigrationsPath              string
-	RepresentativeLookupBaseURL string
+	MigrationsPath              string `yaml:"migrations_path" env:"MIGRATIONS_PATH" envDefault:"database/migrations"`
+	RepresentativeLookupBaseURL string `yaml:"representative_lookup_base_url" env:"REPRESENTATIVE_LOOKUP_BASE_URL" envDefault:"https://represent.opennorth.ca/api"`
 }
 
 type FeatureFlags struct {
@@ -102,9 +102,9 @@ func (c *Config) GetAbsolutePath(path string) string {
 	return abs
 }
 
-// GetMigrationsPath returns the path to the migrations directory
+// GetMigrationsPath returns the absolute path to the migrations directory
 func (c *Config) GetMigrationsPath() string {
-	return c.Server.MigrationsPath
+	return c.GetAbsolutePath(c.Server.MigrationsPath)
 }
 
 // GetLogFilePath returns the path to the log file
@@ -119,11 +119,7 @@ func (c *Config) GetJWTExpiryDuration() (time.Duration, error) {
 
 func (c *Config) setupPaths() error {
 	// Get absolute path for migrations
-	migrationsPath, err := filepath.Abs(c.Server.MigrationsPath)
-	if err != nil {
-		return fmt.Errorf("invalid migrations path: %w", err)
-	}
-	c.Server.MigrationsPath = filepath.Clean(migrationsPath)
+	c.Server.MigrationsPath = c.GetAbsolutePath(c.Server.MigrationsPath)
 
 	// Get absolute path for log file
 	logPath, err := filepath.Abs(c.Log.File)

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -21,12 +20,6 @@ import (
 )
 
 func main() {
-	// Check for required configuration before starting the application
-	if err := config.CheckRequired(); err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-
 	// Initialize application using uber/fx dependency injection
 	app := fx.New(
 		fx.Options(

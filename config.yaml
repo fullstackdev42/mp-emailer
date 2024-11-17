@@ -6,6 +6,23 @@ app:
 
 database:
   port: 3306
+  max_connections: 100
+  idle_timeout: 300s
+  connection_timeout: 30s
+
+email:
+  smtp:
+    port: 587
+    from: "noreply@example.com"
+  mailgun:
+    domain: ""
+
+auth:
+  jwt_expiry: 24h
+  session_name: session
+  session_max_age: 604800
+  session_secure: true
+  session_http_only: true
 
 feature_flags:
   enable_mailgun: false
@@ -18,12 +35,18 @@ log:
   file: storage/logs/app.log
   format: json
   rotation:
-    max_size: 100  # megabytes
-    max_age: 30    # days
+    max_size: 100
+    max_age: 30
     max_backups: 5
     compress: true
 
 server:
-  migrations_path: db/migrations
+  migrations_path: database/migrations
+  representative_lookup_base_url: "https://represent.opennorth.ca/api"
   timeout: 30s
   max_request_size: 10mb
+  cors:
+    allowed_origins: ["http://localhost:3000"]
+    allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: ["Content-Type", "Authorization"]
+    allow_credentials: true

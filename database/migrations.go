@@ -137,13 +137,10 @@ type MigrationParams struct {
 }
 
 func RunMigrations(p MigrationParams) error {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get working directory: %w", err)
-	}
+	// Get migrations path from config
+	migrationsDir := p.Config.GetMigrationsPath()
 
-	// Construct and verify migrations path
-	migrationsDir := filepath.Clean(filepath.Join(pwd, "database", "migrations"))
+	// Verify migrations directory exists
 	if _, err := os.Stat(migrationsDir); os.IsNotExist(err) {
 		return fmt.Errorf("migrations directory not found at %s: %w", migrationsDir, err)
 	}
