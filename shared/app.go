@@ -190,7 +190,7 @@ func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (emai
 		SMTPPassword:  cfg.Email.SMTP.Password,
 		SMTPFrom:      cfg.Email.SMTP.From,
 		MailgunDomain: cfg.Email.MailgunDomain,
-		MailgunAPIKey: cfg.Email.MailgunKey,
+		MailgunAPIKey: cfg.Email.MailgunAPIKey,
 	}
 
 	emailService, err := email.NewEmailService(email.Params{

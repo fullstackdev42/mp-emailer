@@ -7,12 +7,13 @@ import (
 )
 
 type Config struct {
-	App      AppConfig      `yaml:"app"`
-	Database DatabaseConfig `yaml:"database" env:"sensitive"`
-	Email    EmailConfig    `yaml:"email" env:"sensitive"`
-	Auth     AuthConfig     `yaml:"auth" env:"sensitive"`
-	Log      LogConfig      `yaml:"log"`
-	Server   ServerConfig   `yaml:"server"`
+	App          AppConfig      `yaml:"app"`
+	Database     DatabaseConfig `yaml:"database" env:"sensitive"`
+	Email        EmailConfig    `yaml:"email" env:"sensitive"`
+	Auth         AuthConfig     `yaml:"auth" env:"sensitive"`
+	Log          LogConfig      `yaml:"log"`
+	Server       ServerConfig   `yaml:"server"`
+	FeatureFlags FeatureFlags   `yaml:"feature_flags"`
 }
 
 type AppConfig struct {
@@ -32,17 +33,17 @@ type DatabaseConfig struct {
 
 type EmailConfig struct {
 	Provider      EmailProvider `env:"EMAIL_PROVIDER" envDefault:"smtp"`
-	MailgunKey    string        `env:"MAILGUN_KEY,required"`
-	MailgunDomain string        `env:"MAILGUN_DOMAIN,required"`
+	MailgunAPIKey string        `env:"EMAIL_MAILGUN_API_KEY"`
+	MailgunDomain string        `env:"EMAIL_MAILGUN_DOMAIN"`
 	SMTP          SMTPConfig
 }
 
 type SMTPConfig struct {
-	From     string `env:"SMTP_FROM,required"`
-	Host     string `env:"SMTP_HOST,required"`
-	Password string `env:"SMTP_PASSWORD,required"`
-	Port     int    `env:"SMTP_PORT" envDefault:"587"`
-	Username string `env:"SMTP_USERNAME,required"`
+	From     string `env:"EMAIL_FROM"`
+	Host     string `env:"EMAIL_SMTP_HOST"`
+	Password string `env:"EMAIL_SMTP_PASSWORD"`
+	Port     int    `env:"EMAIL_SMTP_PORT" envDefault:"587"`
+	Username string `env:"EMAIL_SMTP_USERNAME"`
 }
 
 type AuthConfig struct {
@@ -53,13 +54,29 @@ type AuthConfig struct {
 }
 
 type LogConfig struct {
-	File  string
-	Level string
+	File     string      `yaml:"file" env:"LOG_FILE" envDefault:"storage/logs/app.log"`
+	Level    string      `yaml:"level" env:"LOG_LEVEL" envDefault:"info"`
+	Format   string      `yaml:"format" env:"LOG_FORMAT" envDefault:"json"`
+	Rotation LogRotation `yaml:"rotation"`
 }
 
 type ServerConfig struct {
 	MigrationsPath              string
 	RepresentativeLookupBaseURL string
+}
+
+type FeatureFlags struct {
+	EnableMailgun bool `yaml:"enable_mailgun" env:"FEATURE_MAILGUN" envDefault:"false"`
+	EnableSMTP    bool `yaml:"enable_smtp" env:"FEATURE_SMTP" envDefault:"true"`
+	EnableMetrics bool `yaml:"enable_metrics" env:"FEATURE_METRICS" envDefault:"false"`
+	BetaFeatures  bool `yaml:"beta_features" env:"FEATURE_BETA" envDefault:"false"`
+}
+
+type LogRotation struct {
+	MaxSize    int  `yaml:"max_size" env:"LOG_MAX_SIZE" envDefault:"100"`
+	MaxAge     int  `yaml:"max_age" env:"LOG_MAX_AGE" envDefault:"30"`
+	MaxBackups int  `yaml:"max_backups" env:"LOG_MAX_BACKUPS" envDefault:"5"`
+	Compress   bool `yaml:"compress" env:"LOG_COMPRESS" envDefault:"true"`
 }
 
 // DSN returns the database connection string

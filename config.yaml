@@ -1,0 +1,29 @@
+app:
+  debug: false
+  env: development
+  host: 0.0.0.0
+  port: 8080
+
+database:
+  port: 3306
+
+feature_flags:
+  enable_mailgun: false
+  enable_smtp: true
+  enable_metrics: false
+  beta_features: false
+
+log:
+  level: info
+  file: storage/logs/app.log
+  format: json
+  rotation:
+    max_size: 100  # megabytes
+    max_age: 30    # days
+    max_backups: 5
+    compress: true
+
+server:
+  migrations_path: db/migrations
+  timeout: 30s
+  max_request_size: 10mb

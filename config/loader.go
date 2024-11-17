@@ -67,12 +67,8 @@ func CheckRequired() error {
 }
 
 func loadConfigFile(cfg *Config) error {
-	// Try loading from config.yaml first
 	if err := loadYAMLConfig("config.yaml", cfg); err != nil {
-		// Fall back to default config
-		if err := loadYAMLConfig("config/config.default.yaml", cfg); err != nil {
-			return fmt.Errorf("failed to load default config: %w", err)
-		}
+		return fmt.Errorf("failed to load config file: %w", err)
 	}
 	return nil
 }
