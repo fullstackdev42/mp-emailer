@@ -5,7 +5,7 @@ import (
 )
 
 func (c *Config) GetLogLevel() loggo.Level {
-	switch c.LogLevel {
+	switch c.Log.Level {
 	case "debug":
 		return loggo.LevelDebug
 	case "info":

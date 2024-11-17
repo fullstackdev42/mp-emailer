@@ -98,7 +98,7 @@ func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
 	return NewSessionsMiddleware(
 		m.sessionStore,
 		m.logger,
-		m.cfg.SessionName,
+		m.cfg.Auth.SessionName,
 		m.errorHandler,
 	)
 }
@@ -249,7 +249,7 @@ func (m *Manager) GetOwnerIDFromSession(c echo.Context) (string, error) {
 	m.logger.Debug("GetOwnerIDFromSession: Starting")
 
 	// Use the session name from config
-	ownerID, err := m.GetUserIDFromSession(c, m.cfg.SessionName)
+	ownerID, err := m.GetUserIDFromSession(c, m.cfg.Auth.SessionName)
 	if err != nil {
 		m.logger.Debug("GetOwnerIDFromSession: Failed to get owner ID", "error", err)
 		return "", err
@@ -278,7 +278,7 @@ func (m *Manager) JWTMiddleware() echo.MiddlewareFunc {
 			}
 
 			token := tokenParts[1]
-			claims, err := shared.ValidateToken(token, m.cfg.JWTSecret)
+			claims, err := shared.ValidateToken(token, m.cfg.Auth.JWTSecret)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, map[string]string{
 					"error": "Invalid token",

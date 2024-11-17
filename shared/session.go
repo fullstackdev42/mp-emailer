@@ -37,7 +37,7 @@ type FlashHandlerParams struct {
 func NewFlashHandler(params FlashHandlerParams) FlashHandlerInterface {
 	return &FlashHandler{
 		Store:        params.Store,
-		SessionName:  params.Config.SessionName,
+		SessionName:  params.Config.Auth.SessionName,
 		Logger:       params.Logger,
 		ErrorHandler: params.ErrorHandler,
 	}

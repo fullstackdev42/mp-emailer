@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/fullstackdev42/mp-emailer/api"
 	"github.com/fullstackdev42/mp-emailer/campaign"
@@ -21,12 +20,6 @@ import (
 )
 
 func main() {
-	// Check for required configuration before starting the application
-	if err := config.CheckRequired(); err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-
 	// Initialize application using uber/fx dependency injection
 	app := fx.New(
 		fx.Options(
@@ -94,8 +87,8 @@ func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo
 			e.GET("/health", handler.HealthCheck)
 
 			go func() {
-				addr := fmt.Sprintf("%s:%d", cfg.AppHost, cfg.AppPort)
-				logger.Info("Starting server", "host", cfg.AppHost, "port", cfg.AppPort)
+				addr := fmt.Sprintf("%s:%d", cfg.App.Host, cfg.App.Port)
+				logger.Info("Starting server", "host", cfg.App.Host, "port", cfg.App.Port)
 				if err := e.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					logger.Error("Server error", err)
 				}

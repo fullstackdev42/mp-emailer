@@ -42,7 +42,8 @@
 				"humao.rest-client",
 				"mtxr.sqltools-driver-mysql",
 				"mtxr.sqltools",
-				"eamodio.gitlens"
+				"eamodio.gitlens",
+				"GitHub.vscode-pull-request-github"
 			]
 		}
 	},

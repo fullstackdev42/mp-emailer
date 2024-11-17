@@ -35,7 +35,7 @@ type RepresentativeLookupServiceParams struct {
 func NewRepresentativeLookupService(params RepresentativeLookupServiceParams) RepresentativeLookupServiceInterface {
 	return &RepresentativeLookupService{
 		logger:  params.Logger,
-		baseURL: params.Config.RepresentativeLookupBaseURL,
+		baseURL: params.Config.Server.RepresentativeLookupBaseURL,
 	}
 }
 
