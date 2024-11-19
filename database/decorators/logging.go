@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/database/core"
 	"gorm.io/gorm"
 )
 

@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"go.uber.org/fx"
 )
 

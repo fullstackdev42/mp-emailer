@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	core "github.com/fullstackdev42/mp-emailer/database/core"
+	core "github.com/jonesrussell/mp-emailer/database/core"
 	mock "github.com/stretchr/testify/mock"
 )
 

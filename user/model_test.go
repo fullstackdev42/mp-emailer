@@ -3,7 +3,7 @@ package user_test
 import (
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/user"
+	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )

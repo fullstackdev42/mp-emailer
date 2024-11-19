@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/mocks"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

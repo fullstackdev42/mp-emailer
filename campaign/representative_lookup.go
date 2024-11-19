@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/config"
 	"go.uber.org/fx"
 )
 

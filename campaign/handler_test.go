@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/internal/testutil"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/internal/testutil"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

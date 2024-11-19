@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/middleware"
 	"github.com/go-playground/validator/v10"
+	"github.com/jonesrussell/mp-emailer/middleware"
 )
 
 // Standard campaign errors

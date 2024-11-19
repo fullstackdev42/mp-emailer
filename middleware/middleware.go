@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/shared"
 
 	"errors"
 

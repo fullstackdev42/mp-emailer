@@ -5,12 +5,12 @@ import (
 	"io"
 	"net/http/httptest"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
-	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
-	mocksShared "github.com/fullstackdev42/mp-emailer/mocks/shared"
 	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksCampaign "github.com/jonesrussell/mp-emailer/mocks/campaign"
+	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
+	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
 )

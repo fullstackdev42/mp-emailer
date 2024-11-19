@@ -7,47 +7,47 @@ with-expecter: true
 
 packages:
 
-  github.com/fullstackdev42/mp-emailer/campaign:
+  github.com/jonesrussell/mp-emailer/campaign:
     interfaces:
       ServiceInterface:
       RepresentativeLookupServiceInterface:
       ClientInterface:
       RepositoryInterface:
 
-  github.com/fullstackdev42/mp-emailer/database/core:
+  github.com/jonesrussell/mp-emailer/database/core:
     interfaces:
       Interface:
       Result:
       AssociationInterface:
       Migrator:
 
-  github.com/fullstackdev42/mp-emailer/database/factories:
+  github.com/jonesrussell/mp-emailer/database/factories:
     interfaces:
       Factory:
 
-  github.com/fullstackdev42/mp-emailer/database/seeders:
+  github.com/jonesrussell/mp-emailer/database/seeders:
     interfaces:
       Seeder:
 
-  github.com/fullstackdev42/mp-emailer/email:
+  github.com/jonesrussell/mp-emailer/email:
     interfaces:
       Service:
       SMTPClient:
       MailgunClient:
 
-  github.com/fullstackdev42/mp-emailer/shared:
+  github.com/jonesrussell/mp-emailer/shared:
     interfaces:
       ErrorHandlerInterface:
       TemplateRendererInterface:
       FlashHandlerInterface:
 
-  github.com/fullstackdev42/mp-emailer/user:
+  github.com/jonesrussell/mp-emailer/user:
     interfaces:
       RepositoryInterface:
       ServiceInterface:
       SessionManager:
 
-  github.com/fullstackdev42/mp-emailer/middleware:
+  github.com/jonesrussell/mp-emailer/middleware:
     interfaces:
       SessionManager:
       SessionStore:

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/email"
-	"github.com/fullstackdev42/mp-emailer/middleware"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/email"
+	"github.com/jonesrussell/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )

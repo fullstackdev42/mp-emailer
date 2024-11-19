@@ -1,9 +1,9 @@
 package campaign
 
 import (
-	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/user"
 	"gorm.io/gorm"
 )
 

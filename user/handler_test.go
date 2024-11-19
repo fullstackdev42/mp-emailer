@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/internal/testutil"
-	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/mp-emailer/internal/testutil"
+	"github.com/jonesrussell/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	mocksUser "github.com/fullstackdev42/mp-emailer/mocks/user"
+	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 )
 
 type HandlerTestSuite struct {

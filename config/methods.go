@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/fullstackdev42/mp-emailer/version"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/version"
 )
 
 func (c *Config) GetLogLevel() loggo.Level {

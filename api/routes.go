@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/fullstackdev42/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/middleware"
 	"github.com/labstack/echo/v4"
 )
 

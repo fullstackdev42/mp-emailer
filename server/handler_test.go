@@ -3,9 +3,9 @@ package server_test
 import (
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/internal/testutil"
-	"github.com/fullstackdev42/mp-emailer/server"
-	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/internal/testutil"
+	"github.com/jonesrussell/mp-emailer/server"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/stretchr/testify/suite"
 )
 

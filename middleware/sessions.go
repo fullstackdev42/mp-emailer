@@ -3,9 +3,9 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 )
 

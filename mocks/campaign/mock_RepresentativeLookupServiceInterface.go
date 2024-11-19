@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	campaign "github.com/fullstackdev42/mp-emailer/campaign"
+	campaign "github.com/jonesrussell/mp-emailer/campaign"
 	mock "github.com/stretchr/testify/mock"
 )
 

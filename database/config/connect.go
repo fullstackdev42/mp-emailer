@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

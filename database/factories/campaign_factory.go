@@ -1,10 +1,10 @@
 package factories
 
 import (
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/go-faker/faker/v4"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/database/core"
 )
 
 type CampaignFactory struct {

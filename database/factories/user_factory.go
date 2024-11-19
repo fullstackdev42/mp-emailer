@@ -1,9 +1,9 @@
 package factories
 
 import (
-	"github.com/fullstackdev42/mp-emailer/database/core"
-	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/go-faker/faker/v4"
+	"github.com/jonesrussell/mp-emailer/database/core"
+	"github.com/jonesrussell/mp-emailer/user"
 )
 
 type UserFactory struct {

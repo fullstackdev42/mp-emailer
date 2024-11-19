@@ -3,10 +3,10 @@ package server
 import (
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/email"
-	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/fullstackdev42/mp-emailer/version"
+	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/email"
+	"github.com/jonesrussell/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/version"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )

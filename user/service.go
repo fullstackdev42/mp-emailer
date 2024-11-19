@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/go-playground/validator/v10"
+	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"go.uber.org/fx"
 	"golang.org/x/crypto/bcrypt"
 )

@@ -3,7 +3,7 @@ package user
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database/core"
+	"github.com/jonesrussell/mp-emailer/database/core"
 )
 
 // RepositoryInterface defines the contract for user repository operations
