@@ -1,28 +1,30 @@
 package version
 
-var (
-	// current holds the current version information
-	current = Info{
+// NewInfo creates and returns a default version Info
+func NewInfo() Info {
+	return Info{
 		Version:   "dev",
 		BuildDate: "unknown",
 		Commit:    "none",
 	}
-)
+}
 
 // Get returns the current version information
 func Get() Info {
-	return current
+	return NewInfo()
 }
 
-// Set updates the version information
-func Set(version, buildDate, commit string) {
+// Set returns a new Info with updated fields
+func Set(version, buildDate, commit string) Info {
+	info := NewInfo()
 	if version != "" {
-		current.Version = version
+		info.Version = version
 	}
 	if buildDate != "" {
-		current.BuildDate = buildDate
+		info.BuildDate = buildDate
 	}
 	if commit != "" {
-		current.Commit = commit
+		info.Commit = commit
 	}
+	return info
 }
