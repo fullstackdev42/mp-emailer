@@ -2,10 +2,10 @@
 
 ## Session Management
 ### Core Implementation
-- [ ] Session Handling
-  - [ ] Add session cleanup
-  - [ ] Add session timeout handling
-  - [ ] Implement session store
+- [x] Session Handling
+  - [x] Add session cleanup
+  - [x] Add session timeout handling
+  - [x] Implement session store
 
 ### Security Enhancements
 - [ ] Session Security
@@ -46,3 +46,16 @@
 - Server startup (see main.go:startServer)
 - Middleware registration (see main.go:registerMiddlewares)
 - Session store configuration (see middleware/store.go)
+
+### External Services
+- [x] Email Provider Integration
+- [x] Database Interactions
+- [x] Cache Integration
+- [x] Session Store
+
+### Integration Tests
+- [ ] User Flow Tests
+  - [ ] Test registration to login flow
+  - [ ] Test password reset flow
+  - [ ] Test account management flow
+  - [x] Test session handling

@@ -1,12 +1,14 @@
 package shared
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
@@ -16,6 +18,7 @@ import (
 	"github.com/jonesrussell/mp-emailer/database/core"
 	"github.com/jonesrussell/mp-emailer/database/decorators"
 	"github.com/jonesrussell/mp-emailer/email"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/version"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -54,8 +57,12 @@ var App = fx.Options(
 			NewFlashHandler,
 			fx.As(new(FlashHandlerInterface)),
 		),
+		provideSessionCleaner,
 	),
 	ErrorModule,
+	fx.Invoke(
+		startSessionCleaner,
+	),
 )
 
 // Provide a new database connection
@@ -208,4 +215,28 @@ func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (emai
 
 func provideVersionInfo() version.Info {
 	return version.Get()
+}
+
+// Add provider function for SessionCleaner
+func provideSessionCleaner(store sessions.Store, cfg *config.Config, logger loggo.LoggerInterface) *session.Cleaner {
+	return session.NewCleaner(
+		store,
+		15*time.Minute, // cleanup interval
+		cfg.Auth.SessionMaxAge,
+		logger,
+	)
+}
+
+// Add startup function
+func startSessionCleaner(lc fx.Lifecycle, cleaner *session.Cleaner, e *echo.Echo) {
+	// Add the cleanup middleware to Echo
+	e.Use(cleaner.Middleware())
+
+	// Start the cleanup routine
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			cleaner.StartCleanup(ctx)
+			return nil
+		},
+	})
 }

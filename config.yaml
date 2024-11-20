@@ -18,11 +18,13 @@ email:
     domain: ""
 
 auth:
-  jwt_expiry: 24h
-  session_name: session
+  jwt_secret: "your-secret-here"
+  jwt_expiry: "24h"
+  session_name: "session"
   session_max_age: 604800
-  session_secure: true
-  session_http_only: true
+  session_secret: "your-session-secret-here"
+  secure: true
+  http_only: true
 
 feature_flags:
   enable_mailgun: false

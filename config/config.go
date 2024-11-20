@@ -51,7 +51,10 @@ type AuthConfig struct {
 	JWTExpiry     string `env:"JWT_EXPIRY" envDefault:"24h"`
 	JWTSecret     string `env:"JWT_SECRET,required" envDefault:"dev_jwt_secret_do_not_use_in_production"`
 	SessionName   string `env:"SESSION_NAME" envDefault:"session"`
+	SessionMaxAge int    `env:"SESSION_MAX_AGE" envDefault:"3600"`
 	SessionSecret string `env:"SESSION_SECRET,required" envDefault:"dev_session_secret_do_not_use_in_production"`
+	Secure        bool   `env:"SESSION_SECURE" envDefault:"true"`
+	HTTPOnly      bool   `env:"SESSION_HTTP_ONLY" envDefault:"true"`
 }
 
 type LogConfig struct {
