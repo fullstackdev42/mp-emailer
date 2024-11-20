@@ -29,6 +29,11 @@ type HandlerTestSuite struct {
 func (s *HandlerTestSuite) SetupTest() {
 	s.BaseTestSuite.SetupTest()
 
+	// Initialize mocks
+	s.CampaignService = campaignmocks.NewMockServiceInterface(s.T())
+	s.TemplateRenderer = sharedmocks.NewMockTemplateRendererInterface(s.T())
+	s.ErrorHandler = sharedmocks.NewMockErrorHandlerInterface(s.T())
+
 	// Register renderer with Echo
 	s.Echo.Renderer = s.TemplateRenderer
 
@@ -66,14 +71,51 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 		{
 			name: "successful_campaign_fetch",
 			setupMocks: func(c echo.Context) {
-				// Mock middleware manager
-				middlewareManager := &middleware.Manager{}
-				c.Set("middleware_manager", middlewareManager)
+				// Register the template renderer with Echo
+				e := echo.New()
+				e.Renderer = s.TemplateRenderer
+				c.Echo().Renderer = s.TemplateRenderer
+
+				// Initialize middleware manager
+				params := middleware.ManagerParams{
+					SessionStore: s.Store,
+					Logger:       s.Logger,
+					Cfg:          s.Config,
+					ErrorHandler: s.ErrorHandler,
+				}
+
+				manager, err := middleware.NewManager(params)
+				s.NoError(err)
+				c.Set("middleware_manager", manager)
+
+				campaignID := uuid.MustParse("b8568959-70eb-42f9-bde6-57250faced25")
+
+				// Setup logger expectations
+				s.Logger.EXPECT().
+					Debug("CampaignGET: Starting").
+					Once()
+
+				s.Logger.EXPECT().
+					Debug("CampaignGET: Parsed ID", "id", campaignID).
+					Once()
+
+				s.Logger.EXPECT().
+					Debug("CampaignGET: Campaign fetched successfully", "id", campaignID).
+					Once()
+
+				s.Logger.EXPECT().
+					Debug("CampaignGET: Authentication status", "isAuthenticated", false).
+					Once()
+
+				// Add expectation for IsAuthenticated check
+				s.Logger.EXPECT().
+					Debug("Failed to get session for authentication check", "error", mock.Anything).
+					Once()
 
 				// Setup campaign service mock
 				campaignData := &campaign.Campaign{
 					BaseModel: shared.BaseModel{
-						ID: uuid.MustParse("b8568959-70eb-42f9-bde6-57250faced25"),
+						ID: campaignID,
 					},
 					Name:        "Test Campaign",
 					Description: "Test Description",
@@ -81,29 +123,26 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 					OwnerID:     uuid.New(),
 				}
 
-				// Setup campaign service expectations using the correct method name
 				s.CampaignService.EXPECT().
-					GetCampaignByID(mock.Anything, campaign.GetCampaignParams{
-						ID: campaignData.ID,
-					}).Return(campaignData, nil)
+					FetchCampaign(
+						mock.Anything,
+						campaign.GetCampaignParams{
+							ID: campaignID,
+						},
+					).Return(campaignData, nil).Once()
 
-				// Setup template renderer expectations
+				// Update template renderer expectations to match actual call signature
 				s.TemplateRenderer.EXPECT().
 					Render(
-						mock.Anything,
-						"campaign/show.html",
-						"layouts/main",
-						mock.AnythingOfType("map[string]interface{}"),
-					).Return(nil)
-
-				// Setup error handler expectations
-				s.ErrorHandler.EXPECT().
-					HandleHTTPError(
-						mock.AnythingOfType("*echo.context"),
-						mock.AnythingOfType("*errors.errorString"),
-						"Internal server error",
-						http.StatusInternalServerError,
-					).Return(echo.NewHTTPError(http.StatusInternalServerError)).Maybe()
+						mock.AnythingOfType("*bytes.Buffer"),
+						"campaign",
+						mock.MatchedBy(func(data shared.Data) bool {
+							return data.Title == "Campaign Details" &&
+								data.PageName == "campaign" &&
+								data.Content != nil
+						}),
+						c,
+					).Return(nil).Once()
 			},
 			campaignID:     "b8568959-70eb-42f9-bde6-57250faced25",
 			expectedStatus: http.StatusOK,
@@ -115,6 +154,7 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 		s.Run(tc.name, func() {
 			// Setup
 			e := echo.New()
+			e.Renderer = s.TemplateRenderer // Register renderer here as well
 			req := httptest.NewRequest(http.MethodGet, "/campaign/"+tc.campaignID, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
