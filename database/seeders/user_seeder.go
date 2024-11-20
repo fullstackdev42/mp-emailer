@@ -3,7 +3,7 @@ package seeders
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database/factories"
+	"github.com/jonesrussell/mp-emailer/database/factories"
 )
 
 type UserSeeder struct {

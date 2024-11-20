@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	user "github.com/fullstackdev42/mp-emailer/user"
+	user "github.com/jonesrussell/mp-emailer/user"
 	mock "github.com/stretchr/testify/mock"
 )
 

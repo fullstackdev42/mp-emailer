@@ -3,8 +3,8 @@ package email
 import (
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
+	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

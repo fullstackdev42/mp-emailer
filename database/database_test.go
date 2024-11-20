@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fullstackdev42/mp-emailer/config"
-	dbconfig "github.com/fullstackdev42/mp-emailer/database/config"
-	"github.com/fullstackdev42/mp-emailer/mocks"
+	"github.com/jonesrussell/mp-emailer/config"
+	dbconfig "github.com/jonesrussell/mp-emailer/database/config"
+	"github.com/jonesrussell/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

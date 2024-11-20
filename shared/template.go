@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
+	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/labstack/echo/v4"
 )
 

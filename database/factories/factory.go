@@ -1,6 +1,6 @@
 package factories
 
-import "github.com/fullstackdev42/mp-emailer/database/core"
+import "github.com/jonesrussell/mp-emailer/database/core"
 
 type Factory interface {
 	Make() interface{}

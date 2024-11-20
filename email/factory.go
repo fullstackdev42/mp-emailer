@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/smtp"
 
-	"github.com/fullstackdev42/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/mailgun/mailgun-go/v4"
 )
 

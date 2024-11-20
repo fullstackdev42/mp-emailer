@@ -1,8 +1,8 @@
 package campaign
 
 import (
-	"github.com/fullstackdev42/mp-emailer/database/core"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/database/core"
 	"go.uber.org/fx"
 )
 

@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	mocks "github.com/fullstackdev42/mp-emailer/mocks"
-	mocksCampaign "github.com/fullstackdev42/mp-emailer/mocks/campaign"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/campaign"
+	mocks "github.com/jonesrussell/mp-emailer/mocks"
+	mocksCampaign "github.com/jonesrussell/mp-emailer/mocks/campaign"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )

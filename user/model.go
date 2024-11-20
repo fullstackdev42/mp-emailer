@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/fullstackdev42/mp-emailer/shared"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"gorm.io/gorm"
 )
 

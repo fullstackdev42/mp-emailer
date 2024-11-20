@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )

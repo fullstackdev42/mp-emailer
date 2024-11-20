@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	mockDB "github.com/fullstackdev42/mp-emailer/mocks/core"
-	"github.com/fullstackdev42/mp-emailer/user"
+	mockDB "github.com/jonesrussell/mp-emailer/mocks/core"
+	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

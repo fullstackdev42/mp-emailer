@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/fullstackdev42/mp-emailer/config"
-	"github.com/fullstackdev42/mp-emailer/middleware"
-	"github.com/fullstackdev42/mp-emailer/mocks"
-	mocksMiddleware "github.com/fullstackdev42/mp-emailer/mocks/middleware"
-	mocksShared "github.com/fullstackdev42/mp-emailer/mocks/shared"
-	"github.com/fullstackdev42/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksMiddleware "github.com/jonesrussell/mp-emailer/mocks/middleware"
+	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
+	"github.com/jonesrussell/mp-emailer/shared"
 )
 
 type MiddlewareTestSuite struct {

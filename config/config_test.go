@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -3,9 +3,9 @@ package shared
 import (
 	"net/http"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/config"
 	"go.uber.org/fx"
 )
 

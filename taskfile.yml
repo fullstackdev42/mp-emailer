@@ -56,9 +56,9 @@ tasks:
       - mkdir -p {{.BIN_DIR}}
       - |
         go build -ldflags "
-          -X 'github.com/fullstackdev42/mp-emailer/version.Version={{.VERSION}}'
-          -X 'github.com/fullstackdev42/mp-emailer/version.BuildDate={{.BUILD_DATE}}'
-          -X 'github.com/fullstackdev42/mp-emailer/version.Commit={{.COMMIT}}'
+          -X 'github.com/jonesrussell/mp-emailer/version.Version={{.VERSION}}'
+          -X 'github.com/jonesrussell/mp-emailer/version.BuildDate={{.BUILD_DATE}}'
+          -X 'github.com/jonesrussell/mp-emailer/version.Commit={{.COMMIT}}'
         " -o {{.BIN_DIR}}/{{.BINARY_NAME}} main.go
 
   run:

@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/campaign"
-	"github.com/fullstackdev42/mp-emailer/shared"
-	"github.com/fullstackdev42/mp-emailer/user"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/shared"
+	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
 )
 

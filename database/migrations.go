@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fullstackdev42/mp-emailer/config"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/jonesrussell/mp-emailer/config"
 	"go.uber.org/fx"
 
 	// Import MySQL driver for database migrations

@@ -1,4 +1,4 @@
-module github.com/fullstackdev42/mp-emailer
+module github.com/jonesrussell/mp-emailer
 
 go 1.23
 

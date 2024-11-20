@@ -3,7 +3,7 @@ package email
 import (
 	"testing"
 
-	mocksEmail "github.com/fullstackdev42/mp-emailer/mocks/email"
+	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -3,7 +3,7 @@ package campaign
 import (
 	"fmt"
 
-	"github.com/fullstackdev42/mp-emailer/database/core"
+	"github.com/jonesrussell/mp-emailer/database/core"
 )
 
 // RepositoryInterface defines the contract for campaign repository operations
