@@ -144,3 +144,8 @@ func (db *DB) Error() string {
 	}
 	return ""
 }
+
+// Add this method to your DB struct
+func (db *DB) Update(value interface{}) error {
+	return db.GormDB.Save(value).Error
+}

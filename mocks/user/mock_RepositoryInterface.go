@@ -124,6 +124,64 @@ func (_c *MockRepositoryInterface_FindByEmail_Call) RunAndReturn(run func(string
 	return _c
 }
 
+// FindByResetToken provides a mock function with given fields: token
+func (_m *MockRepositoryInterface) FindByResetToken(token string) (*user.User, error) {
+	ret := _m.Called(token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByResetToken")
+	}
+
+	var r0 *user.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*user.User, error)); ok {
+		return rf(token)
+	}
+	if rf, ok := ret.Get(0).(func(string) *user.User); ok {
+		r0 = rf(token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*user.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(token)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockRepositoryInterface_FindByResetToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByResetToken'
+type MockRepositoryInterface_FindByResetToken_Call struct {
+	*mock.Call
+}
+
+// FindByResetToken is a helper method to define mock.On call
+//   - token string
+func (_e *MockRepositoryInterface_Expecter) FindByResetToken(token interface{}) *MockRepositoryInterface_FindByResetToken_Call {
+	return &MockRepositoryInterface_FindByResetToken_Call{Call: _e.mock.On("FindByResetToken", token)}
+}
+
+func (_c *MockRepositoryInterface_FindByResetToken_Call) Run(run func(token string)) *MockRepositoryInterface_FindByResetToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *MockRepositoryInterface_FindByResetToken_Call) Return(_a0 *user.User, _a1 error) *MockRepositoryInterface_FindByResetToken_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockRepositoryInterface_FindByResetToken_Call) RunAndReturn(run func(string) (*user.User, error)) *MockRepositoryInterface_FindByResetToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindByUsername provides a mock function with given fields: username
 func (_m *MockRepositoryInterface) FindByUsername(username string) (*user.User, error) {
 	ret := _m.Called(username)
@@ -178,6 +236,52 @@ func (_c *MockRepositoryInterface_FindByUsername_Call) Return(_a0 *user.User, _a
 }
 
 func (_c *MockRepositoryInterface_FindByUsername_Call) RunAndReturn(run func(string) (*user.User, error)) *MockRepositoryInterface_FindByUsername_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function with given fields: _a0
+func (_m *MockRepositoryInterface) Update(_a0 *user.User) error {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*user.User) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockRepositoryInterface_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockRepositoryInterface_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - _a0 *user.User
+func (_e *MockRepositoryInterface_Expecter) Update(_a0 interface{}) *MockRepositoryInterface_Update_Call {
+	return &MockRepositoryInterface_Update_Call{Call: _e.mock.On("Update", _a0)}
+}
+
+func (_c *MockRepositoryInterface_Update_Call) Run(run func(_a0 *user.User)) *MockRepositoryInterface_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*user.User))
+	})
+	return _c
+}
+
+func (_c *MockRepositoryInterface_Update_Call) Return(_a0 error) *MockRepositoryInterface_Update_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRepositoryInterface_Update_Call) RunAndReturn(run func(*user.User) error) *MockRepositoryInterface_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

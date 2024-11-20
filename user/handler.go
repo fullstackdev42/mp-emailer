@@ -24,6 +24,8 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 	userGroup.GET("/login", h.LoginGET)
 	userGroup.POST("/login", h.LoginPOST)
 	userGroup.GET("/logout", h.LogoutGET)
+	userGroup.POST("/request-password-reset", h.RequestPasswordResetPOST)
+	userGroup.POST("/reset-password", h.ResetPasswordPOST)
 }
 
 // Handler for user routes
@@ -161,4 +163,40 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/")
+}
+
+// RequestPasswordResetPOST handles the password reset request
+func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
+	dto := new(PasswordResetDTO)
+	if err := c.Bind(dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
+	}
+
+	if err := h.Service.RequestPasswordReset(dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", http.StatusInternalServerError)
+	}
+
+	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Password reset instructions have been sent to your email"); err != nil {
+		h.Logger.Error("Failed to set flash message", err)
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/user/login")
+}
+
+// ResetPasswordPOST handles the password reset completion
+func (h *Handler) ResetPasswordPOST(c echo.Context) error {
+	dto := new(ResetPasswordDTO)
+	if err := c.Bind(dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
+	}
+
+	if err := h.Service.ResetPassword(dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", http.StatusInternalServerError)
+	}
+
+	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Your password has been reset successfully"); err != nil {
+		h.Logger.Error("Failed to set flash message", err)
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/user/login")
 }

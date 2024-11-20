@@ -169,3 +169,28 @@ func (d *LoggingDecorator) DB() *gorm.DB {
 func (d *LoggingDecorator) GetSQLDB() (*sql.DB, error) {
 	return d.Database.DB().DB()
 }
+
+// Add this method to the LoggingDecorator struct
+func (d *LoggingDecorator) Error() string {
+	err := d.Database.Error()
+	if err != "" {
+		d.Logger.Debug("Database error occurred", "error", err)
+	}
+	return err
+}
+
+// Add this method to the LoggingDecorator struct
+func (d *LoggingDecorator) Migrator() core.Migrator {
+	d.Logger.Debug("Getting database migrator")
+	return d.Database.Migrator()
+}
+
+// Add this method to the LoggingDecorator struct
+func (d *LoggingDecorator) Update(value interface{}) error {
+	d.Logger.Debug("Updating model", "model", value)
+	err := d.Database.Update(value)
+	if err != nil {
+		d.Logger.Error("Error updating model", err, "model", value)
+	}
+	return err
+}

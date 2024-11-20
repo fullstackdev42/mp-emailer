@@ -3,9 +3,11 @@ package user
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/google/uuid"
+	"github.com/jonesrussell/mp-emailer/email"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"go.uber.org/fx"
 	"golang.org/x/crypto/bcrypt"
@@ -18,13 +20,15 @@ type ServiceInterface interface {
 	RegisterUser(params *RegisterDTO) (*DTO, error)
 	LoginUser(params *LoginDTO) (string, error)
 	AuthenticateUser(username, password string) (bool, *User, error)
+	RequestPasswordReset(dto *PasswordResetDTO) error
+	ResetPassword(dto *ResetPasswordDTO) error
 }
 
 // Service is the implementation of the UserServiceInterface
 type Service struct {
-	repo     RepositoryInterface
-	validate *validator.Validate
-	cfg      *config.Config
+	repo         RepositoryInterface
+	validate     *validator.Validate
+	emailService email.ServiceInterface
 }
 
 // Explicitly implement the ServiceInterface
@@ -33,17 +37,17 @@ var _ ServiceInterface = (*Service)(nil)
 // ServiceParams for dependency injection
 type ServiceParams struct {
 	fx.In
-	Repo     RepositoryInterface
-	Validate *validator.Validate
-	Cfg      *config.Config
+	Repo         RepositoryInterface
+	Validate     *validator.Validate
+	EmailService email.ServiceInterface
 }
 
 // NewService creates a new user service
 func NewService(params ServiceParams) ServiceInterface {
 	return &Service{
-		repo:     params.Repo,
-		validate: params.Validate,
-		cfg:      params.Cfg,
+		repo:         params.Repo,
+		validate:     params.Validate,
+		emailService: params.EmailService,
 	}
 }
 
@@ -148,4 +152,77 @@ func (s *Service) AuthenticateUser(username, password string) (bool, *User, erro
 	}
 
 	return true, user, nil
+}
+
+type PasswordResetDTO struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordDTO struct {
+	Token           string `json:"token" validate:"required"`
+	Password        string `json:"password" validate:"required,min=8,max=72"`
+	PasswordConfirm string `json:"password_confirm" validate:"required,eqfield=Password"`
+}
+
+// RequestPasswordReset initiates the password reset process
+func (s *Service) RequestPasswordReset(dto *PasswordResetDTO) error {
+	if err := s.validate.Struct(dto); err != nil {
+		return fmt.Errorf("validation error: %w", err)
+	}
+
+	user, err := s.repo.FindByEmail(dto.Email)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	// Generate reset token
+	token := uuid.New().String()
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	// Save reset token to user
+	user.ResetToken = token
+	user.ResetTokenExpiresAt = expiresAt
+	if err := s.repo.Update(user); err != nil {
+		return fmt.Errorf("failed to save reset token: %w", err)
+	}
+
+	// Send reset email
+	if err := s.emailService.SendPasswordReset(user.Email, token); err != nil {
+		return fmt.Errorf("failed to send reset email: %w", err)
+	}
+
+	return nil
+}
+
+// ResetPassword completes the password reset process
+func (s *Service) ResetPassword(dto *ResetPasswordDTO) error {
+	if err := s.validate.Struct(dto); err != nil {
+		return fmt.Errorf("validation error: %w", err)
+	}
+
+	user, err := s.repo.FindByResetToken(dto.Token)
+	if err != nil {
+		return fmt.Errorf("invalid or expired token: %w", err)
+	}
+
+	if user.ResetTokenExpiresAt.Before(time.Now()) {
+		return fmt.Errorf("reset token has expired")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Update user password and clear reset token
+	user.PasswordHash = string(hashedPassword)
+	user.ResetToken = ""
+	user.ResetTokenExpiresAt = time.Time{}
+
+	if err := s.repo.Update(user); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }

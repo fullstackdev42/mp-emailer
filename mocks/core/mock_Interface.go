@@ -266,6 +266,51 @@ func (_c *MockInterface_Delete_Call) RunAndReturn(run func(interface{}) error) *
 	return _c
 }
 
+// Error provides a mock function with given fields:
+func (_m *MockInterface) Error() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// MockInterface_Error_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Error'
+type MockInterface_Error_Call struct {
+	*mock.Call
+}
+
+// Error is a helper method to define mock.On call
+func (_e *MockInterface_Expecter) Error() *MockInterface_Error_Call {
+	return &MockInterface_Error_Call{Call: _e.mock.On("Error")}
+}
+
+func (_c *MockInterface_Error_Call) Run(run func()) *MockInterface_Error_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockInterface_Error_Call) Return(_a0 string) *MockInterface_Error_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Error_Call) RunAndReturn(run func() string) *MockInterface_Error_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Exec provides a mock function with given fields: query, args
 func (_m *MockInterface) Exec(query string, args ...interface{}) error {
 	var _ca []interface{}
@@ -720,6 +765,53 @@ func (_c *MockInterface_Limit_Call) RunAndReturn(run func(int) core.Interface) *
 	return _c
 }
 
+// Migrator provides a mock function with given fields:
+func (_m *MockInterface) Migrator() core.Migrator {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Migrator")
+	}
+
+	var r0 core.Migrator
+	if rf, ok := ret.Get(0).(func() core.Migrator); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(core.Migrator)
+		}
+	}
+
+	return r0
+}
+
+// MockInterface_Migrator_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Migrator'
+type MockInterface_Migrator_Call struct {
+	*mock.Call
+}
+
+// Migrator is a helper method to define mock.On call
+func (_e *MockInterface_Expecter) Migrator() *MockInterface_Migrator_Call {
+	return &MockInterface_Migrator_Call{Call: _e.mock.On("Migrator")}
+}
+
+func (_c *MockInterface_Migrator_Call) Run(run func()) *MockInterface_Migrator_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockInterface_Migrator_Call) Return(_a0 core.Migrator) *MockInterface_Migrator_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Migrator_Call) RunAndReturn(run func() core.Migrator) *MockInterface_Migrator_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Not provides a mock function with given fields: query, args
 func (_m *MockInterface) Not(query interface{}, args ...interface{}) core.Interface {
 	var _ca []interface{}
@@ -1095,6 +1187,52 @@ func (_c *MockInterface_Unscoped_Call) Return(_a0 core.Interface) *MockInterface
 }
 
 func (_c *MockInterface_Unscoped_Call) RunAndReturn(run func() core.Interface) *MockInterface_Unscoped_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function with given fields: value
+func (_m *MockInterface) Update(value interface{}) error {
+	ret := _m.Called(value)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
+		r0 = rf(value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockInterface_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockInterface_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - value interface{}
+func (_e *MockInterface_Expecter) Update(value interface{}) *MockInterface_Update_Call {
+	return &MockInterface_Update_Call{Call: _e.mock.On("Update", value)}
+}
+
+func (_c *MockInterface_Update_Call) Run(run func(value interface{})) *MockInterface_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(interface{}))
+	})
+	return _c
+}
+
+func (_c *MockInterface_Update_Call) Return(_a0 error) *MockInterface_Update_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Update_Call) RunAndReturn(run func(interface{}) error) *MockInterface_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

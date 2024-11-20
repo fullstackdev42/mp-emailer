@@ -7,12 +7,14 @@ import (
 )
 
 type Interface interface {
+	DB() *gorm.DB
 	Exists(model interface{}, query string, args ...interface{}) (bool, error)
 	Create(value interface{}) error
 	FindOne(model interface{}, query string, args ...interface{}) error
+	Update(value interface{}) error
+	Delete(value interface{}) error
 	Exec(query string, args ...interface{}) error
 	Query(query string, args ...interface{}) Result
-	Delete(value interface{}) error
 	Unscoped() Interface
 	WithTrashed() Interface
 	Preload(query string, args ...interface{}) Interface
@@ -27,8 +29,9 @@ type Interface interface {
 	Limit(limit int) Interface
 	Offset(offset int) Interface
 	AutoMigrate(dst ...interface{}) error
-	DB() *gorm.DB
+	Migrator() Migrator
 	GetSQLDB() (*sql.DB, error)
+	Error() string
 }
 
 type Result interface {

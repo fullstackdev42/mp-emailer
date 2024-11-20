@@ -1,9 +1,11 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/jonesrussell/mp-emailer/database/core"
+	"gorm.io/gorm"
 )
 
 // RepositoryInterface defines the contract for user repository operations
@@ -11,6 +13,8 @@ type RepositoryInterface interface {
 	Create(user *User) error
 	FindByEmail(email string) (*User, error)
 	FindByUsername(username string) (*User, error)
+	FindByResetToken(token string) (*User, error)
+	Update(user *User) error
 }
 
 // Repository implements the RepositoryInterface
@@ -45,6 +49,24 @@ func (r *Repository) FindByUsername(username string) (*User, error) {
 	var user User
 	if err := r.db.FindOne(&user, "username = ?", username); err != nil {
 		return nil, fmt.Errorf("error finding user by username: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *Repository) Update(user *User) error {
+	if err := r.db.Update(user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) FindByResetToken(token string) (*User, error) {
+	var user User
+	if err := r.db.FindOne(&user, "reset_token = ?", token); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found with reset token: %w", err)
+		}
+		return nil, fmt.Errorf("failed to find user by reset token: %w", err)
 	}
 	return &user, nil
 }

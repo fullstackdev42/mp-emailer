@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/jonesrussell/mp-emailer/config"
+	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/stretchr/testify/assert"
@@ -19,19 +19,21 @@ import (
 
 type ServiceTestSuite struct {
 	suite.Suite
-	mockRepo *mocksUser.MockRepositoryInterface
-	service  user.ServiceInterface
-	validate *validator.Validate
+	mockRepo         *mocksUser.MockRepositoryInterface
+	mockEmailService *mocksEmail.MockServiceInterface
+	service          user.ServiceInterface
+	validate         *validator.Validate
 }
 
 func (s *ServiceTestSuite) SetupTest() {
 	s.mockRepo = mocksUser.NewMockRepositoryInterface(s.T())
+	s.mockEmailService = mocksEmail.NewMockServiceInterface(s.T())
 	s.validate = validator.New()
 
 	s.service = user.NewService(user.ServiceParams{
-		Repo:     s.mockRepo,
-		Validate: s.validate,
-		Cfg:      &config.Config{},
+		Repo:         s.mockRepo,
+		Validate:     s.validate,
+		EmailService: s.mockEmailService,
 	})
 }
 

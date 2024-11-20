@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"gorm.io/gorm"
@@ -9,9 +11,11 @@ import (
 // User is the model for a user
 type User struct {
 	shared.BaseModel
-	Username     string `gorm:"uniqueIndex;not null" json:"username"`
-	Email        string `gorm:"uniqueIndex;not null" json:"email"`
-	PasswordHash string `gorm:"not null" json:"-"`
+	Username            string `gorm:"uniqueIndex;not null" json:"username"`
+	Email               string `gorm:"uniqueIndex;not null" json:"email"`
+	PasswordHash        string `gorm:"not null" json:"-"`
+	ResetToken          string `gorm:"index"`
+	ResetTokenExpiresAt time.Time
 }
 
 // BeforeCreate is a GORM hook that is triggered before a new record is inserted into the database

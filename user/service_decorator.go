@@ -72,3 +72,23 @@ func (d *LoggingDecorator) AuthenticateUser(username, password string) (bool, *U
 	}
 	return authenticated, user, err
 }
+
+// RequestPasswordReset decorates the password reset request with logging
+func (d *LoggingDecorator) RequestPasswordReset(dto *PasswordResetDTO) error {
+	d.logger.Info("Requesting password reset", "email", dto.Email)
+	err := d.service.RequestPasswordReset(dto)
+	if err != nil {
+		d.logger.Error("Failed to request password reset", err, "email", dto.Email)
+	}
+	return err
+}
+
+// ResetPassword decorates the password reset completion with logging
+func (d *LoggingDecorator) ResetPassword(dto *ResetPasswordDTO) error {
+	d.logger.Info("Resetting password", "token", dto.Token)
+	err := d.service.ResetPassword(dto)
+	if err != nil {
+		d.logger.Error("Failed to reset password", err, "token", dto.Token)
+	}
+	return err
+}

@@ -347,6 +347,98 @@ func (_c *MockServiceInterface_RegisterUser_Call) RunAndReturn(run func(*user.Re
 	return _c
 }
 
+// RequestPasswordReset provides a mock function with given fields: dto
+func (_m *MockServiceInterface) RequestPasswordReset(dto *user.PasswordResetDTO) error {
+	ret := _m.Called(dto)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RequestPasswordReset")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*user.PasswordResetDTO) error); ok {
+		r0 = rf(dto)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockServiceInterface_RequestPasswordReset_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RequestPasswordReset'
+type MockServiceInterface_RequestPasswordReset_Call struct {
+	*mock.Call
+}
+
+// RequestPasswordReset is a helper method to define mock.On call
+//   - dto *user.PasswordResetDTO
+func (_e *MockServiceInterface_Expecter) RequestPasswordReset(dto interface{}) *MockServiceInterface_RequestPasswordReset_Call {
+	return &MockServiceInterface_RequestPasswordReset_Call{Call: _e.mock.On("RequestPasswordReset", dto)}
+}
+
+func (_c *MockServiceInterface_RequestPasswordReset_Call) Run(run func(dto *user.PasswordResetDTO)) *MockServiceInterface_RequestPasswordReset_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*user.PasswordResetDTO))
+	})
+	return _c
+}
+
+func (_c *MockServiceInterface_RequestPasswordReset_Call) Return(_a0 error) *MockServiceInterface_RequestPasswordReset_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockServiceInterface_RequestPasswordReset_Call) RunAndReturn(run func(*user.PasswordResetDTO) error) *MockServiceInterface_RequestPasswordReset_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResetPassword provides a mock function with given fields: dto
+func (_m *MockServiceInterface) ResetPassword(dto *user.ResetPasswordDTO) error {
+	ret := _m.Called(dto)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResetPassword")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*user.ResetPasswordDTO) error); ok {
+		r0 = rf(dto)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockServiceInterface_ResetPassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResetPassword'
+type MockServiceInterface_ResetPassword_Call struct {
+	*mock.Call
+}
+
+// ResetPassword is a helper method to define mock.On call
+//   - dto *user.ResetPasswordDTO
+func (_e *MockServiceInterface_Expecter) ResetPassword(dto interface{}) *MockServiceInterface_ResetPassword_Call {
+	return &MockServiceInterface_ResetPassword_Call{Call: _e.mock.On("ResetPassword", dto)}
+}
+
+func (_c *MockServiceInterface_ResetPassword_Call) Run(run func(dto *user.ResetPasswordDTO)) *MockServiceInterface_ResetPassword_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*user.ResetPasswordDTO))
+	})
+	return _c
+}
+
+func (_c *MockServiceInterface_ResetPassword_Call) Return(_a0 error) *MockServiceInterface_ResetPassword_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockServiceInterface_ResetPassword_Call) RunAndReturn(run func(*user.ResetPasswordDTO) error) *MockServiceInterface_ResetPassword_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Warn provides a mock function with given fields: message, params
 func (_m *MockServiceInterface) Warn(message string, params ...interface{}) {
 	var _ca []interface{}

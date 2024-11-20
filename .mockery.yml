@@ -31,6 +31,7 @@ packages:
 
   github.com/jonesrussell/mp-emailer/email:
     interfaces:
+      ServiceInterface:
       Service:
       SMTPClient:
       MailgunClient:
