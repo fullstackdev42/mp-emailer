@@ -45,11 +45,15 @@ func (s *IntegrationTestSuite) SetupTest() {
 	mockSession.Values = make(map[interface{}]interface{}) // Initialize session values map
 
 	// Setup expectations for registration
-	mockUserService.On("RegisterUser", mock.MatchedBy(func(params *user.RegisterDTO) bool {
-		return params.Username == "testuser" &&
-			params.Email == "test@example.com" &&
-			params.Password == "securepassword123"
-	})).Return(&user.DTO{
+	mockUserService.On("RegisterUser",
+		mock.Anything,
+		mock.MatchedBy(func(params *user.RegisterDTO) bool {
+			return params.Username == "testuser" &&
+				params.Email == "test@example.com" &&
+				params.Password == "securepassword123" &&
+				params.PasswordConfirm == "securepassword123"
+		}),
+	).Return(&user.DTO{
 		Username: "testuser",
 		Email:    "test@example.com",
 	}, nil)
@@ -59,13 +63,12 @@ func (s *IntegrationTestSuite) SetupTest() {
 		mock.Anything,
 		"Registration successful! Please log in.",
 	).Run(func(_ mock.Arguments) {
-		// Set flash message in session
 		mockSession.AddFlash("Registration successful! Please log in.")
 	}).Return(nil)
 
 	// Setup expectations for login session
 	mockSessionManager.On("GetSession", mock.Anything).Return(mockSession, nil)
-	mockSessionManager.On("SetSessionValues", mockSession, mock.AnythingOfType("*user.User")).Run(func(args mock.Arguments) {
+	mockSessionManager.On("SetSessionValues", mockSession, mock.Anything).Run(func(args mock.Arguments) {
 		// Set user values in session
 		user := args.Get(1).(*user.User)
 		mockSession.Values["user_id"] = user.ID
@@ -78,14 +81,17 @@ func (s *IntegrationTestSuite) SetupTest() {
 		Username: "testuser",
 		Email:    "test@example.com",
 	}
-	mockUserService.On("AuthenticateUser", "testuser", "securepassword123").Return(true, testUser, nil)
+	mockUserService.On("AuthenticateUser",
+		mock.Anything,
+		"testuser",
+		"securepassword123",
+	).Return(true, testUser, nil)
 
 	// Setup expectations for flash message after login
 	mockFlashHandler.On("SetFlashAndSaveSession",
 		mock.Anything,
 		"Successfully logged in!",
 	).Run(func(_ mock.Arguments) {
-		// Set flash message in session
 		mockSession.AddFlash("Successfully logged in!")
 	}).Return(nil)
 

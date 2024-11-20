@@ -21,14 +21,14 @@ import (
 type ServiceTestSuite struct {
 	suite.Suite
 	mockRepo         *mocksUser.MockRepositoryInterface
-	mockEmailService *mocksEmail.MockServiceInterface
+	mockEmailService *mocksEmail.MockService
 	service          user.ServiceInterface
 	validate         *validator.Validate
 }
 
 func (s *ServiceTestSuite) SetupTest() {
 	s.mockRepo = mocksUser.NewMockRepositoryInterface(s.T())
-	s.mockEmailService = mocksEmail.NewMockServiceInterface(s.T())
+	s.mockEmailService = mocksEmail.NewMockService(s.T())
 	s.validate = validator.New()
 
 	s.service = user.NewService(user.ServiceParams{
@@ -59,7 +59,7 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			name: "successful login",
 			setup: func() {
 				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
-				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
+				s.mockRepo.On("FindByUsername", mock.Anything, "testuser").Return(&user.User{
 					Username:     "testuser",
 					PasswordHash: string(hashedPassword),
 				}, nil)
@@ -73,7 +73,7 @@ func (s *ServiceTestSuite) TestLoginUser() {
 		{
 			name: "user not found",
 			setup: func() {
-				s.mockRepo.On("FindByUsername", "nonexistent").
+				s.mockRepo.On("FindByUsername", mock.Anything, "nonexistent").
 					Return(nil, errors.New("user not found"))
 			},
 			dto: &user.LoginDTO{
@@ -86,7 +86,7 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			name: "incorrect password",
 			setup: func() {
 				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpass"), bcrypt.DefaultCost)
-				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
+				s.mockRepo.On("FindByUsername", mock.Anything, "testuser").Return(&user.User{
 					Username:     "testuser",
 					PasswordHash: string(hashedPassword),
 				}, nil)
@@ -140,7 +140,7 @@ func (s *ServiceTestSuite) TestLoginUser() {
 		{
 			name: "repository error",
 			setup: func() {
-				s.mockRepo.On("FindByUsername", "testuser").
+				s.mockRepo.On("FindByUsername", mock.Anything, "testuser").
 					Return(nil, errors.New("database connection error"))
 			},
 			dto: &user.LoginDTO{
@@ -196,7 +196,7 @@ func (s *ServiceTestSuite) TestGetUser() {
 		{
 			name: "successful get user",
 			setup: func() {
-				s.mockRepo.On("FindByUsername", "testuser").Return(&user.User{
+				s.mockRepo.On("FindByUsername", mock.Anything, "testuser").Return(&user.User{
 					Username: "testuser",
 					Email:    "test@example.com",
 				}, nil)
@@ -214,7 +214,7 @@ func (s *ServiceTestSuite) TestGetUser() {
 		{
 			name: "user not found",
 			setup: func() {
-				s.mockRepo.On("FindByUsername", "nonexistent").
+				s.mockRepo.On("FindByUsername", mock.Anything, "nonexistent").
 					Return(nil, errors.New("user not found"))
 			},
 			dto: &user.GetDTO{
@@ -255,16 +255,18 @@ func (s *ServiceTestSuite) TestRegisterUser() {
 		{
 			name: "successful registration",
 			setup: func() {
-				s.mockRepo.On("Create", mock.AnythingOfType("*user.User")).
-					Run(func(args mock.Arguments) {
-						user := args.Get(0).(*user.User)
-						user.CreatedAt = time.Now()
-						user.UpdatedAt = time.Now()
-						assert.Equal(s.T(), "newuser", user.Username)
-						assert.Equal(s.T(), "new@example.com", user.Email)
-						assert.NotEmpty(s.T(), user.PasswordHash)
-					}).
-					Return(nil)
+				s.mockRepo.On("Create",
+					mock.Anything, // First argument for context
+					mock.MatchedBy(func(u *user.User) bool { // Second argument for user
+						return u.Username == "newuser" &&
+							u.Email == "new@example.com" &&
+							len(u.PasswordHash) > 0
+					}),
+				).Run(func(args mock.Arguments) {
+					user := args.Get(1).(*user.User)
+					user.CreatedAt = time.Now()
+					user.UpdatedAt = time.Now()
+				}).Return(nil)
 			},
 			dto: &user.RegisterDTO{
 				Username:        "newuser",
@@ -325,8 +327,13 @@ func (s *ServiceTestSuite) TestRegisterUser() {
 		{
 			name: "duplicate username",
 			setup: func() {
-				s.mockRepo.On("Create", mock.Anything).
-					Return(errors.New("duplicate username"))
+				s.mockRepo.On("Create", mock.Anything,
+					mock.MatchedBy(func(u *user.User) bool {
+						return u.Username == "existinguser" &&
+							u.Email == "test@example.com" &&
+							len(u.PasswordHash) > 0
+					}),
+				).Return(errors.New("duplicate username"))
 			},
 			dto: &user.RegisterDTO{
 				Username:        "existinguser",

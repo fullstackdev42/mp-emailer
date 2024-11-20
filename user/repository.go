@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jonesrussell/mp-emailer/database/core"
+	"github.com/jonesrussell/mp-emailer/database"
 	"gorm.io/gorm"
 )
 
@@ -18,19 +18,27 @@ type RepositoryInterface interface {
 	Update(ctx context.Context, user *User) error
 }
 
+// RepositoryParams defines the parameters for creating a new Repository
+type RepositoryParams struct {
+	DB database.Database
+}
+
 // Repository implements the RepositoryInterface
 type Repository struct {
-	db core.Interface
+	db database.Database
 }
 
 // NewRepository creates a new instance of Repository
-func NewRepository(db core.Interface) RepositoryInterface {
-	return &Repository{db: db}
+func NewRepository(params RepositoryParams) RepositoryInterface {
+	return &Repository{
+		db: params.DB,
+	}
 }
 
 // Create adds a new user to the database
 func (r *Repository) Create(ctx context.Context, user *User) error {
-	if err := r.db.Create(ctx, user); err != nil {
+	err := r.db.Create(ctx, user)
+	if err != nil {
 		return fmt.Errorf("error creating user: %w", err)
 	}
 	return nil
@@ -39,7 +47,11 @@ func (r *Repository) Create(ctx context.Context, user *User) error {
 // FindByEmail retrieves a user by email
 func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
-	if err := r.db.FindOne(ctx, &user, "email = ?", email); err != nil {
+	err := r.db.FindOne(ctx, &user, "email = ?", email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found with email %s: %w", email, err)
+		}
 		return nil, fmt.Errorf("error finding user by email: %w", err)
 	}
 	return &user, nil
@@ -48,14 +60,20 @@ func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, erro
 // FindByUsername retrieves a user by username
 func (r *Repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
-	if err := r.db.FindOne(ctx, &user, "username = ?", username); err != nil {
+	err := r.db.FindOne(ctx, &user, "username = ?", username)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found with username %s: %w", username, err)
+		}
 		return nil, fmt.Errorf("error finding user by username: %w", err)
 	}
 	return &user, nil
 }
 
+// Update updates an existing user in the database
 func (r *Repository) Update(ctx context.Context, user *User) error {
-	if err := r.db.Update(ctx, user); err != nil {
+	err := r.db.Update(ctx, user)
+	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
 	return nil
@@ -63,7 +81,8 @@ func (r *Repository) Update(ctx context.Context, user *User) error {
 
 func (r *Repository) FindByResetToken(ctx context.Context, token string) (*User, error) {
 	var user User
-	if err := r.db.FindOne(ctx, &user, "reset_token = ?", token); err != nil {
+	err := r.db.FindOne(ctx, &user, "reset_token = ?", token)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("user not found with reset token: %w", err)
 		}

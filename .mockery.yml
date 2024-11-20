@@ -14,21 +14,6 @@ packages:
       ClientInterface:
       RepositoryInterface:
 
-  github.com/jonesrussell/mp-emailer/database/core:
-    interfaces:
-      Interface:
-      Result:
-      AssociationInterface:
-      Migrator:
-
-  github.com/jonesrussell/mp-emailer/database/factories:
-    interfaces:
-      Factory:
-
-  github.com/jonesrussell/mp-emailer/database/seeders:
-    interfaces:
-      Seeder:
-
   github.com/jonesrussell/mp-emailer/email:
     interfaces:
       ServiceInterface:
@@ -52,3 +37,7 @@ packages:
     interfaces:
       SessionManager:
       SessionStore:
+
+  github.com/jonesrussell/mp-emailer/database:
+    interfaces:
+      Database:

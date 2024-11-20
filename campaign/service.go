@@ -137,7 +137,7 @@ type ComposeEmailParams struct {
 }
 
 // ComposeEmail composes an email using campaign data and user data
-func (s *Service) ComposeEmail(ctx context.Context, params ComposeEmailParams) (string, error) {
+func (s *Service) ComposeEmail(_ context.Context, params ComposeEmailParams) (string, error) {
 	if params.Campaign == nil {
 		return "", fmt.Errorf("campaign is required")
 	}

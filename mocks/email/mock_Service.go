@@ -66,6 +66,53 @@ func (_c *MockService_SendEmail_Call) RunAndReturn(run func(string, string, stri
 	return _c
 }
 
+// SendPasswordReset provides a mock function with given fields: to, resetToken
+func (_m *MockService) SendPasswordReset(to string, resetToken string) error {
+	ret := _m.Called(to, resetToken)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SendPasswordReset")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(to, resetToken)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockService_SendPasswordReset_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SendPasswordReset'
+type MockService_SendPasswordReset_Call struct {
+	*mock.Call
+}
+
+// SendPasswordReset is a helper method to define mock.On call
+//   - to string
+//   - resetToken string
+func (_e *MockService_Expecter) SendPasswordReset(to interface{}, resetToken interface{}) *MockService_SendPasswordReset_Call {
+	return &MockService_SendPasswordReset_Call{Call: _e.mock.On("SendPasswordReset", to, resetToken)}
+}
+
+func (_c *MockService_SendPasswordReset_Call) Run(run func(to string, resetToken string)) *MockService_SendPasswordReset_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockService_SendPasswordReset_Call) Return(_a0 error) *MockService_SendPasswordReset_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockService_SendPasswordReset_Call) RunAndReturn(run func(string, string) error) *MockService_SendPasswordReset_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockService creates a new instance of MockService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockService(t interface {

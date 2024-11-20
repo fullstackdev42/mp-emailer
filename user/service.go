@@ -29,7 +29,7 @@ type ServiceInterface interface {
 type Service struct {
 	repo         RepositoryInterface
 	validate     *validator.Validate
-	emailService email.ServiceInterface
+	emailService email.Service
 }
 
 // Explicitly implement the ServiceInterface
@@ -40,7 +40,7 @@ type ServiceParams struct {
 	fx.In
 	Repo         RepositoryInterface
 	Validate     *validator.Validate
-	EmailService email.ServiceInterface
+	EmailService email.Service
 }
 
 // NewService creates a new user service

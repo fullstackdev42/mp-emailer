@@ -4,7 +4,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
-	"gorm.io/gorm"
 )
 
 // Campaign represents an email campaign.
@@ -16,12 +15,6 @@ type Campaign struct {
 	OwnerID     uuid.UUID `gorm:"type:uuid;not null" json:"owner_id"`
 	Owner       user.User `gorm:"foreignKey:OwnerID" json:"-"`
 	Tokens      []string  `gorm:"-" json:"tokens"`
-}
-
-// BeforeCreate is a GORM hook that is triggered before a new record is inserted into the database
-func (c *Campaign) BeforeCreate(_ *gorm.DB) error {
-	c.ID = uuid.New()
-	return nil
 }
 
 // Representative represents a government representative.

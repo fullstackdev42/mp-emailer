@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/database"
 	"go.uber.org/fx"
 )
 
@@ -11,6 +12,11 @@ import (
 // nolint:gochecknoglobals
 var Module = fx.Options(
 	fx.Provide(
+		func(db database.Database) RepositoryParams {
+			return RepositoryParams{
+				DB: db,
+			}
+		},
 		NewRepository,
 		fx.Annotate(NewService,
 			fx.As(new(ServiceInterface)),

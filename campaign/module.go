@@ -2,7 +2,7 @@ package campaign
 
 import (
 	"github.com/jonesrussell/loggo"
-	"github.com/jonesrussell/mp-emailer/database/core"
+	"github.com/jonesrussell/mp-emailer/database"
 	"go.uber.org/fx"
 )
 
@@ -29,7 +29,6 @@ var Module = fx.Options(
 		),
 		NewHandler,
 	),
-	// Add module-level decoration
 	fx.Decorate(
 		func(base ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
 			return NewLoggingServiceDecorator(base, logger)
@@ -40,7 +39,7 @@ var Module = fx.Options(
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     core.Interface
+	DB     database.Database
 	Logger loggo.LoggerInterface
 }
 

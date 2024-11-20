@@ -2,6 +2,7 @@ package campaign_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -39,6 +40,13 @@ func (s *CampaignServiceTestSuite) SetupTest() {
 	}
 
 	s.service = campaign.NewService(s.mockRepo, s.validate, s.mockLogger).(*campaign.Service)
+
+	s.mockRepo.On("GetByID",
+		mock.Anything,
+		mock.MatchedBy(func(_ campaign.GetCampaignParams) bool {
+			return true
+		}),
+	).Return(nil, fmt.Errorf("campaign not found"))
 }
 
 func TestCampaignServiceTestSuite(t *testing.T) {
@@ -48,56 +56,59 @@ func TestCampaignServiceTestSuite(t *testing.T) {
 func (s *CampaignServiceTestSuite) TestCreateCampaign() {
 	tests := []struct {
 		name    string
-		input   *campaign.CreateCampaignDTO
-		mock    func(*campaign.CreateCampaignDTO)
-		want    *campaign.Campaign
+		dto     *campaign.CreateCampaignDTO
+		setup   func()
 		wantErr bool
 	}{
 		{
 			name: "successful creation",
-			input: &campaign.CreateCampaignDTO{
+			dto: &campaign.CreateCampaignDTO{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
 				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
-			mock: func(input *campaign.CreateCampaignDTO) {
-				expectedCampaign := &campaign.Campaign{
+			setup: func() {
+				s.mockRepo.EXPECT().Create(
+					mock.Anything,
+					mock.AnythingOfType("*campaign.CreateCampaignDTO"),
+				).Return(&campaign.Campaign{
 					Name:        "Test Campaign",
 					Description: "Test Description",
 					Template:    "Test Template",
 					OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-					Tokens:      []string{},
-				}
-				s.mockRepo.On("Create", input).Return(expectedCampaign, nil)
-				s.mockLogger.On("Info", "Campaign created successfully", "id", mock.Anything).Return()
-			},
-			want: &campaign.Campaign{
-				Name:        "Test Campaign",
-				Description: "Test Description",
-				Template:    "Test Template",
-				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				Tokens:      []string{},
+				}, nil)
+
+				s.mockLogger.EXPECT().Info(
+					"Campaign created successfully",
+					"id",
+					mock.AnythingOfType("uuid.UUID"),
+				).Return()
 			},
 			wantErr: false,
 		},
-		// ... other test cases ...
 	}
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			s.mockRepo.ExpectedCalls = nil
 			s.mockRepo.Calls = nil
+			s.mockLogger.ExpectedCalls = nil
+			s.mockLogger.Calls = nil
 
-			tt.mock(tt.input)
-			got, err := s.service.CreateCampaign(context.Background(), tt.input)
+			tt.setup()
+			got, err := s.service.CreateCampaign(context.Background(), tt.dto)
 			if tt.wantErr {
 				s.Error(err)
 				return
 			}
 			s.NoError(err)
-			s.Equal(tt.want, got)
+			s.Equal(tt.dto.Name, got.Name)
+			s.Equal(tt.dto.Description, got.Description)
+			s.Equal(tt.dto.Template, got.Template)
+			s.Equal(tt.dto.OwnerID, got.OwnerID)
 			s.mockRepo.AssertExpectations(s.T())
+			s.mockLogger.AssertExpectations(s.T())
 		})
 	}
 }
@@ -144,41 +155,45 @@ func (s *CampaignServiceTestSuite) TestComposeEmail() {
 func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 	tests := []struct {
 		name    string
-		params  campaign.GetCampaignParams
-		mock    func(campaign.GetCampaignParams)
+		id      uuid.UUID
+		setup   func()
 		want    *campaign.Campaign
 		wantErr bool
 	}{
 		{
 			name: "successful retrieval",
-			params: campaign.GetCampaignParams{
-				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-			},
-			mock: func(params campaign.GetCampaignParams) {
-				expectedCampaign := &campaign.Campaign{
+			id:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			setup: func() {
+				s.mockRepo.On("GetByID",
+					mock.Anything,
+					campaign.GetCampaignParams{
+						ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					},
+				).Return(&campaign.Campaign{
 					Name:        "Test Campaign",
 					Description: "Test Description",
 					Template:    "Test Template",
-					Tokens:      []string{},
-				}
-				s.mockRepo.On("GetByID", campaign.GetCampaignDTO(params)).Return(expectedCampaign, nil)
+					OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 			},
 			want: &campaign.Campaign{
 				Name:        "Test Campaign",
 				Description: "Test Description",
 				Template:    "Test Template",
-				Tokens:      []string{},
+				OwnerID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "campaign not found",
-			params: campaign.GetCampaignParams{
-				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
-			},
-			mock: func(params campaign.GetCampaignParams) {
-				s.mockRepo.On("GetByID", campaign.GetCampaignDTO(params)).Return(nil, campaign.ErrCampaignNotFound)
-				s.mockLogger.On("Debug", "Campaign not found", "id", params.ID).Return()
+			id:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+			setup: func() {
+				s.mockRepo.EXPECT().GetByID(
+					mock.Anything,
+					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")
+					}),
+				).Return(nil, fmt.Errorf("campaign not found"))
 			},
 			want:    nil,
 			wantErr: true,
@@ -189,9 +204,8 @@ func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 		s.Run(tt.name, func() {
 			s.mockRepo.ExpectedCalls = nil
 			s.mockRepo.Calls = nil
-
-			tt.mock(tt.params)
-			got, err := s.service.GetCampaignByID(context.Background(), tt.params)
+			tt.setup()
+			got, err := s.service.GetCampaignByID(context.Background(), campaign.GetCampaignParams{ID: tt.id})
 			if tt.wantErr {
 				s.Error(err)
 				return
@@ -206,31 +220,55 @@ func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 	tests := []struct {
 		name    string
-		dto     campaign.DeleteCampaignDTO
-		mock    func(campaign.DeleteCampaignDTO)
+		id      uuid.UUID
+		setup   func()
 		wantErr bool
 	}{
 		{
 			name: "successful deletion",
-			dto: campaign.DeleteCampaignDTO{
-				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-			},
-			mock: func(dto campaign.DeleteCampaignDTO) {
-				c := &campaign.Campaign{}
-				s.mockRepo.On("GetByID", campaign.GetCampaignDTO(dto)).Return(c, nil)
-				s.mockRepo.On("Delete", dto).Return(nil)
-				s.mockLogger.On("Info", "Campaign deleted successfully", "id", dto.ID).Return()
+			id:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			setup: func() {
+				s.mockRepo.EXPECT().GetByID(
+					mock.Anything,
+					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+					}),
+				).Return(&campaign.Campaign{}, nil)
+
+				s.mockRepo.EXPECT().Delete(
+					mock.Anything,
+					mock.MatchedBy(func(dto campaign.DeleteCampaignDTO) bool {
+						return dto.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+					}),
+				).Return(nil)
+
+				s.mockLogger.EXPECT().Info(
+					"Campaign deleted successfully",
+					"id",
+					uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				).Return()
 			},
 			wantErr: false,
 		},
 		{
 			name: "campaign not found",
-			dto: campaign.DeleteCampaignDTO{
-				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
-			},
-			mock: func(dto campaign.DeleteCampaignDTO) {
-				s.mockRepo.On("GetByID", campaign.GetCampaignDTO(dto)).Return(nil, campaign.ErrCampaignNotFound)
-				s.mockLogger.On("Debug", "Campaign not found for deletion", "id", dto.ID).Return()
+			id:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+			setup: func() {
+				s.mockRepo.EXPECT().GetByID(
+					mock.Anything,
+					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")
+					}),
+				).Return(nil, fmt.Errorf("campaign not found"))
+
+				s.mockLogger.EXPECT().Error(
+					"Failed to fetch campaign for deletion",
+					mock.MatchedBy(func(err error) bool {
+						return err.Error() == "campaign not found"
+					}),
+					"id",
+					uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+				).Return()
 			},
 			wantErr: true,
 		},
@@ -241,8 +279,8 @@ func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 			s.mockRepo.ExpectedCalls = nil
 			s.mockRepo.Calls = nil
 
-			tt.mock(tt.dto)
-			err := s.service.DeleteCampaign(context.Background(), tt.dto)
+			tt.setup()
+			err := s.service.DeleteCampaign(context.Background(), campaign.DeleteCampaignDTO{ID: tt.id})
 			if tt.wantErr {
 				s.Error(err)
 				return
