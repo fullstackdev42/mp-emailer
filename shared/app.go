@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,9 +13,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
-	dbconfig "github.com/jonesrussell/mp-emailer/database/config"
-	"github.com/jonesrussell/mp-emailer/database/core"
-	"github.com/jonesrussell/mp-emailer/database/decorators"
 	"github.com/jonesrussell/mp-emailer/email"
 	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/version"
@@ -39,10 +35,6 @@ var App = fx.Options(
 			return logger, nil
 		},
 		NewCustomFxLogger,
-		fx.Annotate(
-			newDB,
-			fx.As(new(core.Interface)),
-		),
 		echo.New,
 		newSessionStore,
 		validator.New,
@@ -50,6 +42,7 @@ var App = fx.Options(
 			provideTemplates,
 			fx.As(new(TemplateRendererInterface)),
 		),
+
 		provideEmailService,
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
@@ -64,88 +57,6 @@ var App = fx.Options(
 		startSessionCleaner,
 	),
 )
-
-// Provide a new database connection
-func newDB(logger loggo.LoggerInterface, cfg *config.Config) (core.Interface, error) {
-	logger.Info("Initializing database connection")
-
-	retryConfig := dbconfig.NewDefaultRetryConfig()
-	logger.Info("Attempting database connection with retry config",
-		"maxAttempts", retryConfig.MaxAttempts,
-		"initialInterval", retryConfig.InitialInterval)
-
-	db, err := dbconfig.ConnectWithRetry(cfg, retryConfig, logger, &dbconfig.DefaultConnector{})
-	if err != nil {
-		logger.Error("Database connection failed", err)
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	logger.Info("Database connection successful")
-
-	// List all files in migrations directory
-	files, err := os.ReadDir(cfg.Server.MigrationsPath)
-	if err != nil {
-		logger.Error("Failed to read migrations directory", err)
-		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
-	}
-
-	// Log all SQL migration files found
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".sql") {
-			logger.Info("Found SQL migration file", "filename", file.Name())
-
-			// Optionally read and log migration content for debugging
-			content, err := os.ReadFile(filepath.Join(cfg.Server.MigrationsPath, file.Name()))
-			if err != nil {
-				logger.Error("Failed to read migration file", err, "filename", file.Name())
-			} else {
-				logger.Info("Migration file content",
-					"filename", file.Name(),
-					"content", string(content))
-			}
-		}
-	}
-
-	decorated := &decorators.LoggingDecorator{
-		Database: &core.DB{GormDB: db},
-		Logger:   logger,
-	}
-
-	// Check database connection before migrations
-	sqlDB, err := db.DB()
-	if err != nil {
-		logger.Error("Failed to get underlying *sql.DB", err)
-		return nil, fmt.Errorf("failed to get underlying *sql.DB: %w", err)
-	}
-	if err := sqlDB.Ping(); err != nil {
-		logger.Error("Database ping failed", err)
-		return nil, fmt.Errorf("database ping failed: %w", err)
-	}
-
-	logger.Info("Starting database migrations",
-		"migrationsPath", cfg.Server.MigrationsPath,
-		"databaseName", db.Migrator().CurrentDatabase())
-
-	// Run migrations with detailed error capture
-	if err := decorated.AutoMigrate(); err != nil {
-		// Log the detailed error
-		logger.Error("Database migration failed", err,
-			"migrationsPath", cfg.Server.MigrationsPath,
-			"databaseName", db.Migrator().CurrentDatabase(),
-			"error", err.Error())
-
-		// If it's a specific error type, log more details
-		if migErr, ok := err.(interface{ Details() string }); ok {
-			logger.Error("Migration error details", nil,
-				"details", migErr.Details())
-		}
-
-		return nil, fmt.Errorf("failed to run database migrations: %w", err)
-	}
-
-	logger.Info("Database migrations completed successfully")
-	return decorated, nil
-}
 
 // Provide a new session store
 func newSessionStore(cfg *config.Config) sessions.Store {

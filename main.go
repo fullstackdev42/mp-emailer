@@ -24,11 +24,12 @@ func main() {
 	app := fx.New(
 		fx.Options(
 			shared.App,
+			database.Module,
+			database.MigrationModule,
 			campaign.Module,
 			user.Module,
 			server.Module,
 			api.Module,
-			database.MigrationModule,
 			appMiddleware.Module,
 			fx.Invoke(registerRoutes, startServer),
 		),

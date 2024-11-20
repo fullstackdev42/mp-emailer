@@ -12,10 +12,8 @@ import (
 var Module = fx.Options(
 	fx.Provide(
 		// Repository
-		fx.Annotate(
-			NewRepository,
-			fx.As(new(RepositoryInterface)),
-		),
+		NewRepository,
+
 		// Base service
 		fx.Annotate(
 			NewService,
@@ -42,7 +40,7 @@ var Module = fx.Options(
 // RepositoryParams for dependency injection
 type RepositoryParams struct {
 	fx.In
-	DB     core.Interface
+	DB     core.Interface `name:"database"`
 	Logger loggo.LoggerInterface
 }
 

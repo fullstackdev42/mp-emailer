@@ -5,7 +5,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jonesrussell/mp-emailer/config"
-	dbconfig "github.com/jonesrussell/mp-emailer/database/config"
 	"github.com/jonesrussell/mp-emailer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,21 +41,10 @@ func TestProvideDatabase(t *testing.T) {
 		connector.On("Connect", mock.Anything).Return(gormDB, nil)
 
 		logger := mocks.NewMockLoggerInterface(t)
-		logger.EXPECT().Info("Successfully connected to database after retry").Return()
+		logger.On("Info", "Successfully connected to database after retry").Return()
 
-		cfg := &config.Config{
-			Database: config.DatabaseConfig{
-				Host:     "localhost",
-				Port:     3306,
-				User:     "test",
-				Password: "test",
-				Name:     "testdb",
-			},
-		}
-
-		retryConfig := dbconfig.NewDefaultRetryConfig()
-
-		db, err := ProvideDatabase(cfg, logger, retryConfig, connector)
+		cfg := &config.Config{}
+		db, err := ProvideDatabase(cfg, logger)
 		assert.NoError(t, err)
 		assert.NotNil(t, db)
 	})

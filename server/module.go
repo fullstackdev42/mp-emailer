@@ -7,8 +7,6 @@ import (
 )
 
 // Module defines the server module
-//
-//nolint:gochecknoglobals
 var Module = fx.Module("server",
 	fx.Provide(
 		fx.Annotate(

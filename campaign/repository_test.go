@@ -21,7 +21,9 @@ type RepositoryTestSuite struct {
 // SetupTest sets up the test environment
 func (s *RepositoryTestSuite) SetupTest() {
 	s.mockDB = mocksDatabase.NewMockInterface(s.T())
-	s.repo = campaign.NewRepository(s.mockDB).(*campaign.Repository)
+	s.repo = campaign.NewRepository(campaign.RepositoryParams{
+		DB: s.mockDB,
+	})
 }
 
 // TearDownTest tears down the test environment

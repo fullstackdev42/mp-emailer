@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/database/core"
 	"github.com/jonesrussell/mp-emailer/email"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/version"
@@ -31,6 +32,7 @@ type HandlerInterface interface {
 type HandlerParams struct {
 	fx.In
 	shared.BaseHandlerParams
+	DB              core.Interface `name:"database"`
 	CampaignService campaign.ServiceInterface
 	EmailService    email.Service
 	VersionInfo     version.Info

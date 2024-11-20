@@ -21,8 +21,8 @@ type Repository struct {
 }
 
 // NewRepository creates a new instance of Repository
-func NewRepository(db core.Interface) RepositoryInterface {
-	return &Repository{db: db}
+func NewRepository(params RepositoryParams) RepositoryInterface {
+	return &Repository{db: params.DB}
 }
 
 // Create creates a new campaign in the database
