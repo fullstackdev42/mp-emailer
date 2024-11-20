@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -16,12 +17,12 @@ import (
 // ServiceInterface defines the interface for user services
 type ServiceInterface interface {
 	shared.LoggableService
-	GetUser(params *GetDTO) (*DTO, error)
-	RegisterUser(params *RegisterDTO) (*DTO, error)
-	LoginUser(params *LoginDTO) (string, error)
-	AuthenticateUser(username, password string) (bool, *User, error)
-	RequestPasswordReset(dto *PasswordResetDTO) error
-	ResetPassword(dto *ResetPasswordDTO) error
+	GetUser(ctx context.Context, params *GetDTO) (*DTO, error)
+	RegisterUser(ctx context.Context, params *RegisterDTO) (*DTO, error)
+	LoginUser(ctx context.Context, params *LoginDTO) (string, error)
+	AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error)
+	RequestPasswordReset(ctx context.Context, dto *PasswordResetDTO) error
+	ResetPassword(ctx context.Context, dto *ResetPasswordDTO) error
 }
 
 // Service is the implementation of the UserServiceInterface
@@ -52,7 +53,7 @@ func NewService(params ServiceParams) ServiceInterface {
 }
 
 // RegisterUser registers a new user and returns the user DTO
-func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
+func (s *Service) RegisterUser(ctx context.Context, params *RegisterDTO) (*DTO, error) {
 	// Validate the DTO
 	if err := s.validate.Struct(params); err != nil {
 		return nil, fmt.Errorf("validation error: %w", err)
@@ -75,7 +76,7 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 		PasswordHash: string(hashedPassword),
 	}
 
-	if err := s.repo.Create(user); err != nil {
+	if err := s.repo.Create(ctx, user); err != nil {
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
@@ -88,7 +89,7 @@ func (s *Service) RegisterUser(params *RegisterDTO) (*DTO, error) {
 }
 
 // LoginUser logs in a user and returns a JWT token
-func (s *Service) LoginUser(params *LoginDTO) (string, error) {
+func (s *Service) LoginUser(ctx context.Context, params *LoginDTO) (string, error) {
 	if len(params.Password) < 8 {
 		return "", fmt.Errorf("password too short")
 	}
@@ -97,7 +98,7 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 		return "", fmt.Errorf("invalid username format")
 	}
 
-	authenticated, _, err := s.AuthenticateUser(params.Username, params.Password)
+	authenticated, _, err := s.AuthenticateUser(ctx, params.Username, params.Password)
 	if err != nil || !authenticated {
 		return "", fmt.Errorf("invalid username or password")
 	}
@@ -106,8 +107,8 @@ func (s *Service) LoginUser(params *LoginDTO) (string, error) {
 }
 
 // GetUser retrieves a user by their username
-func (s *Service) GetUser(params *GetDTO) (*DTO, error) {
-	user, err := s.repo.FindByUsername(params.Username)
+func (s *Service) GetUser(ctx context.Context, params *GetDTO) (*DTO, error) {
+	user, err := s.repo.FindByUsername(ctx, params.Username)
 	if err != nil {
 		return nil, fmt.Errorf("error querying user: %w", err)
 	}
@@ -136,12 +137,12 @@ func (s *Service) Error(_ string, _ error, _ ...interface{}) {
 }
 
 // AuthenticateUser validates the username and password combination
-func (s *Service) AuthenticateUser(username, password string) (bool, *User, error) {
+func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error) {
 	if username == "" || password == "" {
 		return false, nil, fmt.Errorf("username and password required")
 	}
 
-	user, err := s.repo.FindByUsername(username)
+	user, err := s.repo.FindByUsername(ctx, username)
 	if err != nil {
 		return false, nil, fmt.Errorf("authentication failed")
 	}
@@ -165,12 +166,12 @@ type ResetPasswordDTO struct {
 }
 
 // RequestPasswordReset initiates the password reset process
-func (s *Service) RequestPasswordReset(dto *PasswordResetDTO) error {
+func (s *Service) RequestPasswordReset(ctx context.Context, dto *PasswordResetDTO) error {
 	if err := s.validate.Struct(dto); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	user, err := s.repo.FindByEmail(dto.Email)
+	user, err := s.repo.FindByEmail(ctx, dto.Email)
 	if err != nil {
 		return fmt.Errorf("user not found: %w", err)
 	}
@@ -182,7 +183,7 @@ func (s *Service) RequestPasswordReset(dto *PasswordResetDTO) error {
 	// Save reset token to user
 	user.ResetToken = token
 	user.ResetTokenExpiresAt = expiresAt
-	if err := s.repo.Update(user); err != nil {
+	if err := s.repo.Update(ctx, user); err != nil {
 		return fmt.Errorf("failed to save reset token: %w", err)
 	}
 
@@ -195,12 +196,12 @@ func (s *Service) RequestPasswordReset(dto *PasswordResetDTO) error {
 }
 
 // ResetPassword completes the password reset process
-func (s *Service) ResetPassword(dto *ResetPasswordDTO) error {
+func (s *Service) ResetPassword(ctx context.Context, dto *ResetPasswordDTO) error {
 	if err := s.validate.Struct(dto); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	user, err := s.repo.FindByResetToken(dto.Token)
+	user, err := s.repo.FindByResetToken(ctx, dto.Token)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token: %w", err)
 	}
@@ -220,7 +221,7 @@ func (s *Service) ResetPassword(dto *ResetPasswordDTO) error {
 	user.ResetToken = ""
 	user.ResetTokenExpiresAt = time.Time{}
 
-	if err := s.repo.Update(user); err != nil {
+	if err := s.repo.Update(ctx, user); err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 

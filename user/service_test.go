@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -155,7 +156,7 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
-			token, err := s.service.LoginUser(tt.dto)
+			token, err := s.service.LoginUser(context.Background(), tt.dto)
 
 			if tt.wantErr {
 				assert.Error(s.T(), err)
@@ -228,7 +229,7 @@ func (s *ServiceTestSuite) TestGetUser() {
 			s.SetupTest()
 			tt.setup()
 
-			got, err := s.service.GetUser(tt.dto)
+			got, err := s.service.GetUser(context.Background(), tt.dto)
 
 			if tt.wantErr {
 				assert.Error(s.T(), err)
@@ -342,7 +343,7 @@ func (s *ServiceTestSuite) TestRegisterUser() {
 			s.SetupTest()
 			tt.setup()
 
-			got, err := s.service.RegisterUser(tt.dto)
+			got, err := s.service.RegisterUser(context.Background(), tt.dto)
 
 			if tt.wantErr {
 				s.Error(err)
@@ -412,7 +413,7 @@ func (s *ServiceTestSuite) TestRegisterUserValidation() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			_, err := s.service.RegisterUser(&tt.dto)
+			_, err := s.service.RegisterUser(context.Background(), &tt.dto)
 			s.Error(err)
 			s.Contains(err.Error(), tt.contains)
 		})

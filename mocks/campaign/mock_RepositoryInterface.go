@@ -3,7 +3,10 @@
 package mocks
 
 import (
+	context "context"
+
 	campaign "github.com/jonesrussell/mp-emailer/campaign"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -20,9 +23,9 @@ func (_m *MockRepositoryInterface) EXPECT() *MockRepositoryInterface_Expecter {
 	return &MockRepositoryInterface_Expecter{mock: &_m.Mock}
 }
 
-// Create provides a mock function with given fields: dto
-func (_m *MockRepositoryInterface) Create(dto *campaign.CreateCampaignDTO) (*campaign.Campaign, error) {
-	ret := _m.Called(dto)
+// Create provides a mock function with given fields: ctx, dto
+func (_m *MockRepositoryInterface) Create(ctx context.Context, dto *campaign.CreateCampaignDTO) (*campaign.Campaign, error) {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -30,19 +33,19 @@ func (_m *MockRepositoryInterface) Create(dto *campaign.CreateCampaignDTO) (*cam
 
 	var r0 *campaign.Campaign
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*campaign.CreateCampaignDTO) (*campaign.Campaign, error)); ok {
-		return rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, *campaign.CreateCampaignDTO) (*campaign.Campaign, error)); ok {
+		return rf(ctx, dto)
 	}
-	if rf, ok := ret.Get(0).(func(*campaign.CreateCampaignDTO) *campaign.Campaign); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, *campaign.CreateCampaignDTO) *campaign.Campaign); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*campaign.Campaign)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*campaign.CreateCampaignDTO) error); ok {
-		r1 = rf(dto)
+	if rf, ok := ret.Get(1).(func(context.Context, *campaign.CreateCampaignDTO) error); ok {
+		r1 = rf(ctx, dto)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -56,14 +59,15 @@ type MockRepositoryInterface_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto *campaign.CreateCampaignDTO
-func (_e *MockRepositoryInterface_Expecter) Create(dto interface{}) *MockRepositoryInterface_Create_Call {
-	return &MockRepositoryInterface_Create_Call{Call: _e.mock.On("Create", dto)}
+func (_e *MockRepositoryInterface_Expecter) Create(ctx interface{}, dto interface{}) *MockRepositoryInterface_Create_Call {
+	return &MockRepositoryInterface_Create_Call{Call: _e.mock.On("Create", ctx, dto)}
 }
 
-func (_c *MockRepositoryInterface_Create_Call) Run(run func(dto *campaign.CreateCampaignDTO)) *MockRepositoryInterface_Create_Call {
+func (_c *MockRepositoryInterface_Create_Call) Run(run func(ctx context.Context, dto *campaign.CreateCampaignDTO)) *MockRepositoryInterface_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*campaign.CreateCampaignDTO))
+		run(args[0].(context.Context), args[1].(*campaign.CreateCampaignDTO))
 	})
 	return _c
 }
@@ -73,22 +77,22 @@ func (_c *MockRepositoryInterface_Create_Call) Return(_a0 *campaign.Campaign, _a
 	return _c
 }
 
-func (_c *MockRepositoryInterface_Create_Call) RunAndReturn(run func(*campaign.CreateCampaignDTO) (*campaign.Campaign, error)) *MockRepositoryInterface_Create_Call {
+func (_c *MockRepositoryInterface_Create_Call) RunAndReturn(run func(context.Context, *campaign.CreateCampaignDTO) (*campaign.Campaign, error)) *MockRepositoryInterface_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Delete provides a mock function with given fields: dto
-func (_m *MockRepositoryInterface) Delete(dto campaign.DeleteCampaignDTO) error {
-	ret := _m.Called(dto)
+// Delete provides a mock function with given fields: ctx, dto
+func (_m *MockRepositoryInterface) Delete(ctx context.Context, dto campaign.DeleteCampaignDTO) error {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(campaign.DeleteCampaignDTO) error); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, campaign.DeleteCampaignDTO) error); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -102,14 +106,15 @@ type MockRepositoryInterface_Delete_Call struct {
 }
 
 // Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto campaign.DeleteCampaignDTO
-func (_e *MockRepositoryInterface_Expecter) Delete(dto interface{}) *MockRepositoryInterface_Delete_Call {
-	return &MockRepositoryInterface_Delete_Call{Call: _e.mock.On("Delete", dto)}
+func (_e *MockRepositoryInterface_Expecter) Delete(ctx interface{}, dto interface{}) *MockRepositoryInterface_Delete_Call {
+	return &MockRepositoryInterface_Delete_Call{Call: _e.mock.On("Delete", ctx, dto)}
 }
 
-func (_c *MockRepositoryInterface_Delete_Call) Run(run func(dto campaign.DeleteCampaignDTO)) *MockRepositoryInterface_Delete_Call {
+func (_c *MockRepositoryInterface_Delete_Call) Run(run func(ctx context.Context, dto campaign.DeleteCampaignDTO)) *MockRepositoryInterface_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(campaign.DeleteCampaignDTO))
+		run(args[0].(context.Context), args[1].(campaign.DeleteCampaignDTO))
 	})
 	return _c
 }
@@ -119,14 +124,14 @@ func (_c *MockRepositoryInterface_Delete_Call) Return(_a0 error) *MockRepository
 	return _c
 }
 
-func (_c *MockRepositoryInterface_Delete_Call) RunAndReturn(run func(campaign.DeleteCampaignDTO) error) *MockRepositoryInterface_Delete_Call {
+func (_c *MockRepositoryInterface_Delete_Call) RunAndReturn(run func(context.Context, campaign.DeleteCampaignDTO) error) *MockRepositoryInterface_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetAll provides a mock function with given fields:
-func (_m *MockRepositoryInterface) GetAll() ([]campaign.Campaign, error) {
-	ret := _m.Called()
+// GetAll provides a mock function with given fields: ctx
+func (_m *MockRepositoryInterface) GetAll(ctx context.Context) ([]campaign.Campaign, error) {
+	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAll")
@@ -134,19 +139,19 @@ func (_m *MockRepositoryInterface) GetAll() ([]campaign.Campaign, error) {
 
 	var r0 []campaign.Campaign
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]campaign.Campaign, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(context.Context) ([]campaign.Campaign, error)); ok {
+		return rf(ctx)
 	}
-	if rf, ok := ret.Get(0).(func() []campaign.Campaign); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) []campaign.Campaign); ok {
+		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]campaign.Campaign)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -160,13 +165,14 @@ type MockRepositoryInterface_GetAll_Call struct {
 }
 
 // GetAll is a helper method to define mock.On call
-func (_e *MockRepositoryInterface_Expecter) GetAll() *MockRepositoryInterface_GetAll_Call {
-	return &MockRepositoryInterface_GetAll_Call{Call: _e.mock.On("GetAll")}
+//   - ctx context.Context
+func (_e *MockRepositoryInterface_Expecter) GetAll(ctx interface{}) *MockRepositoryInterface_GetAll_Call {
+	return &MockRepositoryInterface_GetAll_Call{Call: _e.mock.On("GetAll", ctx)}
 }
 
-func (_c *MockRepositoryInterface_GetAll_Call) Run(run func()) *MockRepositoryInterface_GetAll_Call {
+func (_c *MockRepositoryInterface_GetAll_Call) Run(run func(ctx context.Context)) *MockRepositoryInterface_GetAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(context.Context))
 	})
 	return _c
 }
@@ -176,14 +182,14 @@ func (_c *MockRepositoryInterface_GetAll_Call) Return(_a0 []campaign.Campaign, _
 	return _c
 }
 
-func (_c *MockRepositoryInterface_GetAll_Call) RunAndReturn(run func() ([]campaign.Campaign, error)) *MockRepositoryInterface_GetAll_Call {
+func (_c *MockRepositoryInterface_GetAll_Call) RunAndReturn(run func(context.Context) ([]campaign.Campaign, error)) *MockRepositoryInterface_GetAll_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetByID provides a mock function with given fields: dto
-func (_m *MockRepositoryInterface) GetByID(dto campaign.GetCampaignDTO) (*campaign.Campaign, error) {
-	ret := _m.Called(dto)
+// GetByID provides a mock function with given fields: ctx, dto
+func (_m *MockRepositoryInterface) GetByID(ctx context.Context, dto campaign.GetCampaignDTO) (*campaign.Campaign, error) {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByID")
@@ -191,19 +197,19 @@ func (_m *MockRepositoryInterface) GetByID(dto campaign.GetCampaignDTO) (*campai
 
 	var r0 *campaign.Campaign
 	var r1 error
-	if rf, ok := ret.Get(0).(func(campaign.GetCampaignDTO) (*campaign.Campaign, error)); ok {
-		return rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, campaign.GetCampaignDTO) (*campaign.Campaign, error)); ok {
+		return rf(ctx, dto)
 	}
-	if rf, ok := ret.Get(0).(func(campaign.GetCampaignDTO) *campaign.Campaign); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, campaign.GetCampaignDTO) *campaign.Campaign); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*campaign.Campaign)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(campaign.GetCampaignDTO) error); ok {
-		r1 = rf(dto)
+	if rf, ok := ret.Get(1).(func(context.Context, campaign.GetCampaignDTO) error); ok {
+		r1 = rf(ctx, dto)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -217,14 +223,15 @@ type MockRepositoryInterface_GetByID_Call struct {
 }
 
 // GetByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto campaign.GetCampaignDTO
-func (_e *MockRepositoryInterface_Expecter) GetByID(dto interface{}) *MockRepositoryInterface_GetByID_Call {
-	return &MockRepositoryInterface_GetByID_Call{Call: _e.mock.On("GetByID", dto)}
+func (_e *MockRepositoryInterface_Expecter) GetByID(ctx interface{}, dto interface{}) *MockRepositoryInterface_GetByID_Call {
+	return &MockRepositoryInterface_GetByID_Call{Call: _e.mock.On("GetByID", ctx, dto)}
 }
 
-func (_c *MockRepositoryInterface_GetByID_Call) Run(run func(dto campaign.GetCampaignDTO)) *MockRepositoryInterface_GetByID_Call {
+func (_c *MockRepositoryInterface_GetByID_Call) Run(run func(ctx context.Context, dto campaign.GetCampaignDTO)) *MockRepositoryInterface_GetByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(campaign.GetCampaignDTO))
+		run(args[0].(context.Context), args[1].(campaign.GetCampaignDTO))
 	})
 	return _c
 }
@@ -234,22 +241,22 @@ func (_c *MockRepositoryInterface_GetByID_Call) Return(_a0 *campaign.Campaign, _
 	return _c
 }
 
-func (_c *MockRepositoryInterface_GetByID_Call) RunAndReturn(run func(campaign.GetCampaignDTO) (*campaign.Campaign, error)) *MockRepositoryInterface_GetByID_Call {
+func (_c *MockRepositoryInterface_GetByID_Call) RunAndReturn(run func(context.Context, campaign.GetCampaignDTO) (*campaign.Campaign, error)) *MockRepositoryInterface_GetByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Update provides a mock function with given fields: dto
-func (_m *MockRepositoryInterface) Update(dto *campaign.UpdateCampaignDTO) error {
-	ret := _m.Called(dto)
+// Update provides a mock function with given fields: ctx, dto
+func (_m *MockRepositoryInterface) Update(ctx context.Context, dto *campaign.UpdateCampaignDTO) error {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*campaign.UpdateCampaignDTO) error); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, *campaign.UpdateCampaignDTO) error); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -263,14 +270,15 @@ type MockRepositoryInterface_Update_Call struct {
 }
 
 // Update is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto *campaign.UpdateCampaignDTO
-func (_e *MockRepositoryInterface_Expecter) Update(dto interface{}) *MockRepositoryInterface_Update_Call {
-	return &MockRepositoryInterface_Update_Call{Call: _e.mock.On("Update", dto)}
+func (_e *MockRepositoryInterface_Expecter) Update(ctx interface{}, dto interface{}) *MockRepositoryInterface_Update_Call {
+	return &MockRepositoryInterface_Update_Call{Call: _e.mock.On("Update", ctx, dto)}
 }
 
-func (_c *MockRepositoryInterface_Update_Call) Run(run func(dto *campaign.UpdateCampaignDTO)) *MockRepositoryInterface_Update_Call {
+func (_c *MockRepositoryInterface_Update_Call) Run(run func(ctx context.Context, dto *campaign.UpdateCampaignDTO)) *MockRepositoryInterface_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*campaign.UpdateCampaignDTO))
+		run(args[0].(context.Context), args[1].(*campaign.UpdateCampaignDTO))
 	})
 	return _c
 }
@@ -280,7 +288,7 @@ func (_c *MockRepositoryInterface_Update_Call) Return(_a0 error) *MockRepository
 	return _c
 }
 
-func (_c *MockRepositoryInterface_Update_Call) RunAndReturn(run func(*campaign.UpdateCampaignDTO) error) *MockRepositoryInterface_Update_Call {
+func (_c *MockRepositoryInterface_Update_Call) RunAndReturn(run func(context.Context, *campaign.UpdateCampaignDTO) error) *MockRepositoryInterface_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

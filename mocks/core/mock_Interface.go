@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	context "context"
+
 	core "github.com/jonesrussell/mp-emailer/database/core"
 	gorm "gorm.io/gorm"
 
@@ -127,17 +129,120 @@ func (_c *MockInterface_AutoMigrate_Call) RunAndReturn(run func(...interface{}) 
 	return _c
 }
 
-// Create provides a mock function with given fields: value
-func (_m *MockInterface) Create(value interface{}) error {
-	ret := _m.Called(value)
+// Begin provides a mock function with given fields: ctx
+func (_m *MockInterface) Begin(ctx context.Context) (core.Interface, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Begin")
+	}
+
+	var r0 core.Interface
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (core.Interface, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) core.Interface); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(core.Interface)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockInterface_Begin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Begin'
+type MockInterface_Begin_Call struct {
+	*mock.Call
+}
+
+// Begin is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInterface_Expecter) Begin(ctx interface{}) *MockInterface_Begin_Call {
+	return &MockInterface_Begin_Call{Call: _e.mock.On("Begin", ctx)}
+}
+
+func (_c *MockInterface_Begin_Call) Run(run func(ctx context.Context)) *MockInterface_Begin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockInterface_Begin_Call) Return(_a0 core.Interface, _a1 error) *MockInterface_Begin_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockInterface_Begin_Call) RunAndReturn(run func(context.Context) (core.Interface, error)) *MockInterface_Begin_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Commit provides a mock function with given fields:
+func (_m *MockInterface) Commit() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockInterface_Commit_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Commit'
+type MockInterface_Commit_Call struct {
+	*mock.Call
+}
+
+// Commit is a helper method to define mock.On call
+func (_e *MockInterface_Expecter) Commit() *MockInterface_Commit_Call {
+	return &MockInterface_Commit_Call{Call: _e.mock.On("Commit")}
+}
+
+func (_c *MockInterface_Commit_Call) Run(run func()) *MockInterface_Commit_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockInterface_Commit_Call) Return(_a0 error) *MockInterface_Commit_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Commit_Call) RunAndReturn(run func() error) *MockInterface_Commit_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Create provides a mock function with given fields: ctx, value
+func (_m *MockInterface) Create(ctx context.Context, value interface{}) error {
+	ret := _m.Called(ctx, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
-		r0 = rf(value)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) error); ok {
+		r0 = rf(ctx, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -151,14 +256,15 @@ type MockInterface_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - ctx context.Context
 //   - value interface{}
-func (_e *MockInterface_Expecter) Create(value interface{}) *MockInterface_Create_Call {
-	return &MockInterface_Create_Call{Call: _e.mock.On("Create", value)}
+func (_e *MockInterface_Expecter) Create(ctx interface{}, value interface{}) *MockInterface_Create_Call {
+	return &MockInterface_Create_Call{Call: _e.mock.On("Create", ctx, value)}
 }
 
-func (_c *MockInterface_Create_Call) Run(run func(value interface{})) *MockInterface_Create_Call {
+func (_c *MockInterface_Create_Call) Run(run func(ctx context.Context, value interface{})) *MockInterface_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(interface{}))
+		run(args[0].(context.Context), args[1].(interface{}))
 	})
 	return _c
 }
@@ -168,7 +274,7 @@ func (_c *MockInterface_Create_Call) Return(_a0 error) *MockInterface_Create_Cal
 	return _c
 }
 
-func (_c *MockInterface_Create_Call) RunAndReturn(run func(interface{}) error) *MockInterface_Create_Call {
+func (_c *MockInterface_Create_Call) RunAndReturn(run func(context.Context, interface{}) error) *MockInterface_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -220,17 +326,17 @@ func (_c *MockInterface_DB_Call) RunAndReturn(run func() *gorm.DB) *MockInterfac
 	return _c
 }
 
-// Delete provides a mock function with given fields: value
-func (_m *MockInterface) Delete(value interface{}) error {
-	ret := _m.Called(value)
+// Delete provides a mock function with given fields: ctx, value
+func (_m *MockInterface) Delete(ctx context.Context, value interface{}) error {
+	ret := _m.Called(ctx, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
-		r0 = rf(value)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) error); ok {
+		r0 = rf(ctx, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -244,14 +350,15 @@ type MockInterface_Delete_Call struct {
 }
 
 // Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - value interface{}
-func (_e *MockInterface_Expecter) Delete(value interface{}) *MockInterface_Delete_Call {
-	return &MockInterface_Delete_Call{Call: _e.mock.On("Delete", value)}
+func (_e *MockInterface_Expecter) Delete(ctx interface{}, value interface{}) *MockInterface_Delete_Call {
+	return &MockInterface_Delete_Call{Call: _e.mock.On("Delete", ctx, value)}
 }
 
-func (_c *MockInterface_Delete_Call) Run(run func(value interface{})) *MockInterface_Delete_Call {
+func (_c *MockInterface_Delete_Call) Run(run func(ctx context.Context, value interface{})) *MockInterface_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(interface{}))
+		run(args[0].(context.Context), args[1].(interface{}))
 	})
 	return _c
 }
@@ -261,7 +368,7 @@ func (_c *MockInterface_Delete_Call) Return(_a0 error) *MockInterface_Delete_Cal
 	return _c
 }
 
-func (_c *MockInterface_Delete_Call) RunAndReturn(run func(interface{}) error) *MockInterface_Delete_Call {
+func (_c *MockInterface_Delete_Call) RunAndReturn(run func(context.Context, interface{}) error) *MockInterface_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -311,10 +418,10 @@ func (_c *MockInterface_Error_Call) RunAndReturn(run func() string) *MockInterfa
 	return _c
 }
 
-// Exec provides a mock function with given fields: query, args
-func (_m *MockInterface) Exec(query string, args ...interface{}) error {
+// Exec provides a mock function with given fields: ctx, query, args
+func (_m *MockInterface) Exec(ctx context.Context, query string, args ...interface{}) error {
 	var _ca []interface{}
-	_ca = append(_ca, query)
+	_ca = append(_ca, ctx, query)
 	_ca = append(_ca, args...)
 	ret := _m.Called(_ca...)
 
@@ -323,8 +430,8 @@ func (_m *MockInterface) Exec(query string, args ...interface{}) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, ...interface{}) error); ok {
-		r0 = rf(query, args...)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...interface{}) error); ok {
+		r0 = rf(ctx, query, args...)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -338,22 +445,23 @@ type MockInterface_Exec_Call struct {
 }
 
 // Exec is a helper method to define mock.On call
+//   - ctx context.Context
 //   - query string
 //   - args ...interface{}
-func (_e *MockInterface_Expecter) Exec(query interface{}, args ...interface{}) *MockInterface_Exec_Call {
+func (_e *MockInterface_Expecter) Exec(ctx interface{}, query interface{}, args ...interface{}) *MockInterface_Exec_Call {
 	return &MockInterface_Exec_Call{Call: _e.mock.On("Exec",
-		append([]interface{}{query}, args...)...)}
+		append([]interface{}{ctx, query}, args...)...)}
 }
 
-func (_c *MockInterface_Exec_Call) Run(run func(query string, args ...interface{})) *MockInterface_Exec_Call {
+func (_c *MockInterface_Exec_Call) Run(run func(ctx context.Context, query string, args ...interface{})) *MockInterface_Exec_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-1)
-		for i, a := range args[1:] {
+		variadicArgs := make([]interface{}, len(args)-2)
+		for i, a := range args[2:] {
 			if a != nil {
 				variadicArgs[i] = a.(interface{})
 			}
 		}
-		run(args[0].(string), variadicArgs...)
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -363,15 +471,15 @@ func (_c *MockInterface_Exec_Call) Return(_a0 error) *MockInterface_Exec_Call {
 	return _c
 }
 
-func (_c *MockInterface_Exec_Call) RunAndReturn(run func(string, ...interface{}) error) *MockInterface_Exec_Call {
+func (_c *MockInterface_Exec_Call) RunAndReturn(run func(context.Context, string, ...interface{}) error) *MockInterface_Exec_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Exists provides a mock function with given fields: model, query, args
-func (_m *MockInterface) Exists(model interface{}, query string, args ...interface{}) (bool, error) {
+// Exists provides a mock function with given fields: ctx, model, query, args
+func (_m *MockInterface) Exists(ctx context.Context, model interface{}, query string, args ...interface{}) (bool, error) {
 	var _ca []interface{}
-	_ca = append(_ca, model, query)
+	_ca = append(_ca, ctx, model, query)
 	_ca = append(_ca, args...)
 	ret := _m.Called(_ca...)
 
@@ -381,17 +489,17 @@ func (_m *MockInterface) Exists(model interface{}, query string, args ...interfa
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(interface{}, string, ...interface{}) (bool, error)); ok {
-		return rf(model, query, args...)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}, string, ...interface{}) (bool, error)); ok {
+		return rf(ctx, model, query, args...)
 	}
-	if rf, ok := ret.Get(0).(func(interface{}, string, ...interface{}) bool); ok {
-		r0 = rf(model, query, args...)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}, string, ...interface{}) bool); ok {
+		r0 = rf(ctx, model, query, args...)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(interface{}, string, ...interface{}) error); ok {
-		r1 = rf(model, query, args...)
+	if rf, ok := ret.Get(1).(func(context.Context, interface{}, string, ...interface{}) error); ok {
+		r1 = rf(ctx, model, query, args...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -405,23 +513,24 @@ type MockInterface_Exists_Call struct {
 }
 
 // Exists is a helper method to define mock.On call
+//   - ctx context.Context
 //   - model interface{}
 //   - query string
 //   - args ...interface{}
-func (_e *MockInterface_Expecter) Exists(model interface{}, query interface{}, args ...interface{}) *MockInterface_Exists_Call {
+func (_e *MockInterface_Expecter) Exists(ctx interface{}, model interface{}, query interface{}, args ...interface{}) *MockInterface_Exists_Call {
 	return &MockInterface_Exists_Call{Call: _e.mock.On("Exists",
-		append([]interface{}{model, query}, args...)...)}
+		append([]interface{}{ctx, model, query}, args...)...)}
 }
 
-func (_c *MockInterface_Exists_Call) Run(run func(model interface{}, query string, args ...interface{})) *MockInterface_Exists_Call {
+func (_c *MockInterface_Exists_Call) Run(run func(ctx context.Context, model interface{}, query string, args ...interface{})) *MockInterface_Exists_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-2)
-		for i, a := range args[2:] {
+		variadicArgs := make([]interface{}, len(args)-3)
+		for i, a := range args[3:] {
 			if a != nil {
 				variadicArgs[i] = a.(interface{})
 			}
 		}
-		run(args[0].(interface{}), args[1].(string), variadicArgs...)
+		run(args[0].(context.Context), args[1].(interface{}), args[2].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -431,15 +540,15 @@ func (_c *MockInterface_Exists_Call) Return(_a0 bool, _a1 error) *MockInterface_
 	return _c
 }
 
-func (_c *MockInterface_Exists_Call) RunAndReturn(run func(interface{}, string, ...interface{}) (bool, error)) *MockInterface_Exists_Call {
+func (_c *MockInterface_Exists_Call) RunAndReturn(run func(context.Context, interface{}, string, ...interface{}) (bool, error)) *MockInterface_Exists_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// FindOne provides a mock function with given fields: model, query, args
-func (_m *MockInterface) FindOne(model interface{}, query string, args ...interface{}) error {
+// FindOne provides a mock function with given fields: ctx, model, query, args
+func (_m *MockInterface) FindOne(ctx context.Context, model interface{}, query string, args ...interface{}) error {
 	var _ca []interface{}
-	_ca = append(_ca, model, query)
+	_ca = append(_ca, ctx, model, query)
 	_ca = append(_ca, args...)
 	ret := _m.Called(_ca...)
 
@@ -448,8 +557,8 @@ func (_m *MockInterface) FindOne(model interface{}, query string, args ...interf
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, string, ...interface{}) error); ok {
-		r0 = rf(model, query, args...)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}, string, ...interface{}) error); ok {
+		r0 = rf(ctx, model, query, args...)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -463,23 +572,24 @@ type MockInterface_FindOne_Call struct {
 }
 
 // FindOne is a helper method to define mock.On call
+//   - ctx context.Context
 //   - model interface{}
 //   - query string
 //   - args ...interface{}
-func (_e *MockInterface_Expecter) FindOne(model interface{}, query interface{}, args ...interface{}) *MockInterface_FindOne_Call {
+func (_e *MockInterface_Expecter) FindOne(ctx interface{}, model interface{}, query interface{}, args ...interface{}) *MockInterface_FindOne_Call {
 	return &MockInterface_FindOne_Call{Call: _e.mock.On("FindOne",
-		append([]interface{}{model, query}, args...)...)}
+		append([]interface{}{ctx, model, query}, args...)...)}
 }
 
-func (_c *MockInterface_FindOne_Call) Run(run func(model interface{}, query string, args ...interface{})) *MockInterface_FindOne_Call {
+func (_c *MockInterface_FindOne_Call) Run(run func(ctx context.Context, model interface{}, query string, args ...interface{})) *MockInterface_FindOne_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-2)
-		for i, a := range args[2:] {
+		variadicArgs := make([]interface{}, len(args)-3)
+		for i, a := range args[3:] {
 			if a != nil {
 				variadicArgs[i] = a.(interface{})
 			}
 		}
-		run(args[0].(interface{}), args[1].(string), variadicArgs...)
+		run(args[0].(context.Context), args[1].(interface{}), args[2].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -489,7 +599,7 @@ func (_c *MockInterface_FindOne_Call) Return(_a0 error) *MockInterface_FindOne_C
 	return _c
 }
 
-func (_c *MockInterface_FindOne_Call) RunAndReturn(run func(interface{}, string, ...interface{}) error) *MockInterface_FindOne_Call {
+func (_c *MockInterface_FindOne_Call) RunAndReturn(run func(context.Context, interface{}, string, ...interface{}) error) *MockInterface_FindOne_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1085,10 +1195,10 @@ func (_c *MockInterface_Preload_Call) RunAndReturn(run func(string, ...interface
 	return _c
 }
 
-// Query provides a mock function with given fields: query, args
-func (_m *MockInterface) Query(query string, args ...interface{}) core.Result {
+// Query provides a mock function with given fields: ctx, query, args
+func (_m *MockInterface) Query(ctx context.Context, query string, args ...interface{}) core.Result {
 	var _ca []interface{}
-	_ca = append(_ca, query)
+	_ca = append(_ca, ctx, query)
 	_ca = append(_ca, args...)
 	ret := _m.Called(_ca...)
 
@@ -1097,8 +1207,8 @@ func (_m *MockInterface) Query(query string, args ...interface{}) core.Result {
 	}
 
 	var r0 core.Result
-	if rf, ok := ret.Get(0).(func(string, ...interface{}) core.Result); ok {
-		r0 = rf(query, args...)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...interface{}) core.Result); ok {
+		r0 = rf(ctx, query, args...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(core.Result)
@@ -1114,22 +1224,23 @@ type MockInterface_Query_Call struct {
 }
 
 // Query is a helper method to define mock.On call
+//   - ctx context.Context
 //   - query string
 //   - args ...interface{}
-func (_e *MockInterface_Expecter) Query(query interface{}, args ...interface{}) *MockInterface_Query_Call {
+func (_e *MockInterface_Expecter) Query(ctx interface{}, query interface{}, args ...interface{}) *MockInterface_Query_Call {
 	return &MockInterface_Query_Call{Call: _e.mock.On("Query",
-		append([]interface{}{query}, args...)...)}
+		append([]interface{}{ctx, query}, args...)...)}
 }
 
-func (_c *MockInterface_Query_Call) Run(run func(query string, args ...interface{})) *MockInterface_Query_Call {
+func (_c *MockInterface_Query_Call) Run(run func(ctx context.Context, query string, args ...interface{})) *MockInterface_Query_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]interface{}, len(args)-1)
-		for i, a := range args[1:] {
+		variadicArgs := make([]interface{}, len(args)-2)
+		for i, a := range args[2:] {
 			if a != nil {
 				variadicArgs[i] = a.(interface{})
 			}
 		}
-		run(args[0].(string), variadicArgs...)
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -1139,7 +1250,99 @@ func (_c *MockInterface_Query_Call) Return(_a0 core.Result) *MockInterface_Query
 	return _c
 }
 
-func (_c *MockInterface_Query_Call) RunAndReturn(run func(string, ...interface{}) core.Result) *MockInterface_Query_Call {
+func (_c *MockInterface_Query_Call) RunAndReturn(run func(context.Context, string, ...interface{}) core.Result) *MockInterface_Query_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Rollback provides a mock function with given fields:
+func (_m *MockInterface) Rollback() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Rollback")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockInterface_Rollback_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Rollback'
+type MockInterface_Rollback_Call struct {
+	*mock.Call
+}
+
+// Rollback is a helper method to define mock.On call
+func (_e *MockInterface_Expecter) Rollback() *MockInterface_Rollback_Call {
+	return &MockInterface_Rollback_Call{Call: _e.mock.On("Rollback")}
+}
+
+func (_c *MockInterface_Rollback_Call) Run(run func()) *MockInterface_Rollback_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockInterface_Rollback_Call) Return(_a0 error) *MockInterface_Rollback_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Rollback_Call) RunAndReturn(run func() error) *MockInterface_Rollback_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Transaction provides a mock function with given fields: ctx, fn
+func (_m *MockInterface) Transaction(ctx context.Context, fn func(core.Interface) error) error {
+	ret := _m.Called(ctx, fn)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Transaction")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, func(core.Interface) error) error); ok {
+		r0 = rf(ctx, fn)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockInterface_Transaction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Transaction'
+type MockInterface_Transaction_Call struct {
+	*mock.Call
+}
+
+// Transaction is a helper method to define mock.On call
+//   - ctx context.Context
+//   - fn func(core.Interface) error
+func (_e *MockInterface_Expecter) Transaction(ctx interface{}, fn interface{}) *MockInterface_Transaction_Call {
+	return &MockInterface_Transaction_Call{Call: _e.mock.On("Transaction", ctx, fn)}
+}
+
+func (_c *MockInterface_Transaction_Call) Run(run func(ctx context.Context, fn func(core.Interface) error)) *MockInterface_Transaction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(func(core.Interface) error))
+	})
+	return _c
+}
+
+func (_c *MockInterface_Transaction_Call) Return(_a0 error) *MockInterface_Transaction_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_Transaction_Call) RunAndReturn(run func(context.Context, func(core.Interface) error) error) *MockInterface_Transaction_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1191,17 +1394,17 @@ func (_c *MockInterface_Unscoped_Call) RunAndReturn(run func() core.Interface) *
 	return _c
 }
 
-// Update provides a mock function with given fields: value
-func (_m *MockInterface) Update(value interface{}) error {
-	ret := _m.Called(value)
+// Update provides a mock function with given fields: ctx, value
+func (_m *MockInterface) Update(ctx context.Context, value interface{}) error {
+	ret := _m.Called(ctx, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
-		r0 = rf(value)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) error); ok {
+		r0 = rf(ctx, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1215,14 +1418,15 @@ type MockInterface_Update_Call struct {
 }
 
 // Update is a helper method to define mock.On call
+//   - ctx context.Context
 //   - value interface{}
-func (_e *MockInterface_Expecter) Update(value interface{}) *MockInterface_Update_Call {
-	return &MockInterface_Update_Call{Call: _e.mock.On("Update", value)}
+func (_e *MockInterface_Expecter) Update(ctx interface{}, value interface{}) *MockInterface_Update_Call {
+	return &MockInterface_Update_Call{Call: _e.mock.On("Update", ctx, value)}
 }
 
-func (_c *MockInterface_Update_Call) Run(run func(value interface{})) *MockInterface_Update_Call {
+func (_c *MockInterface_Update_Call) Run(run func(ctx context.Context, value interface{})) *MockInterface_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(interface{}))
+		run(args[0].(context.Context), args[1].(interface{}))
 	})
 	return _c
 }
@@ -1232,7 +1436,7 @@ func (_c *MockInterface_Update_Call) Return(_a0 error) *MockInterface_Update_Cal
 	return _c
 }
 
-func (_c *MockInterface_Update_Call) RunAndReturn(run func(interface{}) error) *MockInterface_Update_Call {
+func (_c *MockInterface_Update_Call) RunAndReturn(run func(context.Context, interface{}) error) *MockInterface_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1292,6 +1496,54 @@ func (_c *MockInterface_Where_Call) Return(_a0 core.Interface) *MockInterface_Wh
 }
 
 func (_c *MockInterface_Where_Call) RunAndReturn(run func(interface{}, ...interface{}) core.Interface) *MockInterface_Where_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// WithContext provides a mock function with given fields: ctx
+func (_m *MockInterface) WithContext(ctx context.Context) core.Interface {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WithContext")
+	}
+
+	var r0 core.Interface
+	if rf, ok := ret.Get(0).(func(context.Context) core.Interface); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(core.Interface)
+		}
+	}
+
+	return r0
+}
+
+// MockInterface_WithContext_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WithContext'
+type MockInterface_WithContext_Call struct {
+	*mock.Call
+}
+
+// WithContext is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInterface_Expecter) WithContext(ctx interface{}) *MockInterface_WithContext_Call {
+	return &MockInterface_WithContext_Call{Call: _e.mock.On("WithContext", ctx)}
+}
+
+func (_c *MockInterface_WithContext_Call) Run(run func(ctx context.Context)) *MockInterface_WithContext_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockInterface_WithContext_Call) Return(_a0 core.Interface) *MockInterface_WithContext_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockInterface_WithContext_Call) RunAndReturn(run func(context.Context) core.Interface) *MockInterface_WithContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

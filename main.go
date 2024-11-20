@@ -10,7 +10,6 @@ import (
 	"github.com/jonesrussell/mp-emailer/api"
 	"github.com/jonesrussell/mp-emailer/campaign"
 	"github.com/jonesrussell/mp-emailer/config"
-	"github.com/jonesrussell/mp-emailer/database"
 	appMiddleware "github.com/jonesrussell/mp-emailer/middleware"
 	"github.com/jonesrussell/mp-emailer/server"
 	"github.com/jonesrussell/mp-emailer/shared"
@@ -24,8 +23,6 @@ func main() {
 	app := fx.New(
 		fx.Options(
 			shared.App,
-			database.Module,
-			database.MigrationModule,
 			campaign.Module,
 			user.Module,
 			server.Module,
@@ -38,8 +35,6 @@ func main() {
 	app.Run()
 }
 
-// registerRoutes centralizes all route registration for the application
-// It takes in all necessary handlers and services via dependency injection
 // registerRoutes centralizes all route registration for the application
 func registerRoutes(
 	e *echo.Echo,

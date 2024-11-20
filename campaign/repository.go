@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jonesrussell/mp-emailer/database/core"
@@ -8,11 +9,11 @@ import (
 
 // RepositoryInterface defines the contract for campaign repository operations
 type RepositoryInterface interface {
-	Create(dto *CreateCampaignDTO) (*Campaign, error)
-	GetAll() ([]Campaign, error)
-	Update(dto *UpdateCampaignDTO) error
-	Delete(dto DeleteCampaignDTO) error
-	GetByID(dto GetCampaignDTO) (*Campaign, error)
+	Create(ctx context.Context, dto *CreateCampaignDTO) (*Campaign, error)
+	GetAll(ctx context.Context) ([]Campaign, error)
+	Update(ctx context.Context, dto *UpdateCampaignDTO) error
+	Delete(ctx context.Context, dto DeleteCampaignDTO) error
+	GetByID(ctx context.Context, dto GetCampaignDTO) (*Campaign, error)
 }
 
 // Repository implements the RepositoryInterface
@@ -26,7 +27,7 @@ func NewRepository(params RepositoryParams) RepositoryInterface {
 }
 
 // Create creates a new campaign in the database
-func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
+func (r *Repository) Create(ctx context.Context, dto *CreateCampaignDTO) (*Campaign, error) {
 	campaign := &Campaign{
 		Name:        dto.Name,
 		Description: dto.Description,
@@ -34,16 +35,16 @@ func (r *Repository) Create(dto *CreateCampaignDTO) (*Campaign, error) {
 		OwnerID:     dto.OwnerID,
 	}
 
-	if err := r.db.Create(campaign); err != nil {
+	if err := r.db.Create(ctx, campaign); err != nil {
 		return nil, fmt.Errorf("error creating campaign: %w", err)
 	}
 	return campaign, nil
 }
 
 // GetAll retrieves all campaigns from the database
-func (r *Repository) GetAll() ([]Campaign, error) {
+func (r *Repository) GetAll(ctx context.Context) ([]Campaign, error) {
 	var campaigns []Campaign
-	result := r.db.Query("SELECT * FROM campaigns")
+	result := r.db.Query(ctx, "SELECT * FROM campaigns")
 	if err := result.Scan(&campaigns).Error(); err != nil {
 		return nil, fmt.Errorf("error querying campaigns: %w", err)
 	}
@@ -51,8 +52,8 @@ func (r *Repository) GetAll() ([]Campaign, error) {
 }
 
 // Update updates an existing campaign in the database
-func (r *Repository) Update(dto *UpdateCampaignDTO) error {
-	exists, err := r.db.Exists(&Campaign{}, "id = ?", dto.ID)
+func (r *Repository) Update(ctx context.Context, dto *UpdateCampaignDTO) error {
+	exists, err := r.db.Exists(ctx, &Campaign{}, "id = ?", dto.ID)
 	if err != nil {
 		return err
 	}
@@ -60,7 +61,7 @@ func (r *Repository) Update(dto *UpdateCampaignDTO) error {
 		return ErrCampaignNotFound
 	}
 
-	err = r.db.Exec("UPDATE campaigns SET name = ?, description = ?, template = ? WHERE id = ?", dto.Name, dto.Description, dto.Template, dto.ID)
+	err = r.db.Exec(ctx, "UPDATE campaigns SET name = ?, description = ?, template = ? WHERE id = ?", dto.Name, dto.Description, dto.Template, dto.ID)
 	if err != nil {
 		return fmt.Errorf("error updating campaign: %w", err)
 	}
@@ -68,8 +69,8 @@ func (r *Repository) Update(dto *UpdateCampaignDTO) error {
 }
 
 // Delete removes a campaign from the database
-func (r *Repository) Delete(dto DeleteCampaignDTO) error {
-	exists, err := r.db.Exists(&Campaign{}, "id = ?", dto.ID)
+func (r *Repository) Delete(ctx context.Context, dto DeleteCampaignDTO) error {
+	exists, err := r.db.Exists(ctx, &Campaign{}, "id = ?", dto.ID)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 		return ErrCampaignNotFound
 	}
 
-	err = r.db.Exec("DELETE FROM campaigns WHERE id = ?", dto.ID)
+	err = r.db.Exec(ctx, "DELETE FROM campaigns WHERE id = ?", dto.ID)
 	if err != nil {
 		return fmt.Errorf("error deleting campaign: %w", err)
 	}
@@ -85,9 +86,9 @@ func (r *Repository) Delete(dto DeleteCampaignDTO) error {
 }
 
 // GetByID retrieves a campaign by its ID
-func (r *Repository) GetByID(dto GetCampaignDTO) (*Campaign, error) {
+func (r *Repository) GetByID(ctx context.Context, dto GetCampaignDTO) (*Campaign, error) {
 	var campaign Campaign
-	err := r.db.FindOne(&campaign, "id = ?", dto.ID)
+	err := r.db.FindOne(ctx, &campaign, "id = ?", dto.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving campaign: %w", err)
 	}

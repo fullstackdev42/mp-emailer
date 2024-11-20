@@ -32,7 +32,7 @@ type HandlerInterface interface {
 type HandlerParams struct {
 	fx.In
 	shared.BaseHandlerParams
-	DB              core.Interface `name:"database"`
+	DB              core.Interface
 	CampaignService campaign.ServiceInterface
 	EmailService    email.Service
 	VersionInfo     version.Info
@@ -50,7 +50,7 @@ func NewHandler(params HandlerParams) HandlerInterface {
 
 // IndexGET page handler
 func (h *Handler) IndexGET(c echo.Context) error {
-	campaigns, err := h.campaignService.GetCampaigns()
+	campaigns, err := h.campaignService.GetCampaigns(c.Request().Context())
 	if err != nil {
 		h.Logger.Error("Error fetching campaigns", err)
 		status, msg := h.MapError(err)

@@ -64,7 +64,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	}
 	h.Logger.Debug("CampaignGET: Parsed ID", "id", campaignID)
 	campaignParams := GetCampaignParams{ID: campaignID}
-	campaign, err := h.service.FetchCampaign(campaignParams)
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), campaignParams)
 	if err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
@@ -83,7 +83,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 // GetCampaigns handles GET requests for all campaigns
 func (h *Handler) GetCampaigns(c echo.Context) error {
 	h.Logger.Debug("Handling GetCampaigns request")
-	campaigns, err := h.service.GetCampaigns()
+	campaigns, err := h.service.GetCampaigns(c.Request().Context())
 	if err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
@@ -130,7 +130,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		Name:        strings.TrimSpace(c.FormValue("name")),
 		Description: strings.TrimSpace(c.FormValue("description")),
 		Template:    strings.TrimSpace(c.FormValue("template")),
-		OwnerID:     uuid.Must(uuid.Parse(userID)), // Convert string to UUID
+		OwnerID:     uuid.Must(uuid.Parse(userID)),
 	}
 
 	// Enhanced validation with specific error messages
@@ -151,13 +151,12 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 			"name", params.Name,
 			"description", params.Description)
 
-		// Return to form with error messages
 		return c.Render(http.StatusBadRequest, "campaign_create", shared.Data{
 			Title:    "Create Campaign",
 			PageName: "campaign_create",
 			Content: map[string]interface{}{
 				"Errors":     validationErrors,
-				"FormValues": params, // Preserve form values
+				"FormValues": params,
 			},
 		})
 	}
@@ -171,7 +170,8 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		OwnerID:     params.OwnerID,
 	}
 
-	campaign, err := h.service.CreateCampaign(dto)
+	// Add context from echo.Context
+	campaign, err := h.service.CreateCampaign(c.Request().Context(), dto)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to create campaign", err,
 			"ownerID", userID,
@@ -199,7 +199,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	if err := h.service.DeleteCampaign(DeleteCampaignDTO{ID: campaignID}); err != nil {
+	if err := h.service.DeleteCampaign(c.Request().Context(), DeleteCampaignDTO{ID: campaignID}); err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
@@ -218,7 +218,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: campaignID})
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: campaignID})
 	if err != nil {
 		if err == ErrCampaignNotFound {
 			return h.ErrorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
@@ -270,7 +270,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	params.Template = c.FormValue("template")
 
 	// Update campaign
-	if err := h.service.UpdateCampaign(&UpdateCampaignDTO{
+	if err := h.service.UpdateCampaign(c.Request().Context(), &UpdateCampaignDTO{
 		ID:       params.ID,
 		Name:     params.Name,
 		Template: params.Template,
@@ -320,7 +320,7 @@ func (h *Handler) ComposeEmail(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	campaign, err := h.service.FetchCampaign(GetCampaignParams{ID: params.ID})
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: params.ID})
 	if err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
@@ -328,7 +328,7 @@ func (h *Handler) ComposeEmail(c echo.Context) error {
 
 	userData := extractUserData(c)
 	representative := mp[0]
-	emailContent, err := h.service.ComposeEmail(ComposeEmailParams{
+	emailContent, err := h.service.ComposeEmail(c.Request().Context(), ComposeEmailParams{
 		MP:       representative,
 		Campaign: campaign,
 		UserData: userData,

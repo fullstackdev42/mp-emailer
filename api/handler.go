@@ -23,7 +23,7 @@ type Handler struct {
 }
 
 func (h *Handler) GetCampaigns(c echo.Context) error {
-	campaigns, err := h.campaignService.GetCampaigns()
+	campaigns, err := h.campaignService.GetCampaigns(c.Request().Context())
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaigns", http.StatusInternalServerError)
 	}
@@ -36,7 +36,7 @@ func (h *Handler) GetCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 
-	cmpn, err := h.campaignService.GetCampaignByID(campaign.GetCampaignParams{ID: id})
+	cmpn, err := h.campaignService.GetCampaignByID(c.Request().Context(), campaign.GetCampaignParams{ID: id})
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching campaign", http.StatusInternalServerError)
 	}
@@ -49,7 +49,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	createdCampaign, err := h.campaignService.CreateCampaign(dto)
+	createdCampaign, err := h.campaignService.CreateCampaign(c.Request().Context(), dto)
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error creating campaign", http.StatusInternalServerError)
 	}
@@ -68,7 +68,7 @@ func (h *Handler) UpdateCampaign(c echo.Context) error {
 	}
 	dto.ID = id
 
-	if err := h.campaignService.UpdateCampaign(dto); err != nil {
+	if err := h.campaignService.UpdateCampaign(c.Request().Context(), dto); err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error updating campaign", http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, dto)
@@ -80,7 +80,7 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid campaign ID", http.StatusBadRequest)
 	}
 
-	if err := h.campaignService.DeleteCampaign(campaign.DeleteCampaignDTO{ID: id}); err != nil {
+	if err := h.campaignService.DeleteCampaign(c.Request().Context(), campaign.DeleteCampaignDTO{ID: id}); err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error deleting campaign", http.StatusInternalServerError)
 	}
 	return c.NoContent(http.StatusNoContent)
@@ -93,7 +93,7 @@ func (h *Handler) RegisterUser(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	createdUser, err := h.userService.RegisterUser(dto)
+	createdUser, err := h.userService.RegisterUser(c.Request().Context(), dto)
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error registering user", http.StatusInternalServerError)
 	}
@@ -106,7 +106,7 @@ func (h *Handler) LoginUser(c echo.Context) error {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	token, err := h.userService.LoginUser(dto)
+	token, err := h.userService.LoginUser(c.Request().Context(), dto)
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Invalid credentials", http.StatusUnauthorized)
 	}
@@ -117,7 +117,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 	username := c.Param("username")
 	dto := &user.GetDTO{Username: username}
 
-	userDetails, err := h.userService.GetUser(dto)
+	userDetails, err := h.userService.GetUser(c.Request().Context(), dto)
 	if err != nil {
 		return h.errorHandler.HandleHTTPError(c, err, "Error fetching user", http.StatusInternalServerError)
 	}

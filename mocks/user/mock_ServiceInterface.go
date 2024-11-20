@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	context "context"
+
 	user "github.com/jonesrussell/mp-emailer/user"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -20,9 +22,9 @@ func (_m *MockServiceInterface) EXPECT() *MockServiceInterface_Expecter {
 	return &MockServiceInterface_Expecter{mock: &_m.Mock}
 }
 
-// AuthenticateUser provides a mock function with given fields: username, password
-func (_m *MockServiceInterface) AuthenticateUser(username string, password string) (bool, *user.User, error) {
-	ret := _m.Called(username, password)
+// AuthenticateUser provides a mock function with given fields: ctx, username, password
+func (_m *MockServiceInterface) AuthenticateUser(ctx context.Context, username string, password string) (bool, *user.User, error) {
+	ret := _m.Called(ctx, username, password)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
@@ -31,25 +33,25 @@ func (_m *MockServiceInterface) AuthenticateUser(username string, password strin
 	var r0 bool
 	var r1 *user.User
 	var r2 error
-	if rf, ok := ret.Get(0).(func(string, string) (bool, *user.User, error)); ok {
-		return rf(username, password)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, *user.User, error)); ok {
+		return rf(ctx, username, password)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
-		r0 = rf(username, password)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(ctx, username, password)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) *user.User); ok {
-		r1 = rf(username, password)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) *user.User); ok {
+		r1 = rf(ctx, username, password)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*user.User)
 		}
 	}
 
-	if rf, ok := ret.Get(2).(func(string, string) error); ok {
-		r2 = rf(username, password)
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = rf(ctx, username, password)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -63,15 +65,16 @@ type MockServiceInterface_AuthenticateUser_Call struct {
 }
 
 // AuthenticateUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - username string
 //   - password string
-func (_e *MockServiceInterface_Expecter) AuthenticateUser(username interface{}, password interface{}) *MockServiceInterface_AuthenticateUser_Call {
-	return &MockServiceInterface_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", username, password)}
+func (_e *MockServiceInterface_Expecter) AuthenticateUser(ctx interface{}, username interface{}, password interface{}) *MockServiceInterface_AuthenticateUser_Call {
+	return &MockServiceInterface_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, username, password)}
 }
 
-func (_c *MockServiceInterface_AuthenticateUser_Call) Run(run func(username string, password string)) *MockServiceInterface_AuthenticateUser_Call {
+func (_c *MockServiceInterface_AuthenticateUser_Call) Run(run func(ctx context.Context, username string, password string)) *MockServiceInterface_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
@@ -81,7 +84,7 @@ func (_c *MockServiceInterface_AuthenticateUser_Call) Return(_a0 bool, _a1 *user
 	return _c
 }
 
-func (_c *MockServiceInterface_AuthenticateUser_Call) RunAndReturn(run func(string, string) (bool, *user.User, error)) *MockServiceInterface_AuthenticateUser_Call {
+func (_c *MockServiceInterface_AuthenticateUser_Call) RunAndReturn(run func(context.Context, string, string) (bool, *user.User, error)) *MockServiceInterface_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -131,9 +134,9 @@ func (_c *MockServiceInterface_Error_Call) RunAndReturn(run func(string, error, 
 	return _c
 }
 
-// GetUser provides a mock function with given fields: params
-func (_m *MockServiceInterface) GetUser(params *user.GetDTO) (*user.DTO, error) {
-	ret := _m.Called(params)
+// GetUser provides a mock function with given fields: ctx, params
+func (_m *MockServiceInterface) GetUser(ctx context.Context, params *user.GetDTO) (*user.DTO, error) {
+	ret := _m.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUser")
@@ -141,19 +144,19 @@ func (_m *MockServiceInterface) GetUser(params *user.GetDTO) (*user.DTO, error) 
 
 	var r0 *user.DTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*user.GetDTO) (*user.DTO, error)); ok {
-		return rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.GetDTO) (*user.DTO, error)); ok {
+		return rf(ctx, params)
 	}
-	if rf, ok := ret.Get(0).(func(*user.GetDTO) *user.DTO); ok {
-		r0 = rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.GetDTO) *user.DTO); ok {
+		r0 = rf(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.DTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*user.GetDTO) error); ok {
-		r1 = rf(params)
+	if rf, ok := ret.Get(1).(func(context.Context, *user.GetDTO) error); ok {
+		r1 = rf(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -167,14 +170,15 @@ type MockServiceInterface_GetUser_Call struct {
 }
 
 // GetUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - params *user.GetDTO
-func (_e *MockServiceInterface_Expecter) GetUser(params interface{}) *MockServiceInterface_GetUser_Call {
-	return &MockServiceInterface_GetUser_Call{Call: _e.mock.On("GetUser", params)}
+func (_e *MockServiceInterface_Expecter) GetUser(ctx interface{}, params interface{}) *MockServiceInterface_GetUser_Call {
+	return &MockServiceInterface_GetUser_Call{Call: _e.mock.On("GetUser", ctx, params)}
 }
 
-func (_c *MockServiceInterface_GetUser_Call) Run(run func(params *user.GetDTO)) *MockServiceInterface_GetUser_Call {
+func (_c *MockServiceInterface_GetUser_Call) Run(run func(ctx context.Context, params *user.GetDTO)) *MockServiceInterface_GetUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*user.GetDTO))
+		run(args[0].(context.Context), args[1].(*user.GetDTO))
 	})
 	return _c
 }
@@ -184,7 +188,7 @@ func (_c *MockServiceInterface_GetUser_Call) Return(_a0 *user.DTO, _a1 error) *M
 	return _c
 }
 
-func (_c *MockServiceInterface_GetUser_Call) RunAndReturn(run func(*user.GetDTO) (*user.DTO, error)) *MockServiceInterface_GetUser_Call {
+func (_c *MockServiceInterface_GetUser_Call) RunAndReturn(run func(context.Context, *user.GetDTO) (*user.DTO, error)) *MockServiceInterface_GetUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -233,9 +237,9 @@ func (_c *MockServiceInterface_Info_Call) RunAndReturn(run func(string, ...inter
 	return _c
 }
 
-// LoginUser provides a mock function with given fields: params
-func (_m *MockServiceInterface) LoginUser(params *user.LoginDTO) (string, error) {
-	ret := _m.Called(params)
+// LoginUser provides a mock function with given fields: ctx, params
+func (_m *MockServiceInterface) LoginUser(ctx context.Context, params *user.LoginDTO) (string, error) {
+	ret := _m.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoginUser")
@@ -243,17 +247,17 @@ func (_m *MockServiceInterface) LoginUser(params *user.LoginDTO) (string, error)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*user.LoginDTO) (string, error)); ok {
-		return rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.LoginDTO) (string, error)); ok {
+		return rf(ctx, params)
 	}
-	if rf, ok := ret.Get(0).(func(*user.LoginDTO) string); ok {
-		r0 = rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.LoginDTO) string); ok {
+		r0 = rf(ctx, params)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(*user.LoginDTO) error); ok {
-		r1 = rf(params)
+	if rf, ok := ret.Get(1).(func(context.Context, *user.LoginDTO) error); ok {
+		r1 = rf(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -267,14 +271,15 @@ type MockServiceInterface_LoginUser_Call struct {
 }
 
 // LoginUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - params *user.LoginDTO
-func (_e *MockServiceInterface_Expecter) LoginUser(params interface{}) *MockServiceInterface_LoginUser_Call {
-	return &MockServiceInterface_LoginUser_Call{Call: _e.mock.On("LoginUser", params)}
+func (_e *MockServiceInterface_Expecter) LoginUser(ctx interface{}, params interface{}) *MockServiceInterface_LoginUser_Call {
+	return &MockServiceInterface_LoginUser_Call{Call: _e.mock.On("LoginUser", ctx, params)}
 }
 
-func (_c *MockServiceInterface_LoginUser_Call) Run(run func(params *user.LoginDTO)) *MockServiceInterface_LoginUser_Call {
+func (_c *MockServiceInterface_LoginUser_Call) Run(run func(ctx context.Context, params *user.LoginDTO)) *MockServiceInterface_LoginUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*user.LoginDTO))
+		run(args[0].(context.Context), args[1].(*user.LoginDTO))
 	})
 	return _c
 }
@@ -284,14 +289,14 @@ func (_c *MockServiceInterface_LoginUser_Call) Return(_a0 string, _a1 error) *Mo
 	return _c
 }
 
-func (_c *MockServiceInterface_LoginUser_Call) RunAndReturn(run func(*user.LoginDTO) (string, error)) *MockServiceInterface_LoginUser_Call {
+func (_c *MockServiceInterface_LoginUser_Call) RunAndReturn(run func(context.Context, *user.LoginDTO) (string, error)) *MockServiceInterface_LoginUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// RegisterUser provides a mock function with given fields: params
-func (_m *MockServiceInterface) RegisterUser(params *user.RegisterDTO) (*user.DTO, error) {
-	ret := _m.Called(params)
+// RegisterUser provides a mock function with given fields: ctx, params
+func (_m *MockServiceInterface) RegisterUser(ctx context.Context, params *user.RegisterDTO) (*user.DTO, error) {
+	ret := _m.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RegisterUser")
@@ -299,19 +304,19 @@ func (_m *MockServiceInterface) RegisterUser(params *user.RegisterDTO) (*user.DT
 
 	var r0 *user.DTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*user.RegisterDTO) (*user.DTO, error)); ok {
-		return rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.RegisterDTO) (*user.DTO, error)); ok {
+		return rf(ctx, params)
 	}
-	if rf, ok := ret.Get(0).(func(*user.RegisterDTO) *user.DTO); ok {
-		r0 = rf(params)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.RegisterDTO) *user.DTO); ok {
+		r0 = rf(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.DTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*user.RegisterDTO) error); ok {
-		r1 = rf(params)
+	if rf, ok := ret.Get(1).(func(context.Context, *user.RegisterDTO) error); ok {
+		r1 = rf(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -325,14 +330,15 @@ type MockServiceInterface_RegisterUser_Call struct {
 }
 
 // RegisterUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - params *user.RegisterDTO
-func (_e *MockServiceInterface_Expecter) RegisterUser(params interface{}) *MockServiceInterface_RegisterUser_Call {
-	return &MockServiceInterface_RegisterUser_Call{Call: _e.mock.On("RegisterUser", params)}
+func (_e *MockServiceInterface_Expecter) RegisterUser(ctx interface{}, params interface{}) *MockServiceInterface_RegisterUser_Call {
+	return &MockServiceInterface_RegisterUser_Call{Call: _e.mock.On("RegisterUser", ctx, params)}
 }
 
-func (_c *MockServiceInterface_RegisterUser_Call) Run(run func(params *user.RegisterDTO)) *MockServiceInterface_RegisterUser_Call {
+func (_c *MockServiceInterface_RegisterUser_Call) Run(run func(ctx context.Context, params *user.RegisterDTO)) *MockServiceInterface_RegisterUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*user.RegisterDTO))
+		run(args[0].(context.Context), args[1].(*user.RegisterDTO))
 	})
 	return _c
 }
@@ -342,22 +348,22 @@ func (_c *MockServiceInterface_RegisterUser_Call) Return(_a0 *user.DTO, _a1 erro
 	return _c
 }
 
-func (_c *MockServiceInterface_RegisterUser_Call) RunAndReturn(run func(*user.RegisterDTO) (*user.DTO, error)) *MockServiceInterface_RegisterUser_Call {
+func (_c *MockServiceInterface_RegisterUser_Call) RunAndReturn(run func(context.Context, *user.RegisterDTO) (*user.DTO, error)) *MockServiceInterface_RegisterUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// RequestPasswordReset provides a mock function with given fields: dto
-func (_m *MockServiceInterface) RequestPasswordReset(dto *user.PasswordResetDTO) error {
-	ret := _m.Called(dto)
+// RequestPasswordReset provides a mock function with given fields: ctx, dto
+func (_m *MockServiceInterface) RequestPasswordReset(ctx context.Context, dto *user.PasswordResetDTO) error {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RequestPasswordReset")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*user.PasswordResetDTO) error); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.PasswordResetDTO) error); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -371,14 +377,15 @@ type MockServiceInterface_RequestPasswordReset_Call struct {
 }
 
 // RequestPasswordReset is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto *user.PasswordResetDTO
-func (_e *MockServiceInterface_Expecter) RequestPasswordReset(dto interface{}) *MockServiceInterface_RequestPasswordReset_Call {
-	return &MockServiceInterface_RequestPasswordReset_Call{Call: _e.mock.On("RequestPasswordReset", dto)}
+func (_e *MockServiceInterface_Expecter) RequestPasswordReset(ctx interface{}, dto interface{}) *MockServiceInterface_RequestPasswordReset_Call {
+	return &MockServiceInterface_RequestPasswordReset_Call{Call: _e.mock.On("RequestPasswordReset", ctx, dto)}
 }
 
-func (_c *MockServiceInterface_RequestPasswordReset_Call) Run(run func(dto *user.PasswordResetDTO)) *MockServiceInterface_RequestPasswordReset_Call {
+func (_c *MockServiceInterface_RequestPasswordReset_Call) Run(run func(ctx context.Context, dto *user.PasswordResetDTO)) *MockServiceInterface_RequestPasswordReset_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*user.PasswordResetDTO))
+		run(args[0].(context.Context), args[1].(*user.PasswordResetDTO))
 	})
 	return _c
 }
@@ -388,22 +395,22 @@ func (_c *MockServiceInterface_RequestPasswordReset_Call) Return(_a0 error) *Moc
 	return _c
 }
 
-func (_c *MockServiceInterface_RequestPasswordReset_Call) RunAndReturn(run func(*user.PasswordResetDTO) error) *MockServiceInterface_RequestPasswordReset_Call {
+func (_c *MockServiceInterface_RequestPasswordReset_Call) RunAndReturn(run func(context.Context, *user.PasswordResetDTO) error) *MockServiceInterface_RequestPasswordReset_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// ResetPassword provides a mock function with given fields: dto
-func (_m *MockServiceInterface) ResetPassword(dto *user.ResetPasswordDTO) error {
-	ret := _m.Called(dto)
+// ResetPassword provides a mock function with given fields: ctx, dto
+func (_m *MockServiceInterface) ResetPassword(ctx context.Context, dto *user.ResetPasswordDTO) error {
+	ret := _m.Called(ctx, dto)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ResetPassword")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*user.ResetPasswordDTO) error); ok {
-		r0 = rf(dto)
+	if rf, ok := ret.Get(0).(func(context.Context, *user.ResetPasswordDTO) error); ok {
+		r0 = rf(ctx, dto)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -417,14 +424,15 @@ type MockServiceInterface_ResetPassword_Call struct {
 }
 
 // ResetPassword is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dto *user.ResetPasswordDTO
-func (_e *MockServiceInterface_Expecter) ResetPassword(dto interface{}) *MockServiceInterface_ResetPassword_Call {
-	return &MockServiceInterface_ResetPassword_Call{Call: _e.mock.On("ResetPassword", dto)}
+func (_e *MockServiceInterface_Expecter) ResetPassword(ctx interface{}, dto interface{}) *MockServiceInterface_ResetPassword_Call {
+	return &MockServiceInterface_ResetPassword_Call{Call: _e.mock.On("ResetPassword", ctx, dto)}
 }
 
-func (_c *MockServiceInterface_ResetPassword_Call) Run(run func(dto *user.ResetPasswordDTO)) *MockServiceInterface_ResetPassword_Call {
+func (_c *MockServiceInterface_ResetPassword_Call) Run(run func(ctx context.Context, dto *user.ResetPasswordDTO)) *MockServiceInterface_ResetPassword_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*user.ResetPasswordDTO))
+		run(args[0].(context.Context), args[1].(*user.ResetPasswordDTO))
 	})
 	return _c
 }
@@ -434,7 +442,7 @@ func (_c *MockServiceInterface_ResetPassword_Call) Return(_a0 error) *MockServic
 	return _c
 }
 
-func (_c *MockServiceInterface_ResetPassword_Call) RunAndReturn(run func(*user.ResetPasswordDTO) error) *MockServiceInterface_ResetPassword_Call {
+func (_c *MockServiceInterface_ResetPassword_Call) RunAndReturn(run func(context.Context, *user.ResetPasswordDTO) error) *MockServiceInterface_ResetPassword_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -99,8 +99,11 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.SessionManager.On("SetSessionValues", sess, testUser)
 				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(nil)
 
-				s.UserService.EXPECT().AuthenticateUser("testuser", "password123").
-					Return(true, testUser, nil)
+				s.UserService.EXPECT().AuthenticateUser(
+					mock.Anything,
+					"testuser",
+					"password123",
+				).Return(true, testUser, nil)
 
 				return sess
 			},
@@ -142,8 +145,11 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					mock.AnythingOfType("*echo.context"),
 				).Return(nil)
 
-				s.UserService.EXPECT().AuthenticateUser("wronguser", "wrongpass").
-					Return(false, nil, nil)
+				s.UserService.EXPECT().AuthenticateUser(
+					mock.Anything,
+					"wronguser",
+					"wrongpass",
+				).Return(false, nil, nil)
 
 				return sess
 			},
@@ -164,8 +170,11 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.SessionManager.On("SaveSession", mock.Anything, sess).
 					Return(errors.New("failed to save session"))
 
-				s.UserService.EXPECT().AuthenticateUser("testuser", "password123").
-					Return(true, testUser, nil)
+				s.UserService.EXPECT().AuthenticateUser(
+					mock.Anything,
+					"testuser",
+					"password123",
+				).Return(true, testUser, nil)
 
 				s.ErrorHandler.On("HandleHTTPError",
 					mock.MatchedBy(func(c echo.Context) bool {

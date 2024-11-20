@@ -1,24 +1,30 @@
 package core
 
 import (
+	"context"
 	"database/sql"
 
 	"gorm.io/gorm"
 )
 
-type Interface interface {
-	DB() *gorm.DB
-	Exists(model interface{}, query string, args ...interface{}) (bool, error)
-	Create(value interface{}) error
-	FindOne(model interface{}, query string, args ...interface{}) error
-	Update(value interface{}) error
-	Delete(value interface{}) error
-	Exec(query string, args ...interface{}) error
-	Query(query string, args ...interface{}) Result
-	Unscoped() Interface
-	WithTrashed() Interface
+// Reader handles database read operations
+type Reader interface {
+	FindOne(ctx context.Context, model interface{}, query string, args ...interface{}) error
+	Query(ctx context.Context, query string, args ...interface{}) Result
+	Exists(ctx context.Context, model interface{}, query string, args ...interface{}) (bool, error)
 	Preload(query string, args ...interface{}) Interface
-	Association(column string) AssociationInterface
+}
+
+// Writer handles database write operations
+type Writer interface {
+	Create(ctx context.Context, value interface{}) error
+	Update(ctx context.Context, value interface{}) error
+	Delete(ctx context.Context, value interface{}) error
+	Exec(ctx context.Context, query string, args ...interface{}) error
+}
+
+// QueryBuilder handles query construction
+type QueryBuilder interface {
 	Where(query interface{}, args ...interface{}) Interface
 	Or(query interface{}, args ...interface{}) Interface
 	Not(query interface{}, args ...interface{}) Interface
@@ -28,6 +34,27 @@ type Interface interface {
 	Joins(query string, args ...interface{}) Interface
 	Limit(limit int) Interface
 	Offset(offset int) Interface
+}
+
+// TransactionManager handles database transactions
+type TransactionManager interface {
+	Transaction(ctx context.Context, fn func(tx Interface) error) error
+	Begin(ctx context.Context) (Interface, error)
+	Commit() error
+	Rollback() error
+}
+
+// Interface combines all database operations
+type Interface interface {
+	Reader
+	Writer
+	QueryBuilder
+	TransactionManager
+	DB() *gorm.DB
+	WithContext(ctx context.Context) Interface
+	Unscoped() Interface
+	WithTrashed() Interface
+	Association(column string) AssociationInterface
 	AutoMigrate(dst ...interface{}) error
 	Migrator() Migrator
 	GetSQLDB() (*sql.DB, error)

@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestRepository(t *testing.T) {
 
 		mockDB.On("Create", user).Return(nil)
 
-		err := repo.Create(user)
+		err := repo.Create(context.Background(), user)
 		assert.NoError(t, err)
 		mockDB.AssertExpectations(t)
 	})
@@ -41,7 +42,7 @@ func TestRepository(t *testing.T) {
 			}).
 			Return(nil)
 
-		foundUser, err := repo.FindByEmail(email)
+		foundUser, err := repo.FindByEmail(context.Background(), email)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedUser, foundUser)
 		mockDB.AssertExpectations(t)
@@ -52,7 +53,7 @@ func TestRepository(t *testing.T) {
 		mockDB.On("FindOne", mock.AnythingOfType("*user.User"), "email = ?", email).
 			Return(fmt.Errorf("not found"))
 
-		foundUser, err := repo.FindByEmail(email)
+		foundUser, err := repo.FindByEmail(context.Background(), email)
 		assert.Error(t, err)
 		assert.Nil(t, foundUser)
 		mockDB.AssertExpectations(t)

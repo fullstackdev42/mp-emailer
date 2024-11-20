@@ -1,6 +1,8 @@
 package user
 
 import (
+	"context"
+
 	"github.com/jonesrussell/loggo"
 )
 
@@ -34,9 +36,9 @@ func (d *LoggingDecorator) Error(message string, err error, params ...interface{
 }
 
 // GetUser gets a user
-func (d *LoggingDecorator) GetUser(dto *GetDTO) (*DTO, error) {
+func (d *LoggingDecorator) GetUser(ctx context.Context, dto *GetDTO) (*DTO, error) {
 	d.logger.Info("Getting user", "dto", dto)
-	user, err := d.service.GetUser(dto)
+	user, err := d.service.GetUser(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to get user", err, "dto", dto)
 	}
@@ -44,9 +46,9 @@ func (d *LoggingDecorator) GetUser(dto *GetDTO) (*DTO, error) {
 }
 
 // LoginUser logs in a user
-func (d *LoggingDecorator) LoginUser(dto *LoginDTO) (string, error) {
+func (d *LoggingDecorator) LoginUser(ctx context.Context, dto *LoginDTO) (string, error) {
 	d.logger.Info("Logging in user", "dto", dto)
-	token, err := d.service.LoginUser(dto)
+	token, err := d.service.LoginUser(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to login user", err, "dto", dto)
 	}
@@ -54,9 +56,9 @@ func (d *LoggingDecorator) LoginUser(dto *LoginDTO) (string, error) {
 }
 
 // RegisterUser registers a new user
-func (d *LoggingDecorator) RegisterUser(dto *RegisterDTO) (*DTO, error) {
+func (d *LoggingDecorator) RegisterUser(ctx context.Context, dto *RegisterDTO) (*DTO, error) {
 	d.logger.Info("Registering new user", "dto", dto)
-	user, err := d.service.RegisterUser(dto)
+	user, err := d.service.RegisterUser(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to register user", err, "dto", dto)
 	}
@@ -64,9 +66,9 @@ func (d *LoggingDecorator) RegisterUser(dto *RegisterDTO) (*DTO, error) {
 }
 
 // AuthenticateUser authenticates a user with logging
-func (d *LoggingDecorator) AuthenticateUser(username, password string) (bool, *User, error) {
+func (d *LoggingDecorator) AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error) {
 	d.logger.Info("Authenticating user", "username", username)
-	authenticated, user, err := d.service.AuthenticateUser(username, password)
+	authenticated, user, err := d.service.AuthenticateUser(ctx, username, password)
 	if err != nil {
 		d.logger.Error("Failed to authenticate user", err, "username", username)
 	}
@@ -74,9 +76,9 @@ func (d *LoggingDecorator) AuthenticateUser(username, password string) (bool, *U
 }
 
 // RequestPasswordReset decorates the password reset request with logging
-func (d *LoggingDecorator) RequestPasswordReset(dto *PasswordResetDTO) error {
+func (d *LoggingDecorator) RequestPasswordReset(ctx context.Context, dto *PasswordResetDTO) error {
 	d.logger.Info("Requesting password reset", "email", dto.Email)
-	err := d.service.RequestPasswordReset(dto)
+	err := d.service.RequestPasswordReset(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to request password reset", err, "email", dto.Email)
 	}
@@ -84,9 +86,9 @@ func (d *LoggingDecorator) RequestPasswordReset(dto *PasswordResetDTO) error {
 }
 
 // ResetPassword decorates the password reset completion with logging
-func (d *LoggingDecorator) ResetPassword(dto *ResetPasswordDTO) error {
+func (d *LoggingDecorator) ResetPassword(ctx context.Context, dto *ResetPasswordDTO) error {
 	d.logger.Info("Resetting password", "token", dto.Token)
-	err := d.service.ResetPassword(dto)
+	err := d.service.ResetPassword(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to reset password", err, "token", dto.Token)
 	}

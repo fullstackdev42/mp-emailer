@@ -1,6 +1,7 @@
 package seeders
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jonesrussell/mp-emailer/database/factories"
@@ -15,7 +16,7 @@ func (s *UserSeeder) Seed() error {
 	users := factory.MakeMany(5)
 
 	for _, user := range users {
-		if err := s.DB.Create(user); err != nil {
+		if err := s.DB.Create(context.Background(), user); err != nil {
 			return fmt.Errorf("failed to seed user: %w", err)
 		}
 	}

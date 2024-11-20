@@ -1,6 +1,7 @@
 package campaign_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -89,7 +90,7 @@ func (s *CampaignServiceTestSuite) TestCreateCampaign() {
 			s.mockRepo.Calls = nil
 
 			tt.mock(tt.input)
-			got, err := s.service.CreateCampaign(tt.input)
+			got, err := s.service.CreateCampaign(context.Background(), tt.input)
 			if tt.wantErr {
 				s.Error(err)
 				return
@@ -129,7 +130,7 @@ func (s *CampaignServiceTestSuite) TestComposeEmail() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			got, err := s.service.ComposeEmail(tt.params)
+			got, err := s.service.ComposeEmail(context.Background(), tt.params)
 			if tt.wantErr {
 				s.Error(err)
 				return
@@ -190,7 +191,7 @@ func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 			s.mockRepo.Calls = nil
 
 			tt.mock(tt.params)
-			got, err := s.service.GetCampaignByID(tt.params)
+			got, err := s.service.GetCampaignByID(context.Background(), tt.params)
 			if tt.wantErr {
 				s.Error(err)
 				return
@@ -241,7 +242,7 @@ func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 			s.mockRepo.Calls = nil
 
 			tt.mock(tt.dto)
-			err := s.service.DeleteCampaign(tt.dto)
+			err := s.service.DeleteCampaign(context.Background(), tt.dto)
 			if tt.wantErr {
 				s.Error(err)
 				return

@@ -1,6 +1,7 @@
 package decorators
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -23,45 +24,63 @@ func NewLoggingDecorator(db core.Interface, logger loggo.LoggerInterface) core.I
 	}
 }
 
-func (d *LoggingDecorator) Exists(model interface{}, query string, args ...interface{}) (bool, error) {
+func (d *LoggingDecorator) Exists(ctx context.Context, model interface{}, query string, args ...interface{}) (bool, error) {
 	d.Logger.Debug("Checking existence", "model", model, "query", query, "args", args)
-	exists, err := d.Database.Exists(model, query, args...)
+	exists, err := d.Database.Exists(ctx, model, query, args...)
 	if err != nil {
 		d.Logger.Error("Error checking existence", err, "model", model, "query", query, "args", args)
 	}
 	return exists, err
 }
 
-func (d *LoggingDecorator) Create(model interface{}) error {
+func (d *LoggingDecorator) Create(ctx context.Context, model interface{}) error {
 	d.Logger.Debug("Creating model", "model", model)
-	err := d.Database.Create(model)
+	err := d.Database.Create(ctx, model)
 	if err != nil {
 		d.Logger.Error("Error creating model", err, "model", model)
 	}
 	return err
 }
 
-func (d *LoggingDecorator) FindOne(model interface{}, query string, args ...interface{}) error {
+func (d *LoggingDecorator) FindOne(ctx context.Context, model interface{}, query string, args ...interface{}) error {
 	d.Logger.Debug("Finding one", "model", model, "query", query, "args", args)
-	err := d.Database.FindOne(model, query, args...)
+	err := d.Database.FindOne(ctx, model, query, args...)
 	if err != nil {
 		d.Logger.Error("Error finding one", err, "model", model, "query", query, "args", args)
 	}
 	return err
 }
 
-func (d *LoggingDecorator) Exec(query string, args ...interface{}) error {
+func (d *LoggingDecorator) Query(ctx context.Context, query string, args ...interface{}) core.Result {
 	d.Logger.Debug("Executing query", "query", query, "args", args)
-	err := d.Database.Exec(query, args...)
+	return d.Database.Query(ctx, query, args...)
+}
+
+func (d *LoggingDecorator) Update(ctx context.Context, value interface{}) error {
+	d.Logger.Debug("Updating model", "model", value)
+	err := d.Database.Update(ctx, value)
 	if err != nil {
-		d.Logger.Error("Error executing query", err, "query", query, "args", args)
+		d.Logger.Error("Error updating model", err, "model", value)
 	}
 	return err
 }
 
-func (d *LoggingDecorator) Query(query string, args ...interface{}) core.Result {
-	d.Logger.Debug("Querying", "query", query, "args", args)
-	return d.Database.Query(query, args...)
+func (d *LoggingDecorator) Delete(ctx context.Context, value interface{}) error {
+	d.Logger.Debug("Deleting model", "model", value)
+	err := d.Database.Delete(ctx, value)
+	if err != nil {
+		d.Logger.Error("Error deleting model", err, "model", value)
+	}
+	return err
+}
+
+func (d *LoggingDecorator) Exec(ctx context.Context, query string, args ...interface{}) error {
+	d.Logger.Debug("Executing statement", "query", query, "args", args)
+	err := d.Database.Exec(ctx, query, args...)
+	if err != nil {
+		d.Logger.Error("Error executing statement", err, "query", query, "args", args)
+	}
+	return err
 }
 
 // Add Association method implementation
@@ -82,16 +101,6 @@ func (d *LoggingDecorator) AutoMigrate(dst ...interface{}) error {
 		"duration", time.Since(start),
 		"error", err)
 
-	return err
-}
-
-// Add this method to the LoggingDecorator struct
-func (d *LoggingDecorator) Delete(model interface{}) error {
-	d.Logger.Debug("Deleting model", "model", model)
-	err := d.Database.Delete(model)
-	if err != nil {
-		d.Logger.Error("Error deleting model", err, "model", model)
-	}
 	return err
 }
 
@@ -185,12 +194,57 @@ func (d *LoggingDecorator) Migrator() core.Migrator {
 	return d.Database.Migrator()
 }
 
-// Add this method to the LoggingDecorator struct
-func (d *LoggingDecorator) Update(value interface{}) error {
-	d.Logger.Debug("Updating model", "model", value)
-	err := d.Database.Update(value)
+// Add Begin method
+func (d *LoggingDecorator) Begin(ctx context.Context) (core.Interface, error) {
+	d.Logger.Debug("Beginning transaction")
+	return d.Database.Begin(ctx)
+}
+
+// Add Commit method
+func (d *LoggingDecorator) Commit() error {
+	d.Logger.Debug("Committing transaction")
+	err := d.Database.Commit()
 	if err != nil {
-		d.Logger.Error("Error updating model", err, "model", value)
+		d.Logger.Error("Error committing transaction", err)
 	}
 	return err
+}
+
+// Add Rollback method
+func (d *LoggingDecorator) Rollback() error {
+	d.Logger.Debug("Rolling back transaction")
+	err := d.Database.Rollback()
+	if err != nil {
+		d.Logger.Error("Error rolling back transaction", err)
+	}
+	return err
+}
+
+// Add Transaction method
+func (d *LoggingDecorator) Transaction(ctx context.Context, fn func(tx core.Interface) error) error {
+	d.Logger.Debug("Beginning transaction")
+	start := time.Now()
+
+	err := d.Database.Transaction(ctx, func(tx core.Interface) error {
+		// Wrap the transaction with logging
+		txLogger := NewLoggingDecorator(tx, d.Logger)
+		return fn(txLogger)
+	})
+
+	if err != nil {
+		d.Logger.Error("Transaction failed", err, "duration", time.Since(start))
+	} else {
+		d.Logger.Debug("Transaction completed successfully", "duration", time.Since(start))
+	}
+
+	return err
+}
+
+// Add WithContext method
+func (d *LoggingDecorator) WithContext(ctx context.Context) core.Interface {
+	d.Logger.Debug("Setting context on database")
+	return &LoggingDecorator{
+		Database: d.Database.WithContext(ctx),
+		Logger:   d.Logger,
+	}
 }

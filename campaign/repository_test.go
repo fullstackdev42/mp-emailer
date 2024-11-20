@@ -1,6 +1,7 @@
 package campaign_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -86,7 +87,7 @@ func (s *RepositoryTestSuite) TestCreate() {
 			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
-			campaign, err := s.repo.Create(tt.dto)
+			campaign, err := s.repo.Create(context.Background(), tt.dto)
 
 			if tt.wantErr {
 				assert.Error(s.T(), err)
@@ -150,7 +151,7 @@ func (s *RepositoryTestSuite) TestGetAll() {
 			s.SetupTest() // Reset mock for each test case
 			tt.setup()
 
-			campaigns, err := s.repo.GetAll()
+			campaigns, err := s.repo.GetAll(context.Background())
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 				assert.Nil(s.T(), campaigns)
@@ -207,7 +208,7 @@ func (s *RepositoryTestSuite) TestUpdate() {
 			s.SetupTest()
 			tt.setup()
 
-			err := s.repo.Update(tt.dto)
+			err := s.repo.Update(context.Background(), tt.dto)
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 			} else {
@@ -257,7 +258,7 @@ func (s *RepositoryTestSuite) TestDelete() {
 			s.SetupTest()
 			tt.setup()
 
-			err := s.repo.Delete(tt.dto)
+			err := s.repo.Delete(context.Background(), tt.dto)
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 			} else {
@@ -310,7 +311,7 @@ func (s *RepositoryTestSuite) TestGetByID() {
 			s.SetupTest()
 			tt.setup()
 
-			campaign, err := s.repo.GetByID(tt.dto)
+			campaign, err := s.repo.GetByID(context.Background(), tt.dto)
 			if tt.wantErr {
 				assert.Error(s.T(), err)
 				assert.Nil(s.T(), campaign)

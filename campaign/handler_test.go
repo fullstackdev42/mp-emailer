@@ -74,6 +74,7 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 				}
 
 				s.CampaignService.EXPECT().FetchCampaign(
+					mock.Anything,
 					campaign.GetCampaignParams{ID: campaignID},
 				).Return(campaignTest, nil)
 
@@ -113,6 +114,7 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 				s.Logger.EXPECT().Debug("CampaignGET: Parsed ID", "id", campaignID)
 
 				s.CampaignService.EXPECT().FetchCampaign(
+					mock.Anything,
 					campaign.GetCampaignParams{ID: campaignID},
 				).Return(nil, campaign.ErrCampaignNotFound)
 
@@ -186,7 +188,9 @@ func (s *HandlerTestSuite) TestGetCampaigns() {
 				s.Logger.EXPECT().Debug("Handling GetCampaigns request")
 				s.Logger.EXPECT().Debug("Rendering all campaigns", "count", len(campaigns))
 
-				s.CampaignService.EXPECT().GetCampaigns().Return(campaigns, nil)
+				s.CampaignService.EXPECT().GetCampaigns(
+					mock.Anything,
+				).Return(campaigns, nil)
 
 				s.TemplateRenderer.EXPECT().Render(
 					mock.Anything,
@@ -208,7 +212,9 @@ func (s *HandlerTestSuite) TestGetCampaigns() {
 				s.Logger.EXPECT().Debug("Handling GetCampaigns request")
 
 				dbErr := errors.New("database error")
-				s.CampaignService.EXPECT().GetCampaigns().Return(nil, dbErr)
+				s.CampaignService.EXPECT().GetCampaigns(
+					mock.Anything,
+				).Return(nil, dbErr)
 
 				// Create the HTTP error that will be returned
 				httpError := echo.NewHTTPError(http.StatusInternalServerError, "Internal server error")

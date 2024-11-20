@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,25 +66,28 @@ func TestGetCampaigns(t *testing.T) {
 		{
 			name: "successful fetch",
 			setupMocks: func(s *APITestSuite) {
-				campaigns := []campaign.Campaign{{
-					BaseModel: shared.BaseModel{ID: uuid.New()},
-					Name:      "Test Campaign",
-				}}
-
-				s.mockCampaign.EXPECT().GetCampaigns().Return(campaigns, nil)
+				s.mockCampaign.EXPECT().
+					GetCampaigns(mock.Anything).
+					Return([]campaign.Campaign{{
+						BaseModel: shared.BaseModel{ID: uuid.New()},
+						Name:      "Test Campaign",
+					}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "service error",
 			setupMocks: func(s *APITestSuite) {
-				s.mockCampaign.EXPECT().GetCampaigns().Return(nil, assert.AnError)
-				s.mockErrorHandler.EXPECT().HandleHTTPError(
-					mock.Anything,
-					assert.AnError,
-					"Error fetching campaigns",
-					http.StatusInternalServerError,
-				).Return(echo.NewHTTPError(http.StatusInternalServerError, "Error fetching campaigns"))
+				s.mockCampaign.EXPECT().
+					GetCampaigns(mock.Anything).
+					Return(nil, assert.AnError)
+				s.mockErrorHandler.EXPECT().
+					HandleHTTPError(
+						mock.Anything,
+						assert.AnError,
+						"Error fetching campaigns",
+						http.StatusInternalServerError,
+					).Return(echo.NewHTTPError(http.StatusInternalServerError, "Error fetching campaigns"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -99,6 +103,10 @@ func TestGetCampaigns(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/api/campaigns", nil)
 			rec := httptest.NewRecorder()
 			c := suite.echo.NewContext(req, rec)
+
+			ctx := context.Background()
+			req = req.WithContext(ctx)
+			c.SetRequest(req)
 
 			err := suite.handler.GetCampaigns(c)
 

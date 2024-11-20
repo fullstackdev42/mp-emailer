@@ -1,6 +1,8 @@
 package campaign
 
 import (
+	"context"
+
 	"github.com/jonesrussell/loggo"
 )
 
@@ -17,9 +19,9 @@ func NewLoggingDecorator(service ServiceInterface, logger loggo.LoggerInterface)
 }
 
 // Info logs an info message with the given parameters
-func (d *LoggingDecorator) ComposeEmail(params ComposeEmailParams) (string, error) {
+func (d *LoggingDecorator) ComposeEmail(ctx context.Context, params ComposeEmailParams) (string, error) {
 	d.logger.Info("Composing email", "params", params)
-	email, err := d.service.ComposeEmail(params)
+	email, err := d.service.ComposeEmail(ctx, params)
 	if err != nil {
 		d.logger.Error("Failed to compose email", err, "params", params)
 	}
@@ -42,9 +44,9 @@ func (d *LoggingDecorator) Error(message string, err error, params ...interface{
 }
 
 // CreateCampaign creates a new campaign
-func (d *LoggingDecorator) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
+func (d *LoggingDecorator) CreateCampaign(ctx context.Context, dto *CreateCampaignDTO) (*Campaign, error) {
 	d.logger.Info("Creating campaign", "dto", dto)
-	campaign, err := d.service.CreateCampaign(dto)
+	campaign, err := d.service.CreateCampaign(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to create campaign", err, "dto", dto)
 	}
@@ -52,9 +54,9 @@ func (d *LoggingDecorator) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, er
 }
 
 // UpdateCampaign updates an existing campaign
-func (d *LoggingDecorator) UpdateCampaign(dto *UpdateCampaignDTO) error {
+func (d *LoggingDecorator) UpdateCampaign(ctx context.Context, dto *UpdateCampaignDTO) error {
 	d.logger.Info("Updating campaign", "dto", dto)
-	err := d.service.UpdateCampaign(dto)
+	err := d.service.UpdateCampaign(ctx, dto)
 	if err != nil {
 		d.logger.Error("Failed to update campaign", err, "dto", dto)
 	}
@@ -62,9 +64,9 @@ func (d *LoggingDecorator) UpdateCampaign(dto *UpdateCampaignDTO) error {
 }
 
 // GetCampaignByID gets a campaign by its ID
-func (d *LoggingDecorator) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
+func (d *LoggingDecorator) GetCampaignByID(ctx context.Context, params GetCampaignParams) (*Campaign, error) {
 	d.logger.Info("Getting campaign by ID", "params", params)
-	campaign, err := d.service.GetCampaignByID(params)
+	campaign, err := d.service.GetCampaignByID(ctx, params)
 	if err != nil {
 		d.logger.Error("Failed to get campaign", err, "params", params)
 	}
@@ -72,9 +74,9 @@ func (d *LoggingDecorator) GetCampaignByID(params GetCampaignParams) (*Campaign,
 }
 
 // GetCampaigns gets all campaigns
-func (d *LoggingDecorator) GetCampaigns() ([]Campaign, error) {
+func (d *LoggingDecorator) GetCampaigns(ctx context.Context) ([]Campaign, error) {
 	d.logger.Info("Fetching all campaigns")
-	campaigns, err := d.service.GetCampaigns()
+	campaigns, err := d.service.GetCampaigns(ctx)
 	if err != nil {
 		d.logger.Error("Failed to fetch campaigns", err)
 	}
@@ -82,9 +84,9 @@ func (d *LoggingDecorator) GetCampaigns() ([]Campaign, error) {
 }
 
 // DeleteCampaign deletes a campaign
-func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignDTO) error {
+func (d *LoggingDecorator) DeleteCampaign(ctx context.Context, params DeleteCampaignDTO) error {
 	d.logger.Info("Deleting campaign", "params", params)
-	err := d.service.DeleteCampaign(params)
+	err := d.service.DeleteCampaign(ctx, params)
 	if err != nil {
 		d.logger.Error("Failed to delete campaign", err, "params", params)
 	}
@@ -92,9 +94,9 @@ func (d *LoggingDecorator) DeleteCampaign(params DeleteCampaignDTO) error {
 }
 
 // FetchCampaign fetches a campaign
-func (d *LoggingDecorator) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
+func (d *LoggingDecorator) FetchCampaign(ctx context.Context, params GetCampaignParams) (*Campaign, error) {
 	d.logger.Info("Fetching campaign", "params", params)
-	campaign, err := d.service.FetchCampaign(params)
+	campaign, err := d.service.FetchCampaign(ctx, params)
 	if err != nil {
 		d.logger.Error("Failed to fetch campaign", err, "params", params)
 	}

@@ -88,7 +88,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		return h.TemplateRenderer.Render(c.Response().Writer, "register", data, c)
 	}
 
-	_, err := h.Service.RegisterUser(params)
+	_, err := h.Service.RegisterUser(c.Request().Context(), params)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
@@ -124,7 +124,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	authenticated, user, err := h.Service.AuthenticateUser(params.Username, params.Password)
+	authenticated, user, err := h.Service.AuthenticateUser(c.Request().Context(), params.Username, params.Password)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
 	}
@@ -172,7 +172,7 @@ func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
 	}
 
-	if err := h.Service.RequestPasswordReset(dto); err != nil {
+	if err := h.Service.RequestPasswordReset(c.Request().Context(), dto); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", http.StatusInternalServerError)
 	}
 
@@ -190,7 +190,7 @@ func (h *Handler) ResetPasswordPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
 	}
 
-	if err := h.Service.ResetPassword(dto); err != nil {
+	if err := h.Service.ResetPassword(c.Request().Context(), dto); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", http.StatusInternalServerError)
 	}
 

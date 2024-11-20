@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/database"
 	"github.com/jonesrussell/mp-emailer/email"
 	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/version"
@@ -42,8 +43,10 @@ var App = fx.Options(
 			provideTemplates,
 			fx.As(new(TemplateRendererInterface)),
 		),
-
-		provideEmailService,
+		fx.Annotate(
+			provideEmailService,
+			fx.As(new(email.Service)),
+		),
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
 		fx.Annotate(
@@ -53,6 +56,7 @@ var App = fx.Options(
 		provideSessionCleaner,
 	),
 	ErrorModule,
+	database.Module,
 	fx.Invoke(
 		startSessionCleaner,
 	),
@@ -147,6 +151,10 @@ func startSessionCleaner(lc fx.Lifecycle, cleaner *session.Cleaner, e *echo.Echo
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			cleaner.StartCleanup(ctx)
+			return nil
+		},
+		OnStop: func(_ context.Context) error {
+			// Add graceful shutdown handling if needed
 			return nil
 		},
 	})

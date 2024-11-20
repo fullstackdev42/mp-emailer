@@ -43,8 +43,12 @@ func TestProvideDatabase(t *testing.T) {
 		logger := mocks.NewMockLoggerInterface(t)
 		logger.On("Info", "Successfully connected to database after retry").Return()
 
-		cfg := &config.Config{}
-		db, err := ProvideDatabase(cfg, logger)
+		params := Params{
+			Config: &config.Config{},
+			Logger: logger,
+		}
+
+		db, err := NewDatabaseService(params)
 		assert.NoError(t, err)
 		assert.NotNil(t, db)
 	})

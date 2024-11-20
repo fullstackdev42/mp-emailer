@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -22,13 +23,13 @@ func NewService(repo RepositoryInterface, validate *validator.Validate, logger l
 
 // ServiceInterface defines the methods of the campaign service
 type ServiceInterface interface {
-	CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error)
-	UpdateCampaign(dto *UpdateCampaignDTO) error
-	GetCampaignByID(params GetCampaignParams) (*Campaign, error)
-	GetCampaigns() ([]Campaign, error)
-	DeleteCampaign(params DeleteCampaignDTO) error
-	FetchCampaign(params GetCampaignParams) (*Campaign, error)
-	ComposeEmail(params ComposeEmailParams) (string, error)
+	CreateCampaign(ctx context.Context, dto *CreateCampaignDTO) (*Campaign, error)
+	UpdateCampaign(ctx context.Context, dto *UpdateCampaignDTO) error
+	GetCampaignByID(ctx context.Context, params GetCampaignParams) (*Campaign, error)
+	GetCampaigns(ctx context.Context) ([]Campaign, error)
+	DeleteCampaign(ctx context.Context, params DeleteCampaignDTO) error
+	FetchCampaign(ctx context.Context, params GetCampaignParams) (*Campaign, error)
+	ComposeEmail(ctx context.Context, params ComposeEmailParams) (string, error)
 }
 
 // Service implements the campaign service
@@ -42,7 +43,7 @@ type Service struct {
 var _ ServiceInterface = &Service{}
 
 // CreateCampaign creates a new campaign
-func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
+func (s *Service) CreateCampaign(ctx context.Context, dto *CreateCampaignDTO) (*Campaign, error) {
 	if dto == nil {
 		return nil, fmt.Errorf("campaign data is required")
 	}
@@ -52,7 +53,7 @@ func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
-	campaign, err := s.repo.Create(dto)
+	campaign, err := s.repo.Create(ctx, dto)
 	if err != nil {
 		s.logger.Error("Failed to create campaign", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
@@ -63,17 +64,17 @@ func (s *Service) CreateCampaign(dto *CreateCampaignDTO) (*Campaign, error) {
 }
 
 // UpdateCampaign updates an existing campaign
-func (s *Service) UpdateCampaign(dto *UpdateCampaignDTO) error {
+func (s *Service) UpdateCampaign(ctx context.Context, dto *UpdateCampaignDTO) error {
 	err := s.validate.Struct(dto)
 	if err != nil {
 		return fmt.Errorf("invalid input: %w", err)
 	}
-	return s.repo.Update(dto)
+	return s.repo.Update(ctx, dto)
 }
 
 // GetCampaignByID retrieves a campaign by ID
-func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+func (s *Service) GetCampaignByID(ctx context.Context, params GetCampaignParams) (*Campaign, error) {
+	campaign, err := s.repo.GetByID(ctx, GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
 			s.logger.Debug("Campaign not found", "id", params.ID)
@@ -87,8 +88,8 @@ func (s *Service) GetCampaignByID(params GetCampaignParams) (*Campaign, error) {
 }
 
 // GetCampaigns retrieves all campaigns
-func (s *Service) GetCampaigns() ([]Campaign, error) {
-	campaigns, err := s.repo.GetAll()
+func (s *Service) GetCampaigns(ctx context.Context) ([]Campaign, error) {
+	campaigns, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get campaigns: %w", err)
 	}
@@ -96,8 +97,8 @@ func (s *Service) GetCampaigns() ([]Campaign, error) {
 }
 
 // DeleteCampaign deletes a campaign by ID
-func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
-	_, err := s.repo.GetByID(GetCampaignDTO(params))
+func (s *Service) DeleteCampaign(ctx context.Context, params DeleteCampaignDTO) error {
+	_, err := s.repo.GetByID(ctx, GetCampaignDTO(params))
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
 			s.logger.Debug("Campaign not found for deletion", "id", params.ID)
@@ -107,7 +108,7 @@ func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
 		return fmt.Errorf("failed to fetch campaign: %w", err)
 	}
 
-	if err := s.repo.Delete(params); err != nil {
+	if err := s.repo.Delete(ctx, params); err != nil {
 		s.logger.Error("Failed to delete campaign", err, "id", params.ID)
 		return fmt.Errorf("failed to delete campaign: %w", err)
 	}
@@ -117,8 +118,8 @@ func (s *Service) DeleteCampaign(params DeleteCampaignDTO) error {
 }
 
 // FetchCampaign retrieves a campaign by parameters
-func (s *Service) FetchCampaign(params GetCampaignParams) (*Campaign, error) {
-	campaign, err := s.repo.GetByID(GetCampaignDTO{ID: params.ID})
+func (s *Service) FetchCampaign(ctx context.Context, params GetCampaignParams) (*Campaign, error) {
+	campaign, err := s.repo.GetByID(ctx, GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrCampaignNotFound
@@ -136,7 +137,7 @@ type ComposeEmailParams struct {
 }
 
 // ComposeEmail composes an email using campaign data and user data
-func (s *Service) ComposeEmail(params ComposeEmailParams) (string, error) {
+func (s *Service) ComposeEmail(ctx context.Context, params ComposeEmailParams) (string, error) {
 	if params.Campaign == nil {
 		return "", fmt.Errorf("campaign is required")
 	}
