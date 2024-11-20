@@ -39,8 +39,8 @@
   - [ ] Test success scenarios
 
 ### Integration Tests
-- [ ] User Flow Tests
-  - [ ] Test registration to login flow
+- [x] User Flow Tests
+  - [x] Test registration to login flow
   - [ ] Test password reset flow
   - [ ] Test account management flow
   - [ ] Test session handling
