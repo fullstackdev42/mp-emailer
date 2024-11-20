@@ -239,19 +239,23 @@ func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 			setup: func() {
 				s.mockRepo.On("GetByID",
 					mock.Anything,
-					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+					mock.MatchedBy(func(params campaign.GetCampaignDTO) bool {
 						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 					}),
-				).Return(&campaign.Campaign{}, nil)
+				).Return(&campaign.Campaign{
+					Name:        "Test Campaign",
+					Description: "Test Description",
+					Template:    "Test Template",
+				}, nil)
 
 				s.mockRepo.On("Delete",
 					mock.Anything,
-					mock.MatchedBy(func(dto campaign.DeleteCampaignDTO) bool {
-						return dto.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+					mock.MatchedBy(func(params campaign.DeleteCampaignDTO) bool {
+						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 					}),
 				).Return(nil)
 
-				s.mockLogger.EXPECT().Info(
+				s.mockLogger.On("Info",
 					"Campaign deleted successfully",
 					"id",
 					uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
