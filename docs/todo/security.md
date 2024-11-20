@@ -14,6 +14,13 @@
   - [ ] Implement secure cookie handling
   - [ ] Add CSRF protection
 
+### Session Security Enhancements
+- [ ] Session Management Improvements
+  - [ ] Add session regeneration on authentication
+  - [ ] Implement session fixation protection
+  - [ ] Add secure cookie handling
+  - [ ] Configure session expiration handling
+
 ## Middleware Security
 ### Rate Limiting
 - [ ] Rate Limiting Implementation
@@ -25,6 +32,13 @@
   - [ ] Test email service rate limiting
   - [ ] Test API endpoint rate limiting
   - [ ] Monitor rate limit metrics
+
+### Rate Limiting Enhancements
+- [ ] Rate Limiter Configuration
+  - [ ] Move rate limit values to config
+  - [ ] Add per-endpoint rate limiting
+  - [ ] Implement distributed rate limiting
+  - [ ] Add rate limit metrics collection
 
 ### Request Processing
 - [ ] Core Security Middleware
@@ -59,3 +73,10 @@
   - [ ] Test password reset flow
   - [ ] Test account management flow
   - [x] Test session handling
+
+### JWT Enhancements
+- [ ] JWT Security Improvements
+  - [ ] Add token expiration validation
+  - [ ] Implement refresh token mechanism
+  - [ ] Add role-based access control (RBAC)
+  - [ ] Implement token blacklisting

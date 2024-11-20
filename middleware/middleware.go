@@ -291,3 +291,29 @@ func (m *Manager) JWTMiddleware() echo.MiddlewareFunc {
 		}
 	}
 }
+
+// IsAuthenticated checks if the user is authenticated in the current session
+func (m *Manager) IsAuthenticated(c echo.Context) bool {
+	session, err := m.sessionStore.Get(c.Request(), m.cfg.Auth.SessionName)
+	if err != nil {
+		m.logger.Debug("Failed to get session for authentication check", "error", err)
+		return false
+	}
+
+	// Get authentication value from session
+	authValue, exists := session.Values["authenticated"]
+	if !exists {
+		m.logger.Debug("No authentication value found in session")
+		return false
+	}
+
+	// Type assert to boolean
+	auth, ok := authValue.(bool)
+	if !ok {
+		m.logger.Debug("Invalid authentication value type in session")
+		return false
+	}
+
+	m.logger.Debug("Authentication status checked", "isAuthenticated", auth)
+	return auth
+}

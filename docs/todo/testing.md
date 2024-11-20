@@ -58,6 +58,14 @@
   - [ ] Test recovery scenarios
   - [ ] Test error handling
 
+### Middleware Testing
+- [ ] Middleware Test Coverage
+  - [ ] Add session edge case tests
+  - [ ] Test rate limiter performance
+  - [ ] Add JWT validation scenarios
+  - [ ] Test middleware chain performance
+  - [ ] Add concurrent middleware tests
+
 ## Testing Guidelines
 - Use `testify/assert` for assertions
 - Avoid global state in tests

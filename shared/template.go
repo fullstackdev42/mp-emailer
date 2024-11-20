@@ -75,7 +75,6 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 	case *Data:
 		pageData = d
 	default:
-		// If data is not of type Data, create new Data struct with content
 		pageData = &Data{
 			Title:    "MP Emailer",
 			PageName: name,
@@ -83,12 +82,14 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		}
 	}
 
-	// Set other required fields
-	isAuthenticated, _ := c.Get("IsAuthenticated").(bool)
-	if !isAuthenticated {
-		isAuthenticated = session.Values["authenticated"] == true
+	pageData.IsAuthenticated = false
+
+	if authValue, ok := c.Get("IsAuthenticated").(bool); ok && authValue {
+		pageData.IsAuthenticated = true
+	} else if authValue, ok := session.Values["authenticated"].(bool); ok && authValue {
+		pageData.IsAuthenticated = true
 	}
-	pageData.IsAuthenticated = isAuthenticated
+
 	pageData.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
 
 	messages := make([]string, len(flashes))

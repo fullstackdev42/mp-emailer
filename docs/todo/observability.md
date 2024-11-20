@@ -42,6 +42,14 @@
   - [ ] Track authentication success/failure
   - [ ] Monitor rate limiting
 
+### Middleware Metrics
+- [ ] Middleware Performance Monitoring
+  - [ ] Add middleware execution timing
+  - [ ] Track rate limiter statistics
+  - [ ] Monitor session operations
+  - [ ] Track JWT operations
+  - [ ] Implement middleware chaining metrics
+
 ## Health Checks
 ### Core Services
 - [ ] Service Health

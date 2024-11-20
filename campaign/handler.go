@@ -71,10 +71,23 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	}
 	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
 
-	data := map[string]interface{}{
-		"Title":    "Campaign Details",
-		"PageName": "campaign",
-		"Campaign": campaign,
+	// Get the middleware manager from context
+	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
+	if !ok {
+		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	}
+
+	// Check if user is authenticated
+	isAuthenticated := manager.IsAuthenticated(c)
+	h.Logger.Debug("CampaignGET: Authentication status", "isAuthenticated", isAuthenticated)
+
+	data := shared.Data{
+		Title:           "Campaign Details",
+		PageName:        "campaign",
+		IsAuthenticated: isAuthenticated,
+		Content: map[string]interface{}{
+			"Campaign": campaign,
+		},
 	}
 
 	return c.Render(http.StatusOK, "campaign", data)
