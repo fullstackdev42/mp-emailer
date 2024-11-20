@@ -166,9 +166,9 @@ func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 			setup: func() {
 				s.mockRepo.On("GetByID",
 					mock.Anything,
-					campaign.GetCampaignParams{
-						ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-					},
+					mock.MatchedBy(func(params campaign.GetCampaignDTO) bool {
+						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+					}),
 				).Return(&campaign.Campaign{
 					Name:        "Test Campaign",
 					Description: "Test Description",
@@ -190,10 +190,19 @@ func (s *CampaignServiceTestSuite) TestGetCampaignByID() {
 			setup: func() {
 				s.mockRepo.EXPECT().GetByID(
 					mock.Anything,
-					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+					mock.MatchedBy(func(params campaign.GetCampaignDTO) bool {
 						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")
 					}),
 				).Return(nil, fmt.Errorf("campaign not found"))
+
+				s.mockLogger.EXPECT().Error(
+					"Failed to get campaign",
+					mock.MatchedBy(func(err error) bool {
+						return err.Error() == "campaign not found"
+					}),
+					"id",
+					uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+				).Return()
 			},
 			want:    nil,
 			wantErr: true,
@@ -228,14 +237,14 @@ func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 			name: "successful deletion",
 			id:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			setup: func() {
-				s.mockRepo.EXPECT().GetByID(
+				s.mockRepo.On("GetByID",
 					mock.Anything,
 					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
 						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 					}),
 				).Return(&campaign.Campaign{}, nil)
 
-				s.mockRepo.EXPECT().Delete(
+				s.mockRepo.On("Delete",
 					mock.Anything,
 					mock.MatchedBy(func(dto campaign.DeleteCampaignDTO) bool {
 						return dto.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
@@ -256,7 +265,7 @@ func (s *CampaignServiceTestSuite) TestDeleteCampaign() {
 			setup: func() {
 				s.mockRepo.EXPECT().GetByID(
 					mock.Anything,
-					mock.MatchedBy(func(params campaign.GetCampaignParams) bool {
+					mock.MatchedBy(func(params campaign.GetCampaignDTO) bool {
 						return params.ID == uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")
 					}),
 				).Return(nil, fmt.Errorf("campaign not found"))
