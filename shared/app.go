@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -54,7 +55,14 @@ var App = fx.Options(
 				return e
 			},
 		),
-		newSessionStore(),
+		fx.Annotate(
+			provideSessionStore,
+			fx.As(new(session.Store)),
+		),
+		fx.Annotate(
+			provideSessionManager,
+			fx.As(new(session.Manager)),
+		),
 		validator.New,
 		fx.Annotate(
 			provideTemplates,
@@ -70,12 +78,7 @@ var App = fx.Options(
 			NewFlashHandler,
 			fx.As(new(FlashHandlerInterface)),
 		),
-		provideSessionCleaner,
 		provideDatabaseService,
-		fx.Annotate(
-			session.NewManager,
-			fx.As(new(session.Manager)),
-		),
 	),
 	ErrorModule,
 	fx.Invoke(
@@ -91,22 +94,59 @@ var App = fx.Options(
 				},
 			})
 		},
-		startSessionCleaner,
 	),
 )
 
-// Modify newSessionStore to return the constructor function directly
-func newSessionStore() interface{} {
-	return fx.Annotate(
-		func(cfg *config.Config) sessions.Store {
-			return sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
-		},
-		fx.As(new(sessions.Store)),
-	)
+// provideSessionStore creates a new session store based on the configuration
+func provideSessionStore(cfg *config.Config, logger loggo.LoggerInterface) (session.Store, error) {
+	logger.Debug("Initializing secure session store")
+
+	options := session.Options{
+		MaxAge:          cfg.Auth.SessionMaxAge,
+		CleanupInterval: 15 * time.Minute,
+		SecurityKey:     []byte(cfg.Auth.SessionSecret),
+		CookieName:      cfg.Auth.SessionName,
+		Domain:          cfg.App.Domain,
+		Secure:          cfg.App.Env == "production",
+		HTTPOnly:        true,
+		SameSite:        http.SameSiteLaxMode,
+		Path:            "/",
+		KeyPrefix:       "sess_",
+	}
+
+	baseStore := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
+	store, err := session.NewSecureStore(baseStore, options)
+	if err != nil {
+		logger.Error("Failed to create secure session store", err)
+		return nil, fmt.Errorf("failed to create secure session store: %w", err)
+	}
+
+	logger.Debug("Secure session store initialized successfully")
+	return store, nil
+}
+
+// provideSessionManager creates a new session manager based on the configuration
+func provideSessionManager(store session.Store, cfg *config.Config, logger loggo.LoggerInterface) (session.Manager, error) {
+	logger.Debug("Initializing session manager")
+
+	options := session.Options{
+		MaxAge:          cfg.Auth.SessionMaxAge,
+		CleanupInterval: 15 * time.Minute,
+		SecurityKey:     []byte(cfg.Auth.SessionSecret),
+		CookieName:      cfg.Auth.SessionName,
+		Domain:          cfg.App.Domain,
+		Secure:          cfg.App.Env == "production",
+		HTTPOnly:        true,
+		SameSite:        http.SameSiteLaxMode,
+	}
+
+	manager := session.NewManager(store, logger, options)
+	logger.Debug("Session manager initialized successfully")
+	return manager, nil
 }
 
 // provideTemplates creates and configures the template renderer
-func provideTemplates(store sessions.Store, cfg *config.Config, logger loggo.LoggerInterface) (TemplateRendererInterface, error) {
+func provideTemplates(store session.Store, cfg *config.Config, logger loggo.LoggerInterface) (TemplateRendererInterface, error) {
 	logger.Debug("Initializing template renderer")
 
 	tmpl := template.New("").Funcs(template.FuncMap{
@@ -167,35 +207,6 @@ func provideEmailService(cfg *config.Config, logger loggo.LoggerInterface) (emai
 
 func provideVersionInfo() version.Info {
 	return version.Get()
-}
-
-// Add provider function for SessionCleaner
-func provideSessionCleaner(store sessions.Store, cfg *config.Config, logger loggo.LoggerInterface) *session.Cleaner {
-	return session.NewCleaner(
-		store,
-		15*time.Minute, // cleanup interval
-		cfg.Auth.SessionMaxAge,
-		logger,
-	)
-}
-
-// Add startup function
-func startSessionCleaner(lc fx.Lifecycle, cleaner *session.Cleaner, e *echo.Echo, logger loggo.LoggerInterface) {
-	logger.Debug("Setting up session cleaner")
-
-	e.Use(cleaner.Middleware())
-
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			logger.Info("Starting session cleanup routine")
-			cleaner.StartCleanup(ctx)
-			return nil
-		},
-		OnStop: func(_ context.Context) error {
-			logger.Info("Stopping session cleanup routine")
-			return nil
-		},
-	})
 }
 
 func provideDatabaseService(cfg *config.Config, logger loggo.LoggerInterface) (database.Database, error) {

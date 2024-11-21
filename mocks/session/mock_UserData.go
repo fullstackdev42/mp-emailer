@@ -17,6 +17,53 @@ func (_m *MockUserData) EXPECT() *MockUserData_Expecter {
 	return &MockUserData_Expecter{mock: &_m.Mock}
 }
 
+// GetCustomData provides a mock function with given fields:
+func (_m *MockUserData) GetCustomData() map[string]interface{} {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCustomData")
+	}
+
+	var r0 map[string]interface{}
+	if rf, ok := ret.Get(0).(func() map[string]interface{}); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]interface{})
+		}
+	}
+
+	return r0
+}
+
+// MockUserData_GetCustomData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCustomData'
+type MockUserData_GetCustomData_Call struct {
+	*mock.Call
+}
+
+// GetCustomData is a helper method to define mock.On call
+func (_e *MockUserData_Expecter) GetCustomData() *MockUserData_GetCustomData_Call {
+	return &MockUserData_GetCustomData_Call{Call: _e.mock.On("GetCustomData")}
+}
+
+func (_c *MockUserData_GetCustomData_Call) Run(run func()) *MockUserData_GetCustomData_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockUserData_GetCustomData_Call) Return(_a0 map[string]interface{}) *MockUserData_GetCustomData_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserData_GetCustomData_Call) RunAndReturn(run func() map[string]interface{}) *MockUserData_GetCustomData_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetID provides a mock function with given fields:
 func (_m *MockUserData) GetID() interface{} {
 	ret := _m.Called()

@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	mocksMiddleware "github.com/jonesrussell/mp-emailer/mocks/middleware"
+	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 )
 
@@ -25,7 +25,7 @@ type HandlerTestSuite struct {
 	handler        *user.Handler
 	UserService    *mocksUser.MockServiceInterface
 	UserRepo       *mocksUser.MockRepositoryInterface
-	SessionManager *mocksMiddleware.MockSessionManager
+	SessionManager *mocksSession.MockManager
 }
 
 func (s *HandlerTestSuite) SetupTest() {
@@ -33,7 +33,7 @@ func (s *HandlerTestSuite) SetupTest() {
 
 	s.UserService = mocksUser.NewMockServiceInterface(s.T())
 	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
-	s.SessionManager = mocksMiddleware.NewMockSessionManager(s.T())
+	s.SessionManager = mocksSession.NewMockManager(s.T())
 
 	s.Config.Auth.SessionName = "test_session"
 

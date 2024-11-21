@@ -2,19 +2,19 @@ package campaign
 
 import (
 	"github.com/jonesrussell/mp-emailer/config"
-	"github.com/jonesrussell/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/labstack/echo/v4"
 )
 
 // RegisterRoutes registers the campaign routes
-func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config, manager *middleware.Manager) {
+func RegisterRoutes(h *Handler, e *echo.Echo, cfg *config.Config, sessionManager session.Manager) {
 	// Public routes (no authentication required)
 	e.GET("/campaigns", h.GetCampaigns)
 	e.GET("/campaign/:id", h.CampaignGET)
 
 	// Protected routes (require authentication)
 	protected := e.Group("/campaign")
-	protected.Use(manager.ValidateSession(cfg.Auth.SessionName))
+	protected.Use(sessionManager.ValidateSession(cfg.Auth.SessionName))
 
 	// Protected campaign routes
 	protected.GET("/new", h.CreateCampaignForm)

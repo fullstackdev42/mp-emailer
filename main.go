@@ -12,6 +12,7 @@ import (
 	"github.com/jonesrussell/mp-emailer/config"
 	appMiddleware "github.com/jonesrussell/mp-emailer/middleware"
 	"github.com/jonesrussell/mp-emailer/server"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
@@ -45,6 +46,7 @@ func registerRoutes(
 	renderer shared.TemplateRendererInterface,
 	middlewareManager *appMiddleware.Manager,
 	cfg *config.Config,
+	sessionManager session.Manager,
 ) {
 	// Set custom template renderer for HTML responses
 	e.Renderer = renderer
@@ -53,7 +55,7 @@ func registerRoutes(
 	middlewareManager.Register(e)
 
 	// Register route handlers after middleware
-	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg, middlewareManager)
+	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg, middlewareManager, sessionManager)
 
 	// Serve static files
 	e.Static("/static", "web/public")
@@ -68,9 +70,10 @@ func registerHandlers(
 	apiHandler *api.Handler,
 	cfg *config.Config,
 	middlewareManager *appMiddleware.Manager,
+	sessionManager session.Manager,
 ) {
 	server.RegisterRoutes(serverHandler, e)
-	campaign.RegisterRoutes(campaignHandler, e, cfg, middlewareManager)
+	campaign.RegisterRoutes(campaignHandler, e, cfg, sessionManager)
 	user.RegisterRoutes(userHandler, e)
 	api.RegisterRoutes(apiHandler, e, middlewareManager)
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jonesrussell/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/session"
 )
 
 // Standard campaign errors
@@ -41,7 +41,7 @@ func mapErrorToHTTPStatus(err error) (int, string) {
 		return http.StatusInternalServerError, "Internal server error"
 	case errors.Is(err, validator.ValidationErrors{}):
 		return http.StatusBadRequest, "Invalid input: Missing required fields"
-	case errors.Is(err, middleware.ErrSessionInvalid):
+	case errors.Is(err, session.ErrInvalidSession):
 		return http.StatusUnauthorized, "Invalid session"
 	default:
 		return http.StatusInternalServerError, "Internal server error"

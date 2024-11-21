@@ -18,10 +18,12 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Debug bool        `env:"APP_DEBUG" envDefault:"false"`
-	Env   Environment `env:"APP_ENV" envDefault:"development"`
-	Host  string      `env:"APP_HOST" envDefault:"0.0.0.0"`
-	Port  int         `env:"APP_PORT" envDefault:"8080"`
+	Debug   bool        `env:"APP_DEBUG" envDefault:"false"`
+	Env     Environment `env:"APP_ENV" envDefault:"development"`
+	Host    string      `env:"APP_HOST" envDefault:"0.0.0.0"`
+	Port    int         `env:"APP_PORT" envDefault:"8080"`
+	Domain  string      `env:"APP_DOMAIN" envDefault:"localhost"`
+	BaseURL string      `env:"APP_BASE_URL" envDefault:"http://localhost:8080"`
 }
 
 type DatabaseConfig struct {
@@ -67,6 +69,10 @@ type LogConfig struct {
 type ServerConfig struct {
 	MigrationsPath              string `yaml:"migrations_path" env:"MIGRATIONS_PATH" envDefault:"database/migrations"`
 	RepresentativeLookupBaseURL string `yaml:"representative_lookup_base_url" env:"REPRESENTATIVE_LOOKUP_BASE_URL" envDefault:"https://represent.opennorth.ca/api"`
+	RateLimiting                struct {
+		RequestsPerSecond float64 `yaml:"requests_per_second" env:"RATE_LIMIT_RPS" envDefault:"20"`
+		BurstSize         int     `yaml:"burst_size" env:"RATE_LIMIT_BURST" envDefault:"50"`
+	} `yaml:"rate_limiting"`
 }
 
 type FeatureFlags struct {

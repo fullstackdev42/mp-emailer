@@ -2,96 +2,78 @@ package session
 
 import (
 	"context"
+	"sync"
 	"time"
 
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
-	"github.com/labstack/echo/v4"
 )
 
 type Cleaner struct {
-	store           sessions.Store
-	cleanupInterval time.Duration
-	maxAge          int
-	logger          loggo.LoggerInterface
+	store         Store
+	interval      time.Duration
+	maxAge        int
+	logger        loggo.LoggerInterface
+	cleanupTicker *time.Ticker
+	cleanupDone   chan struct{}
+	cleanupWG     sync.WaitGroup
 }
 
-func NewCleaner(store sessions.Store, cleanupInterval time.Duration, maxAge int, logger loggo.LoggerInterface) *Cleaner {
+func NewCleaner(store Store, interval time.Duration, maxAge int, logger loggo.LoggerInterface) *Cleaner {
 	return &Cleaner{
-		store:           store,
-		cleanupInterval: cleanupInterval,
-		maxAge:          maxAge,
-		logger:          logger,
+		store:       store,
+		interval:    interval,
+		maxAge:      maxAge,
+		logger:      logger,
+		cleanupDone: make(chan struct{}),
 	}
 }
 
-// StartCleanup initiates the periodic session cleanup
-func (sc *Cleaner) StartCleanup(ctx context.Context) {
-	ticker := time.NewTicker(sc.cleanupInterval)
+func (c *Cleaner) StartCleanup(ctx context.Context) {
+	c.logger.Debug("Starting session cleanup routine",
+		"interval", c.interval,
+		"maxAge", c.maxAge)
+
+	c.cleanupTicker = time.NewTicker(c.interval)
+	c.cleanupWG.Add(1)
+
 	go func() {
+		defer c.cleanupWG.Done()
 		for {
 			select {
 			case <-ctx.Done():
-				ticker.Stop()
+				c.logger.Debug("Context cancelled, stopping cleanup routine")
 				return
-			case <-ticker.C:
-				sc.cleanup()
+			case <-c.cleanupDone:
+				c.logger.Debug("Cleanup routine stopped")
+				return
+			case <-c.cleanupTicker.C:
+				c.cleanup()
 			}
 		}
 	}()
 }
 
-// cleanup performs the actual session cleanup
-func (sc *Cleaner) cleanup() {
-	// For CookieStore, we don't need to check the store type
-	// as sessions are managed by the browser via cookie expiration
-	now := time.Now()
-	threshold := now.Add(-time.Duration(sc.maxAge) * time.Second)
+func (c *Cleaner) StopCleanup() error {
+	c.logger.Debug("Stopping session cleanup routine")
 
-	sc.logger.Info("Session cleanup check",
-		"maxAge", sc.maxAge,
-		"threshold", threshold,
-		"cleanupInterval", sc.cleanupInterval)
+	if c.cleanupTicker != nil {
+		c.cleanupTicker.Stop()
+		close(c.cleanupDone)
+		c.cleanupWG.Wait()
+	}
+	return nil
 }
 
-// Middleware returns an Echo middleware function
-func (sc *Cleaner) Middleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			// Get the session
-			sess, err := sc.store.Get(c.Request(), "session")
-			if err != nil {
-				sc.logger.Error("Error getting session", err)
-				return next(c)
-			}
+func (c *Cleaner) cleanup() {
+	c.logger.Debug("Running session cleanup")
 
-			// Check if session is expired
-			if isExpired(sess) {
-				// Delete the session
-				sess.Options.MaxAge = -1
-				err = sess.Save(c.Request(), c.Response().Writer)
-				if err != nil {
-					sc.logger.Error("Error deleting expired session", err)
-				}
-			}
+	threshold := time.Now().Add(-time.Duration(c.maxAge) * time.Second)
 
-			return next(c)
+	if store, ok := c.store.(interface {
+		Cleanup(threshold time.Time) error
+	}); ok {
+		if err := store.Cleanup(threshold); err != nil {
+			c.logger.Error("Session cleanup failed", err)
 		}
 	}
-}
-
-// isExpired checks if a session is expired
-func isExpired(s *sessions.Session) bool {
-	lastAccessed, ok := s.Values["last_accessed"].(time.Time)
-	if !ok {
-		return true
-	}
-
-	// Check if session has exceeded max age
-	maxAge := s.Options.MaxAge
-	if maxAge > 0 {
-		return time.Since(lastAccessed) > time.Duration(maxAge)*time.Second
-	}
-
-	return false
 }

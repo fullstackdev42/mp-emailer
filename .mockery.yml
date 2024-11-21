@@ -7,6 +7,12 @@ with-expecter: true
 
 packages:
 
+  github.com/jonesrussell/mp-emailer/session:
+    interfaces:
+      Manager:
+      Store:
+      UserData:
+
   github.com/jonesrussell/mp-emailer/campaign:
     interfaces:
       ServiceInterface:
@@ -32,16 +38,6 @@ packages:
       RepositoryInterface:
       ServiceInterface:
 
-  github.com/jonesrussell/mp-emailer/middleware:
-    interfaces:
-      SessionManager:
-      SessionStore:
-
   github.com/jonesrussell/mp-emailer/database:
     interfaces:
       Database:
-
-  github.com/jonesrussell/mp-emailer/session:
-    interfaces:
-      Manager:
-      UserData:

@@ -52,3 +52,6 @@ server:
     allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allowed_headers: ["Content-Type", "Authorization"]
     allow_credentials: true
+  rate_limiting:
+    requests_per_second: 20
+    burst_size: 50

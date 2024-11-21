@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/email"
-	"github.com/jonesrussell/mp-emailer/middleware"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -62,24 +62,21 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		status, msg := h.MapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Debug("CampaignGET: Parsed ID", "id", campaignID)
-	campaignParams := GetCampaignParams{ID: campaignID}
-	campaign, err := h.service.FetchCampaign(c.Request().Context(), campaignParams)
+
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: campaignID})
 	if err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
 
-	// Get the middleware manager from context
-	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
-	if !ok {
-		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
+	// Get userID and check authentication
+	userID, err := h.getUserIDFromSession(c)
+	isAuthenticated := err == nil && userID != ""
+
+	// Optional: Add ownership check
+	if isAuthenticated && campaign.OwnerID.String() != userID {
+		return h.ErrorHandler.HandleHTTPError(c, ErrUnauthorizedAccess, "Unauthorized", http.StatusUnauthorized)
 	}
-
-	// Check if user is authenticated
-	isAuthenticated := manager.IsAuthenticated(c)
-	h.Logger.Debug("CampaignGET: Authentication status", "isAuthenticated", isAuthenticated)
 
 	data := shared.Data{
 		Title:           "Campaign Details",
@@ -126,17 +123,9 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	// Get the middleware manager from context
-	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
-	if !ok {
-		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
-	}
-
-	userID, err := manager.GetOwnerIDFromSession(c)
+	userID, err := h.getUserIDFromSession(c)
 	if err != nil {
-		h.Logger.Error("CreateCampaign: Failed to get owner ID from session", err)
-		status, msg := h.MapError(ErrUnauthorizedAccess)
-		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
 
 	params := &CreateCampaignParams{
@@ -204,12 +193,27 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling DeleteCampaign request")
 
-	// Get ID from URL parameter instead of binding
+	userID, err := h.getUserIDFromSession(c)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
+	}
+
 	id := c.Param("id")
 	campaignID, err := uuid.Parse(id)
 	if err != nil {
 		status, msg := h.MapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	// Verify ownership
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: campaignID})
+	if err != nil {
+		status, msg := h.MapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	if campaign.OwnerID.String() != userID {
+		return h.ErrorHandler.HandleHTTPError(c, ErrUnauthorizedAccess, "Unauthorized", http.StatusUnauthorized)
 	}
 
 	if err := h.service.DeleteCampaign(c.Request().Context(), DeleteCampaignDTO{ID: campaignID}); err != nil {
@@ -240,18 +244,12 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	// Get the middleware manager from context
-	manager, ok := c.Get("middleware_manager").(*middleware.Manager)
-	if !ok {
-		return h.ErrorHandler.HandleHTTPError(c, errors.New("middleware manager not found"), "Internal server error", http.StatusInternalServerError)
-	}
-
-	ownerID, err := manager.GetOwnerIDFromSession(c)
+	userID, err := h.getUserIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
 
-	if campaign.OwnerID.String() != ownerID {
+	if campaign.OwnerID.String() != userID {
 		return h.ErrorHandler.HandleHTTPError(c, errors.New("unauthorized"), "Unauthorized", http.StatusUnauthorized)
 	}
 
@@ -268,21 +266,36 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 func (h *Handler) EditCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaign request")
 
+	userID, err := h.getUserIDFromSession(c)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
+	}
+
 	// Get campaign ID from URL parameter
-	params := EditParams{}
 	id := c.Param("id")
 	campaignID, err := uuid.Parse(id)
 	if err != nil {
 		status, msg := h.MapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
-	params.ID = campaignID
 
-	// Get form values
-	params.Name = c.FormValue("name")
-	params.Template = c.FormValue("template")
+	// Verify ownership
+	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: campaignID})
+	if err != nil {
+		status, msg := h.MapError(err)
+		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
 
-	// Update campaign
+	if campaign.OwnerID.String() != userID {
+		return h.ErrorHandler.HandleHTTPError(c, ErrUnauthorizedAccess, "Unauthorized", http.StatusUnauthorized)
+	}
+
+	params := EditParams{
+		ID:       campaignID,
+		Name:     c.FormValue("name"),
+		Template: c.FormValue("template"),
+	}
+
 	if err := h.service.UpdateCampaign(c.Request().Context(), &UpdateCampaignDTO{
 		ID:       params.ID,
 		Name:     params.Name,
@@ -292,22 +305,11 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	// Add success flash message
-	session, err := h.Store.Get(c.Request(), h.Config.Auth.SessionName)
-	if err != nil {
-		h.Logger.Error("Failed to get session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
-	}
-
-	session.AddFlash("Campaign updated successfully", "messages")
-	if err := session.Save(c.Request(), c.Response().Writer); err != nil {
-		h.Logger.Error("Failed to save session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Session error", http.StatusInternalServerError)
+	if err := h.addFlashMessage(c, "Campaign updated successfully"); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
 	}
 
 	h.Logger.Info("Campaign updated successfully", "campaignID", params.ID)
-
-	// Redirect to campaign details page
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+params.ID.String())
 }
 
@@ -437,4 +439,45 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 			"Representatives": filteredRepresentatives,
 		},
 	})
+}
+
+// getSessionManager retrieves the session manager from context
+func (h *Handler) getSessionManager(c echo.Context) (session.Manager, error) {
+	sessionManager, ok := c.Get("session_manager").(session.Manager)
+	if !ok {
+		return nil, errors.New("session manager not found")
+	}
+	return sessionManager, nil
+}
+
+// getUserIDFromSession retrieves and validates the user ID from session
+func (h *Handler) getUserIDFromSession(c echo.Context) (string, error) {
+	sessionManager, err := h.getSessionManager(c)
+	if err != nil {
+		return "", err
+	}
+
+	sess, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return "", err
+	}
+
+	userID, ok := sessionManager.GetSessionValue(sess, "user_id").(string)
+	if !ok || userID == "" {
+		return "", ErrUnauthorizedAccess
+	}
+
+	return userID, nil
+}
+
+// addFlashMessage adds a flash message to the session
+func (h *Handler) addFlashMessage(c echo.Context, message string) error {
+	session, err := h.Store.Get(c.Request(), h.Config.Auth.SessionName)
+	if err != nil {
+		return err
+	}
+
+	session.AddFlash(message, "messages")
+	return session.Save(c.Request(), c.Response().Writer)
 }
