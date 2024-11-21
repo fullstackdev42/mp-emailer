@@ -69,6 +69,8 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
+	h.Logger.Debug("CampaignGET: Campaign fetched successfully", "id", campaignID)
+
 	// Get userID and check authentication
 	userID, err := h.GetUserIDFromSession(c)
 	isAuthenticated := err == nil && userID != ""

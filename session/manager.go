@@ -187,5 +187,6 @@ func (m *manager) StartCleanup(ctx context.Context) {
 }
 
 func (m *manager) StopCleanup() error {
-	return m.cleaner.StopCleanup()
+	m.cleaner.StopCleanup()
+	return nil
 }

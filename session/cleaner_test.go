@@ -32,26 +32,33 @@ func TestCleanup(t *testing.T) {
 	logger := mocks.NewMockLoggerInterface(t)
 	interval := 15 * time.Millisecond
 	maxAge := 3600
+	ctx := context.Background()
 
-	// Set up expectations
-	logger.EXPECT().Debug("Starting session cleanup routine",
-		"interval", interval,
-		"maxAge", maxAge,
+	// Set up expectations with correct types:
+	// Debug(string, string, time.Duration, string, int)
+	logger.On("Debug",
+		"Starting session cleanup routine",
+		"interval", interval, // time.Duration
+		"maxAge", maxAge, // int
 	).Return()
 
-	logger.EXPECT().Debug("Running session cleanup").Return()
-	store.EXPECT().Cleanup(mock.AnythingOfType("time.Time")).Return(nil)
+	// Debug(string)
+	logger.On("Debug", "Running session cleanup").Return()
+	store.On("Cleanup", mock.AnythingOfType("time.Time")).Return(nil)
 
 	cleaner := session.NewCleaner(store, interval, maxAge, logger)
 
 	// Act
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-
 	cleaner.StartCleanup(ctx)
 
 	// Wait for at least one cleanup cycle
 	time.Sleep(20 * time.Millisecond)
+
+	// Cleanup
+	cleaner.StopCleanup()
+
+	// Assert
+	mock.AssertExpectationsForObjects(t, store, logger)
 }
 
 func TestStopCleanup(t *testing.T) {
@@ -60,24 +67,29 @@ func TestStopCleanup(t *testing.T) {
 	logger := mocks.NewMockLoggerInterface(t)
 	interval := 100 * time.Millisecond
 	maxAge := 3600
+	ctx := context.Background()
+
+	// Set up expectations
+	logger.EXPECT().Debug("Starting session cleanup routine",
+		"interval", interval,
+		"maxAge", maxAge).Return()
+	logger.EXPECT().Debug("Running session cleanup").Return()
+	store.EXPECT().Cleanup(mock.AnythingOfType("time.Time")).Return(nil)
 
 	cleaner := session.NewCleaner(store, interval, maxAge, logger)
 
-	logger.EXPECT().Debug("Starting session cleanup routine",
-		"interval", interval,
-		"maxAge", maxAge,
-	).Return()
-
-	logger.EXPECT().Debug("Context cancelled, stopping cleanup routine").Return()
-
 	// Act
-	ctx, cancel := context.WithCancel(context.Background())
 	cleaner.StartCleanup(ctx)
 
-	// Wait briefly then cancel
-	time.Sleep(50 * time.Millisecond)
-	cancel()
+	// Wait a moment to ensure goroutine is running
+	time.Sleep(150 * time.Millisecond)
 
-	// Wait for cleanup to stop
-	time.Sleep(50 * time.Millisecond)
+	// Stop the cleanup
+	cleaner.StopCleanup()
+
+	// Wait a moment to ensure goroutine has stopped
+	time.Sleep(150 * time.Millisecond)
+
+	// Assert
+	mock.AssertExpectationsForObjects(t, store, logger)
 }
