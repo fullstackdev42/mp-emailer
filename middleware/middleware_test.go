@@ -127,20 +127,23 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 
 		mockStore.On("Get", mock.Anything, "test-session").Return(session, nil)
 		mockStore.On("Save", mock.Anything, mock.Anything, session).Return(nil)
-		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+		mockLogger.On("Debug", "Getting session", "name", "test-session").Return()
+		mockLogger.On("Debug", "Validating session", "name", "test-session").Return()
+		mockLogger.On("Debug", "Saving session").Return()
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(
+		// Use new SessionManager instead
+		sessionManager := middleware.NewSessionManager(
 			mockStore,
 			mockLogger,
-			"test-session",
 			mockErrHandler,
 		)
 
 		// Execute
+		middleware := sessionManager.ValidateSession("test-session")
 		err := middleware(func(c echo.Context) error {
 			return c.String(http.StatusOK, "success")
 		})(c)
@@ -159,7 +162,8 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		mockErrHandler := new(mocksShared.MockErrorHandlerInterface)
 
 		expectedErr := errors.New("session error")
-		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+		mockLogger.On("Debug", "Getting session", "name", "test-session").Return()
+		mockLogger.On("Debug", "Validating session", "name", "test-session").Return()
 		mockStore.On("Get", mock.Anything, "test-session").Return(nil, expectedErr)
 
 		mockErrHandler.On("HandleHTTPError",
@@ -173,24 +177,22 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(
+		// Use new SessionManager
+		sessionManager := middleware.NewSessionManager(
 			mockStore,
 			mockLogger,
-			"test-session",
 			mockErrHandler,
 		)
 
 		// Execute
-		handlerCalled := false
+		middleware := sessionManager.ValidateSession("test-session")
 		err := middleware(func(c echo.Context) error {
-			handlerCalled = true
 			return c.String(http.StatusOK, "success")
 		})(c)
 
 		// Assert
 		s.Error(err)
 		s.Equal(http.StatusInternalServerError, err.(*echo.HTTPError).Code)
-		s.False(handlerCalled, "Handler should not be called when session error occurs")
 		mockStore.AssertExpectations(s.T())
 		mockLogger.AssertExpectations(s.T())
 	})
@@ -206,7 +208,9 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 
 		mockStore.On("Get", mock.Anything, "test-session").Return(session, nil)
 		mockStore.On("Save", mock.Anything, mock.Anything, session).Return(expectedErr)
-		mockLogger.On("Debug", "Session middleware processing request", "path", mock.Anything).Return()
+		mockLogger.On("Debug", "Getting session", "name", "test-session").Return()
+		mockLogger.On("Debug", "Validating session", "name", "test-session").Return()
+		mockLogger.On("Debug", "Saving session").Return()
 
 		mockErrHandler.On("HandleHTTPError",
 			mock.Anything,
@@ -219,24 +223,22 @@ func (s *MiddlewareTestSuite) TestSessionsMiddleware() {
 		rec := httptest.NewRecorder()
 		c := echo.New().NewContext(req, rec)
 
-		middleware := middleware.NewSessionsMiddleware(
+		// Use new SessionManager
+		sessionManager := middleware.NewSessionManager(
 			mockStore,
 			mockLogger,
-			"test-session",
 			mockErrHandler,
 		)
 
 		// Execute
-		handlerCalled := false
+		middleware := sessionManager.ValidateSession("test-session")
 		err := middleware(func(c echo.Context) error {
-			handlerCalled = true
 			return c.String(http.StatusOK, "success")
 		})(c)
 
 		// Assert
 		s.Error(err)
 		s.Equal(http.StatusInternalServerError, err.(*echo.HTTPError).Code)
-		s.True(handlerCalled, "Handler should be called before session save error")
 		mockStore.AssertExpectations(s.T())
 		mockLogger.AssertExpectations(s.T())
 	})

@@ -95,7 +95,7 @@ var App = fx.Options(
 // Provide a new session store
 func newSessionStore(cfg *config.Config, logger loggo.LoggerInterface) sessions.Store {
 	logger.Debug("Initializing session store",
-		"secure", true,
+		"secure", cfg.App.Env == config.EnvProduction,
 		"httpOnly", true,
 		"maxAge", "7 days",
 	)
@@ -106,8 +106,8 @@ func newSessionStore(cfg *config.Config, logger loggo.LoggerInterface) sessions.
 		Path:     "/",
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   cfg.App.Env == config.EnvProduction,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	logger.Debug("Session store initialized successfully")

@@ -95,12 +95,33 @@ func (m *Manager) registerContextMiddleware(e *echo.Echo) {
 
 // SessionsMiddleware sets up session middleware
 func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
-	return NewSessionsMiddleware(
-		m.sessionStore,
-		m.logger,
-		m.cfg.Auth.SessionName,
-		m.errorHandler,
-	)
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			session, err := m.sessionStore.Get(c.Request(), m.cfg.Auth.SessionName)
+			if err != nil {
+				m.logger.Error("Session error", err)
+				// Continue with a new session instead of returning an error
+				session, _ = m.sessionStore.New(c.Request(), m.cfg.Auth.SessionName)
+			}
+
+			// Store the session in context for later use
+			c.Set("session", session)
+
+			// Process the request
+			err = next(c)
+			if err != nil {
+				return err
+			}
+
+			// Save the session after processing
+			if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+				m.logger.Error("Failed to save session", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save session")
+			}
+
+			return nil
+		}
+	}
 }
 
 // registerLogging configures request logging
@@ -147,6 +168,12 @@ func (m *Manager) registerMethodOverride(e *echo.Echo) {
 func (m *Manager) GetSession(c echo.Context, sessionName string) *sessions.Session {
 	m.logger.Debug("Getting session", "session_name", sessionName)
 
+	// First try to get from context
+	if sess, ok := c.Get("session").(*sessions.Session); ok {
+		return sess
+	}
+
+	// Fallback to getting from store
 	session, err := m.sessionStore.Get(c.Request(), sessionName)
 	if err != nil {
 		m.logger.Debug("Error getting session", "error", err)
