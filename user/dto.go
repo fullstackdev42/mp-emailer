@@ -51,5 +51,5 @@ type RegisterDTO struct {
 	Username        string `json:"username" form:"username" validate:"required,min=3,max=50"`
 	Email           string `json:"email" form:"email" validate:"required,email"`
 	Password        string `json:"password" form:"password" validate:"required,min=8,max=72"`
-	PasswordConfirm string `json:"confirm_password" form:"confirm_password" validate:"required,eqfield=Password"`
+	PasswordConfirm string `json:"password_confirm" form:"password_confirm" validate:"required,eqfield=Password"`
 }

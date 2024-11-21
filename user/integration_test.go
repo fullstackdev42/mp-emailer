@@ -6,7 +6,9 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/mocks"
@@ -42,23 +44,62 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 	// Create test session
 	mockSession := sessions.NewSession(mockStore, "test_session")
-	mockSession.Values = make(map[interface{}]interface{}) // Initialize session values map
+	mockSession.Values = make(map[interface{}]interface{})
+
+	// Define test user with complete data
+	testUser := &user.User{
+		BaseModel: shared.BaseModel{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		Username:     "testuser",
+		Email:        "test@example.com",
+		PasswordHash: "$2a$10$somehashedpassword",
+	}
+
+	// Setup logger expectations with correct argument patterns
+	mockLogger.On("Debug", "Processing login request").Return()
+	mockLogger.On("Debug", "Attempting user authentication", "username", testUser.Username).Return()
+	mockLogger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
+	mockLogger.On("Debug", "Login process completed successfully", "username", testUser.Username).Return()
+
+	// Setup session expectations with proper user data
+	mockSessionManager.On("GetSession", mock.Anything).Return(mockSession, nil)
+	mockSessionManager.On("SetSessionValues", mockSession, testUser).Run(func(args mock.Arguments) {
+		session := args.Get(0).(*sessions.Session)
+		user := args.Get(1).(*user.User)
+		// Set the actual session values
+		session.Values["user_id"] = user.ID.String()
+		session.Values["username"] = user.Username
+	}).Return()
+	mockSessionManager.On("SaveSession", mock.Anything, mockSession).Return(nil)
+
+	// Setup authentication expectations with complete user data
+	mockUserService.On("AuthenticateUser",
+		mock.Anything,
+		testUser.Username,
+		"securepassword123",
+	).Return(true, testUser, nil)
 
 	// Setup expectations for registration
 	mockUserService.On("RegisterUser",
 		mock.Anything,
 		mock.MatchedBy(func(params *user.RegisterDTO) bool {
-			return params.Username == "testuser" &&
-				params.Email == "test@example.com" &&
+			return params.Username == testUser.Username &&
+				params.Email == testUser.Email &&
 				params.Password == "securepassword123" &&
 				params.PasswordConfirm == "securepassword123"
 		}),
 	).Return(&user.DTO{
-		Username: "testuser",
-		Email:    "test@example.com",
+		ID:        testUser.ID,
+		Username:  testUser.Username,
+		Email:     testUser.Email,
+		CreatedAt: testUser.CreatedAt,
+		UpdatedAt: testUser.UpdatedAt,
 	}, nil)
 
-	// Setup expectations for flash message after registration
+	// Setup flash handler expectations
 	mockFlashHandler.On("SetFlashAndSaveSession",
 		mock.Anything,
 		"Registration successful! Please log in.",
@@ -66,28 +107,6 @@ func (s *IntegrationTestSuite) SetupTest() {
 		mockSession.AddFlash("Registration successful! Please log in.")
 	}).Return(nil)
 
-	// Setup expectations for login session
-	mockSessionManager.On("GetSession", mock.Anything).Return(mockSession, nil)
-	mockSessionManager.On("SetSessionValues", mockSession, mock.Anything).Run(func(args mock.Arguments) {
-		// Set user values in session
-		user := args.Get(1).(*user.User)
-		mockSession.Values["user_id"] = user.ID
-		mockSession.Values["username"] = user.Username
-	}).Return()
-	mockSessionManager.On("SaveSession", mock.Anything, mockSession).Return(nil)
-
-	// Setup expectations for authentication
-	testUser := &user.User{
-		Username: "testuser",
-		Email:    "test@example.com",
-	}
-	mockUserService.On("AuthenticateUser",
-		mock.Anything,
-		"testuser",
-		"securepassword123",
-	).Return(true, testUser, nil)
-
-	// Setup expectations for flash message after login
 	mockFlashHandler.On("SetFlashAndSaveSession",
 		mock.Anything,
 		"Successfully logged in!",
@@ -128,7 +147,7 @@ func (s *IntegrationTestSuite) TestRegistrationToLoginFlow() {
 	registrationForm.Set("username", username)
 	registrationForm.Set("email", email)
 	registrationForm.Set("password", password)
-	registrationForm.Set("confirm_password", password)
+	registrationForm.Set("password_confirm", password)
 
 	req := httptest.NewRequest(http.MethodPost, "/user/register", strings.NewReader(registrationForm.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)

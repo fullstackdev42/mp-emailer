@@ -144,14 +144,23 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 
 	user, err := s.repo.FindByUsername(ctx, username)
 	if err != nil {
-		return false, nil, fmt.Errorf("authentication failed")
+		// Log the specific error but return a generic message
+		s.Error("User lookup failed", err, "username", username)
+		return false, nil, fmt.Errorf("invalid username or password")
+	}
+
+	if user == nil {
+		s.Info("Login attempt for non-existent user", "username", username)
+		return false, nil, fmt.Errorf("invalid username or password")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return false, nil, fmt.Errorf("authentication failed")
+		s.Info("Password mismatch", "username", username)
+		return false, nil, fmt.Errorf("invalid username or password")
 	}
 
+	s.Info("User authenticated successfully", "username", username)
 	return true, user, nil
 }
 
@@ -159,6 +168,7 @@ type PasswordResetDTO struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
+// ResetPasswordDTO struct should also be updated for consistency
 type ResetPasswordDTO struct {
 	Token           string `json:"token" validate:"required"`
 	Password        string `json:"password" validate:"required,min=8,max=72"`

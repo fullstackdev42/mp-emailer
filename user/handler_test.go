@@ -95,13 +95,18 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					Username: "testuser",
 				}
 
+				s.Logger.On("Debug", "Processing login request").Return()
+				s.Logger.On("Debug", "Attempting user authentication", "username", testUser.Username).Return()
+				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
+				s.Logger.On("Debug", "Login process completed successfully", "username", testUser.Username).Return()
+
 				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
-				s.SessionManager.On("SetSessionValues", sess, testUser)
+				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
 				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(nil)
 
-				s.UserService.EXPECT().AuthenticateUser(
+				s.UserService.On("AuthenticateUser",
 					mock.Anything,
-					"testuser",
+					testUser.Username,
 					"password123",
 				).Return(true, testUser, nil)
 
@@ -114,12 +119,17 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			name:    "Session store error",
 			payload: `{"username": "testuser", "password": "password123"}`,
 			setupMocks: func() *sessions.Session {
+				sessionErr := errors.New("session store error")
+
+				s.Logger.On("Debug", "Processing login request").Return()
+				s.Logger.On("Error", "Failed to get session", sessionErr).Return()
+
 				s.SessionManager.On("GetSession", mock.Anything).
-					Return(nil, errors.New("session store error"))
+					Return(nil, sessionErr)
 
 				s.ErrorHandler.On("HandleHTTPError",
-					mock.MatchedBy(func(_ echo.Context) bool { return true }),
-					mock.MatchedBy(func(err error) bool { return err.Error() == "session store error" }),
+					mock.AnythingOfType("*echo.context"),
+					sessionErr,
 					"Error getting session",
 					http.StatusInternalServerError,
 				).Return(echo.NewHTTPError(http.StatusInternalServerError))
@@ -136,6 +146,10 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				sess := sessions.NewSession(s.Store, "test_session")
 				sess.Values = make(map[interface{}]interface{})
 
+				s.Logger.On("Debug", "Processing login request").Return()
+				s.Logger.On("Debug", "Attempting user authentication", "username", "wronguser").Return()
+				s.Logger.On("Debug", "Invalid login attempt", "username", "wronguser").Return()
+
 				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
 
 				s.TemplateRenderer.On("Render",
@@ -145,7 +159,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					mock.AnythingOfType("*echo.context"),
 				).Return(nil)
 
-				s.UserService.EXPECT().AuthenticateUser(
+				s.UserService.On("AuthenticateUser",
 					mock.Anything,
 					"wronguser",
 					"wrongpass",
@@ -163,35 +177,36 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				sess := sessions.NewSession(s.Store, "test_session")
 				sess.Values = make(map[interface{}]interface{})
 
-				testUser := &user.User{Username: "testuser"}
+				testUser := &user.User{
+					BaseModel: shared.BaseModel{
+						ID: uuid.New(),
+					},
+					Username: "testuser",
+				}
+
+				saveErr := errors.New("failed to save session")
+
+				s.Logger.On("Debug", "Processing login request").Return()
+				s.Logger.On("Debug", "Attempting user authentication", "username", testUser.Username).Return()
+				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
+				s.Logger.On("Error", "Failed to save session", saveErr).Return()
 
 				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
-				s.SessionManager.On("SetSessionValues", sess, testUser)
-				s.SessionManager.On("SaveSession", mock.Anything, sess).
-					Return(errors.New("failed to save session"))
+				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
+				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(saveErr)
 
-				s.UserService.EXPECT().AuthenticateUser(
+				s.UserService.On("AuthenticateUser",
 					mock.Anything,
-					"testuser",
+					testUser.Username,
 					"password123",
 				).Return(true, testUser, nil)
 
 				s.ErrorHandler.On("HandleHTTPError",
-					mock.MatchedBy(func(c echo.Context) bool {
-						s.T().Logf("Matching context: %+v", c)
-						return true
-					}),
-					mock.MatchedBy(func(err error) bool {
-						s.T().Logf("Matching error: %v", err)
-						return true
-					}),
-					mock.AnythingOfType("string"),
+					mock.AnythingOfType("*echo.context"),
+					saveErr,
+					"Error saving session",
 					http.StatusInternalServerError,
-				).Run(func(args mock.Arguments) {
-					// Set the status code on the response
-					c := args.Get(0).(echo.Context)
-					c.Response().Status = http.StatusInternalServerError
-				}).Return(echo.NewHTTPError(http.StatusInternalServerError))
+				).Return(echo.NewHTTPError(http.StatusInternalServerError))
 
 				return sess
 			},

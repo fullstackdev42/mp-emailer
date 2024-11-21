@@ -111,34 +111,45 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
+	// Add request logging
+	h.Logger.Debug("Processing login request")
+
 	sess, err := h.SessionManager.GetSession(c)
 	if err != nil {
-		if err := h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError); err != nil {
-			return err
-		}
-		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
+		h.Logger.Error("Failed to get session", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
 	}
 
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
+		h.Logger.Error("Failed to bind login parameters", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
+	// Add debug logging for authentication attempt
+	h.Logger.Debug("Attempting user authentication", "username", params.Username)
+
 	authenticated, user, err := h.Service.AuthenticateUser(c.Request().Context(), params.Username, params.Password)
 	if err != nil {
+		h.Logger.Error("Authentication failed", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
 	}
 
 	if !authenticated || user == nil {
+		h.Logger.Debug("Invalid login attempt", "username", params.Username)
 		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
 			Title: "Login",
 			Error: "Invalid username or password",
 		})
 	}
 
+	// Log successful authentication
+	h.Logger.Debug("User authenticated successfully", "username", params.Username, "userID", user.ID)
+
 	h.SessionManager.SetSessionValues(sess, user)
 
 	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		h.Logger.Error("Failed to save session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
 	}
 
@@ -146,6 +157,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		h.Logger.Error("Failed to set flash message", err)
 	}
 
+	h.Logger.Debug("Login process completed successfully", "username", params.Username)
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
