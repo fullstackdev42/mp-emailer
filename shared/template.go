@@ -86,7 +86,7 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 
 	if authValue, ok := c.Get("IsAuthenticated").(bool); ok && authValue {
 		pageData.IsAuthenticated = true
-	} else if authValue, ok := session.Values["authenticated"].(bool); ok && authValue {
+	} else if authValue, ok := session.Values["is_authenticated"].(bool); ok && authValue {
 		pageData.IsAuthenticated = true
 	}
 
