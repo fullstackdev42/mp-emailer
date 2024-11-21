@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	// mysql driver is imported here to register its SQL driver init function
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pressly/goose/v3"
 )
