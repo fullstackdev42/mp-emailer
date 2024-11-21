@@ -55,14 +55,6 @@ var App = fx.Options(
 				return e
 			},
 		),
-		fx.Annotate(
-			provideSessionStore,
-			fx.As(new(session.Store)),
-		),
-		fx.Annotate(
-			provideSessionManager,
-			fx.As(new(session.Manager)),
-		),
 		validator.New,
 		fx.Annotate(
 			provideTemplates,
@@ -74,11 +66,32 @@ var App = fx.Options(
 		),
 		NewBaseHandler,
 		NewGenericLoggingDecorator[LoggableService],
-		fx.Annotate(
-			NewFlashHandler,
-			fx.As(new(FlashHandlerInterface)),
-		),
 		provideDatabaseService,
+		fx.Annotate(
+			func(cfg *config.Config, logger loggo.LoggerInterface) (session.Manager, error) {
+				options := session.Options{
+					MaxAge:          cfg.Auth.SessionMaxAge,
+					CleanupInterval: 15 * time.Minute,
+					SecurityKey:     []byte(cfg.Auth.SessionSecret),
+					CookieName:      cfg.Auth.SessionName,
+					Domain:          cfg.App.Domain,
+					Secure:          cfg.App.Env == "production",
+					HTTPOnly:        true,
+					SameSite:        http.SameSiteLaxMode,
+					Path:            "/",
+					KeyPrefix:       "sess_",
+				}
+
+				store := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
+				secureStore, err := session.NewSecureStore(store, options)
+				if err != nil {
+					return nil, err
+				}
+
+				return session.NewManager(secureStore, logger, options), nil
+			},
+			fx.As(new(session.Manager)),
+		),
 	),
 	ErrorModule,
 	fx.Invoke(
@@ -97,56 +110,8 @@ var App = fx.Options(
 	),
 )
 
-// provideSessionStore creates a new session store based on the configuration
-func provideSessionStore(cfg *config.Config, logger loggo.LoggerInterface) (session.Store, error) {
-	logger.Debug("Initializing secure session store")
-
-	options := session.Options{
-		MaxAge:          cfg.Auth.SessionMaxAge,
-		CleanupInterval: 15 * time.Minute,
-		SecurityKey:     []byte(cfg.Auth.SessionSecret),
-		CookieName:      cfg.Auth.SessionName,
-		Domain:          cfg.App.Domain,
-		Secure:          cfg.App.Env == "production",
-		HTTPOnly:        true,
-		SameSite:        http.SameSiteLaxMode,
-		Path:            "/",
-		KeyPrefix:       "sess_",
-	}
-
-	baseStore := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
-	store, err := session.NewSecureStore(baseStore, options)
-	if err != nil {
-		logger.Error("Failed to create secure session store", err)
-		return nil, fmt.Errorf("failed to create secure session store: %w", err)
-	}
-
-	logger.Debug("Secure session store initialized successfully")
-	return store, nil
-}
-
-// provideSessionManager creates a new session manager based on the configuration
-func provideSessionManager(store session.Store, cfg *config.Config, logger loggo.LoggerInterface) (session.Manager, error) {
-	logger.Debug("Initializing session manager")
-
-	options := session.Options{
-		MaxAge:          cfg.Auth.SessionMaxAge,
-		CleanupInterval: 15 * time.Minute,
-		SecurityKey:     []byte(cfg.Auth.SessionSecret),
-		CookieName:      cfg.Auth.SessionName,
-		Domain:          cfg.App.Domain,
-		Secure:          cfg.App.Env == "production",
-		HTTPOnly:        true,
-		SameSite:        http.SameSiteLaxMode,
-	}
-
-	manager := session.NewManager(store, logger, options)
-	logger.Debug("Session manager initialized successfully")
-	return manager, nil
-}
-
 // provideTemplates creates and configures the template renderer
-func provideTemplates(store session.Store, cfg *config.Config, logger loggo.LoggerInterface) (TemplateRendererInterface, error) {
+func provideTemplates(manager session.Manager, cfg *config.Config, logger loggo.LoggerInterface) (TemplateRendererInterface, error) {
 	logger.Debug("Initializing template renderer")
 
 	tmpl := template.New("").Funcs(template.FuncMap{
@@ -178,7 +143,7 @@ func provideTemplates(store session.Store, cfg *config.Config, logger loggo.Logg
 	}
 
 	logger.Debug("Templates parsed successfully")
-	return NewCustomTemplateRenderer(tmpl, store, cfg), nil
+	return NewCustomTemplateRenderer(tmpl, manager, cfg), nil
 }
 
 // provideEmailService creates a new email service based on the configuration

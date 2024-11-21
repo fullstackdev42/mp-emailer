@@ -3,7 +3,6 @@ package shared
 import (
 	"net/http"
 
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
 	"go.uber.org/fx"
@@ -13,7 +12,6 @@ import (
 type BaseHandlerParams struct {
 	fx.In
 
-	Store            sessions.Store
 	Logger           loggo.LoggerInterface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
@@ -21,7 +19,6 @@ type BaseHandlerParams struct {
 }
 
 type BaseHandler struct {
-	Store            sessions.Store
 	Logger           loggo.LoggerInterface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
@@ -31,7 +28,6 @@ type BaseHandler struct {
 
 func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 	return BaseHandler{
-		Store:            params.Store,
 		Logger:           params.Logger,
 		ErrorHandler:     params.ErrorHandler,
 		Config:           params.Config,

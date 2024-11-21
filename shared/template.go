@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,7 +40,7 @@ type TemplateRendererInterface interface {
 // CustomTemplateRenderer is a custom renderer for Echo
 type CustomTemplateRenderer struct {
 	templates *template.Template
-	store     sessions.Store
+	manager   session.Manager
 	config    *config.Config
 }
 
@@ -48,23 +48,23 @@ type CustomTemplateRenderer struct {
 var _ TemplateRendererInterface = (*CustomTemplateRenderer)(nil)
 
 // NewCustomTemplateRenderer creates a new template renderer
-func NewCustomTemplateRenderer(t *template.Template, store sessions.Store, cfg *config.Config) TemplateRendererInterface {
+func NewCustomTemplateRenderer(t *template.Template, manager session.Manager, cfg *config.Config) TemplateRendererInterface {
 	return &CustomTemplateRenderer{
 		templates: t,
-		store:     store,
+		manager:   manager,
 		config:    cfg,
 	}
 }
 
 // Render method implements echo.Renderer and handles rendering templates
 func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	session, err := t.store.Get(c.Request(), t.config.Auth.SessionName)
+	session, err := t.manager.GetSession(c, t.config.Auth.SessionName)
 	if err != nil {
 		return fmt.Errorf("failed to get session: %w", err)
 	}
 
 	flashes := session.Flashes("messages")
-	if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+	if err := t.manager.SaveSession(c, session); err != nil {
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
