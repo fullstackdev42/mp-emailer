@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/campaign"
 	mockdb "github.com/jonesrussell/mp-emailer/mocks/database"
+	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -107,14 +108,14 @@ func (s *RepositoryTestSuite) TestGetAll() {
 			name: "successful retrieval",
 			setup: func() {
 				campaigns := []campaign.Campaign{
-					{Name: "Campaign 1"},
-					{Name: "Campaign 2"},
+					{BaseModel: shared.BaseModel{ID: uuid.New()}, Name: "Campaign 1"},
+					{BaseModel: shared.BaseModel{ID: uuid.New()}, Name: "Campaign 2"},
 				}
 
-				s.mockDB.EXPECT().FindOne(
+				s.mockDB.EXPECT().FindAll(
 					mock.Anything,
 					mock.AnythingOfType("*[]campaign.Campaign"),
-					"",
+					"1=1",
 				).Run(func(_ context.Context, dest interface{}, _ string, _ ...interface{}) {
 					if destSlice, ok := dest.(*[]campaign.Campaign); ok {
 						*destSlice = campaigns
@@ -140,6 +141,139 @@ func (s *RepositoryTestSuite) TestGetAll() {
 			} else {
 				assert.NoError(s.T(), err)
 				assert.Len(s.T(), campaigns, tt.wantCount)
+			}
+		})
+	}
+}
+
+func (s *RepositoryTestSuite) TestUpdate() {
+	tests := []struct {
+		name    string
+		dto     *campaign.UpdateCampaignDTO
+		wantErr bool
+	}{
+		{
+			name: "successful update",
+			dto: &campaign.UpdateCampaignDTO{
+				ID:          uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				Name:        "Updated Campaign",
+				Description: "Updated Description",
+				Template:    "Updated Template",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
+
+			// Mock Update call
+			s.mockDB.EXPECT().Update(
+				mock.Anything,
+				mock.AnythingOfType("*campaign.Campaign"),
+			).Return(nil)
+
+			err := s.repo.Update(context.Background(), tt.dto)
+
+			if tt.wantErr {
+				assert.Error(s.T(), err)
+			} else {
+				assert.NoError(s.T(), err)
+			}
+		})
+	}
+}
+
+func (s *RepositoryTestSuite) TestDelete() {
+	tests := []struct {
+		name    string
+		dto     campaign.DeleteCampaignDTO
+		wantErr bool
+	}{
+		{
+			name: "successful delete",
+			dto: campaign.DeleteCampaignDTO{
+				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
+
+			// Mock Delete call
+			s.mockDB.EXPECT().Delete(
+				mock.Anything,
+				mock.AnythingOfType("*campaign.Campaign"),
+			).Return(nil)
+
+			err := s.repo.Delete(context.Background(), tt.dto)
+
+			if tt.wantErr {
+				assert.Error(s.T(), err)
+			} else {
+				assert.NoError(s.T(), err)
+			}
+		})
+	}
+}
+
+func (s *RepositoryTestSuite) TestGetByID() {
+	tests := []struct {
+		name    string
+		dto     campaign.GetCampaignDTO
+		setup   func()
+		wantErr bool
+	}{
+		{
+			name: "successful retrieval by ID",
+			dto: campaign.GetCampaignDTO{
+				ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			},
+			setup: func() {
+				expectedCampaign := &campaign.Campaign{
+					BaseModel: shared.BaseModel{
+						ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					},
+					Name:        "Test Campaign",
+					Description: "Test Description",
+					Template:    "Test Template",
+				}
+
+				s.mockDB.EXPECT().FindOne(
+					mock.Anything,
+					mock.AnythingOfType("*campaign.Campaign"),
+					"id = ?",
+					mock.AnythingOfType("uuid.UUID"),
+				).Run(func(_ context.Context, dest interface{}, _ string, _ ...interface{}) {
+					if campaign, ok := dest.(*campaign.Campaign); ok {
+						*campaign = *expectedCampaign
+					}
+				}).Return(nil)
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest() // Reset mock for each test case
+			if tt.setup != nil {
+				tt.setup()
+			}
+
+			result, err := s.repo.GetByID(context.Background(), tt.dto)
+
+			if tt.wantErr {
+				assert.Error(s.T(), err)
+				assert.Nil(s.T(), result)
+			} else {
+				assert.NoError(s.T(), err)
+				assert.NotNil(s.T(), result)
+				assert.Equal(s.T(), tt.dto.ID, result.ID)
 			}
 		})
 	}
