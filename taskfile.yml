@@ -94,19 +94,6 @@ tasks:
       - rm -rf {{.BIN_DIR}}
       - go clean -cache -testcache
 
-  # Database tasks
-  migrate:
-    desc: "Manage database migrations"
-    summary: |
-      Usage: task migrate -- <command> [args]
-      Commands:
-        up        - Apply all migrations
-        down      - Rollback last migration
-        force     - Force set version
-        version   - Show current version
-    cmds:
-      - migrate -database "{{.DB_URL}}" -path {{.MIGRATIONS}} {{.CLI_ARGS}}
-
   # Frontend tasks
   frontend:
     desc: "Manage frontend tasks"
@@ -147,4 +134,41 @@ tasks:
   # - deploy: Deploy the application to production
   # - benchmark: Run performance benchmarks
   # - security-scan: Scan for security vulnerabilities
+
+  migrate:create:
+    desc: "Create a new migration file"
+    summary: |
+      Usage: task migrate:create -- <migration_name>
+      Example: task migrate:create -- add_status_to_users
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          echo "Error: Migration name is required"
+          echo "Usage: task migrate:create -- <migration_name>"
+          exit 1
+        fi
+        goose -dir database/migrations mysql "{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}?parseTime=true" create {{.CLI_ARGS}} sql
+
+  migrate:reset:
+    desc: "Reset all migrations (rollback everything)"
+    summary: |
+      Usage: task migrate:reset
+      Warning: This will drop all tables and data!
+    shell: bash
+    interactive: true
+    cmds:
+      - |
+        echo "Are you sure you want to reset all migrations? This will delete all data! [y/N]"
+        read REPLY
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+          goose -dir database/migrations mysql "{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}?parseTime=true" reset
+        fi
+
+  migrate:up:
+    desc: "Run all pending migrations"
+    summary: |
+      Usage: task migrate:up
+      Applies all pending database migrations
+    cmds:
+      - goose -dir database/migrations mysql "{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}?parseTime=true" up
   

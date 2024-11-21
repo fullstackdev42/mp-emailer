@@ -1,12 +1,12 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"path/filepath"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/mysql"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/pressly/goose/v3"
 )
 
 type MigrationConfig struct {
@@ -21,16 +21,17 @@ func RunMigrations(cfg MigrationConfig) error {
 		return fmt.Errorf("invalid migrations path: %w", err)
 	}
 
-	m, err := migrate.New(
-		"file://"+absPath,
-		"mysql://"+cfg.DSN,
-	)
+	db, err := sql.Open("mysql", cfg.DSN)
 	if err != nil {
-		return fmt.Errorf("failed to create migrator: %w", err)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer m.Close()
+	defer db.Close()
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := goose.SetDialect("mysql"); err != nil {
+		return fmt.Errorf("failed to set dialect: %w", err)
+	}
+
+	if err := goose.Up(db, absPath); err != nil {
 		return fmt.Errorf("error running migrations: %w", err)
 	}
 
