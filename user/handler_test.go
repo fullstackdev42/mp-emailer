@@ -93,7 +93,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 
 				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
 				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
-				s.SessionManager.On("SaveSession", mock.Anything, sess).Run(func(args mock.Arguments) {
+				s.SessionManager.On("SaveSession", mock.Anything, sess).Run(func(_ mock.Arguments) {
 					// Verify flash message was added
 					flashes := sess.Flashes()
 					s.Len(flashes, 1)
@@ -116,9 +116,23 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			payload: `{"username": "testuser", "password": "password123"}`,
 			setupMocks: func() *sessions.Session {
 				sessionErr := errors.New("session store error")
+				testUser := &user.User{
+					BaseModel: shared.BaseModel{
+						ID: uuid.New(),
+					},
+					Username: "testuser",
+				}
 
 				s.Logger.On("Debug", "Processing login request").Return()
+				s.Logger.On("Debug", "Attempting user authentication", "username", "testuser").Return()
+				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
 				s.Logger.On("Error", "Failed to get session", sessionErr).Return()
+
+				s.UserService.On("AuthenticateUser",
+					mock.Anything,
+					"testuser",
+					"password123",
+				).Return(true, testUser, nil)
 
 				s.SessionManager.On("GetSession", mock.Anything, "test_session").
 					Return(nil, sessionErr)
@@ -139,14 +153,15 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 			name:    "Invalid credentials",
 			payload: `{"username": "wronguser", "password": "wrongpass"}`,
 			setupMocks: func() *sessions.Session {
-				sess := sessions.NewSession(s.Store, "test_session")
-				sess.Values = make(map[interface{}]interface{})
-
 				s.Logger.On("Debug", "Processing login request").Return()
 				s.Logger.On("Debug", "Attempting user authentication", "username", "wronguser").Return()
 				s.Logger.On("Debug", "Invalid login attempt", "username", "wronguser").Return()
 
-				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
+				s.UserService.On("AuthenticateUser",
+					mock.Anything,
+					"wronguser",
+					"wrongpass",
+				).Return(false, nil, nil)
 
 				s.TemplateRenderer.On("Render",
 					mock.AnythingOfType("*bytes.Buffer"),
@@ -155,13 +170,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 					mock.AnythingOfType("*echo.context"),
 				).Return(nil)
 
-				s.UserService.On("AuthenticateUser",
-					mock.Anything,
-					"wronguser",
-					"wrongpass",
-				).Return(false, nil, nil)
-
-				return sess
+				return nil
 			},
 			expectedStatus: http.StatusUnauthorized,
 			expectedPath:   "",

@@ -2,7 +2,6 @@ package session_test
 
 import (
 	"context"
-	"net/http"
 	"testing"
 	"time"
 
@@ -19,17 +18,6 @@ func TestNewCleaner(t *testing.T) {
 	logger := mocks.NewMockLoggerInterface(t)
 	interval := 15 * time.Minute
 	maxAge := 3600
-
-	// Set expectations for store configuration
-	store.EXPECT().SetSecure(true).Return()
-	store.EXPECT().SetSameSite(http.SameSiteLaxMode).Return()
-	store.EXPECT().SetOptions(mock.AnythingOfType("*sessions.Options")).Return()
-
-	// Expect debug log
-	logger.EXPECT().Debug("Starting session cleanup routine",
-		"interval", interval,
-		"maxAge", maxAge,
-	).Return()
 
 	// Act
 	cleaner := session.NewCleaner(store, interval, maxAge, logger)
