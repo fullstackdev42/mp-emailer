@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -30,6 +31,18 @@ var App = fx.Options(
 			fmt.Println("🚀 Starting application...")
 			return nil
 		},
+	}),
+	fx.Invoke(func(lc fx.Lifecycle) {
+		lc.Append(fx.Hook{
+			OnStart: func(_ context.Context) error {
+				fmt.Println("🚀 Starting application...")
+				return nil
+			},
+			OnStop: func(_ context.Context) error {
+				fmt.Println("👋 Shutting down application...")
+				return nil
+			},
+		})
 	}),
 	fx.Provide(
 		config.Load,
@@ -69,10 +82,27 @@ var App = fx.Options(
 		provideDatabaseService,
 		fx.Annotate(
 			func(cfg *config.Config, logger loggo.LoggerInterface) (session.Manager, error) {
+				// Decode the base64 secret key
+				decodedKey, err := base64.StdEncoding.DecodeString(cfg.Auth.SessionSecret)
+				if err != nil {
+					return nil, fmt.Errorf("session secret must be valid base64: %w", err)
+				}
+
+				// Check the decoded key length
+				if len(decodedKey) != 32 {
+					fmt.Println("\n❌ Configuration Error: Invalid Session Secret")
+					fmt.Println("The decoded session secret key must be exactly 32 bytes long.")
+					fmt.Println("\nTo fix this:")
+					fmt.Println("1. Generate a new key:    openssl rand -base64 24")
+					fmt.Println("2. Set it in your .env:   SESSION_SECRET=<generated_key>")
+					return nil, fmt.Errorf("decoded session secret must be exactly 32 bytes (current length: %d)",
+						len(decodedKey))
+				}
+
 				options := session.Options{
 					MaxAge:          cfg.Auth.SessionMaxAge,
 					CleanupInterval: 15 * time.Minute,
-					SecurityKey:     []byte(cfg.Auth.SessionSecret),
+					SecurityKey:     decodedKey, // Use the decoded key
 					CookieName:      cfg.Auth.SessionName,
 					Domain:          cfg.App.Domain,
 					Secure:          cfg.App.Env == "production",
@@ -82,13 +112,18 @@ var App = fx.Options(
 					KeyPrefix:       "sess_",
 				}
 
-				store := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
+				store := sessions.NewCookieStore(decodedKey) // Use the decoded key
 				secureStore, err := session.NewSecureStore(store, options)
 				if err != nil {
 					return nil, err
 				}
 
-				return session.NewManager(secureStore, logger, options), nil
+				manager, err := session.NewManager(secureStore, logger, options)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create session manager: %w", err)
+				}
+
+				return manager, nil
 			},
 			fx.As(new(session.Manager)),
 		),

@@ -16,7 +16,13 @@ type manager struct {
 	cleaner *Cleaner
 }
 
-func NewManager(store Store, logger loggo.LoggerInterface, options Options) Manager {
+func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Manager, error) {
+	// Validate security key size
+	keySize := len(options.SecurityKey)
+	if keySize != 16 && keySize != 24 && keySize != 32 {
+		return nil, ErrInvalidKeySize
+	}
+
 	m := &manager{
 		store:   store,
 		logger:  logger,
@@ -38,7 +44,7 @@ func NewManager(store Store, logger loggo.LoggerInterface, options Options) Mana
 	// Initialize cleaner
 	m.cleaner = NewCleaner(store, options.CleanupInterval, options.MaxAge, logger)
 
-	return m
+	return m, nil
 }
 
 func (m *manager) GetSession(c echo.Context, name string) (*sessions.Session, error) {

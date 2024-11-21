@@ -82,4 +82,5 @@ var (
 	ErrSessionExpired     = echo.NewHTTPError(http.StatusUnauthorized, "session expired")
 	ErrInvalidSession     = echo.NewHTTPError(http.StatusBadRequest, "invalid session")
 	ErrSessionStoreFailed = echo.NewHTTPError(http.StatusInternalServerError, "session store failed")
+	ErrInvalidKeySize     = echo.NewHTTPError(http.StatusInternalServerError, "invalid security key size: must be 16, 24, or 32 bytes")
 )
