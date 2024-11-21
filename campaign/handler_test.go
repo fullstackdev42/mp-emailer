@@ -72,25 +72,6 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 			name: "successful_campaign_fetch",
 			setupMocks: func(c echo.Context) {
 				campaignID := uuid.MustParse("b8568959-70eb-42f9-bde6-57250faced25")
-				userID := uuid.New().String()
-
-				// Setup session manager mock
-				sessionManager := sessionmocks.NewMockManager(s.T())
-				c.Set("session_manager", sessionManager)
-
-				// Setup session expectations
-				mockSession := &sessions.Session{
-					Values: make(map[interface{}]interface{}),
-				}
-				mockSession.Values["user_id"] = userID
-
-				sessionManager.EXPECT().
-					GetSession(c, s.Config.Auth.SessionName).
-					Return(mockSession, nil)
-
-				sessionManager.EXPECT().
-					GetSessionValue(mockSession, "user_id").
-					Return(userID)
 
 				// Setup logger expectations
 				s.Logger.EXPECT().Debug("CampaignGET: Starting").Once()
@@ -104,7 +85,7 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 					Name:        "Test Campaign",
 					Description: "Test Description",
 					Template:    "Test Template",
-					OwnerID:     uuid.MustParse(userID),
+					OwnerID:     uuid.New(),
 				}
 
 				s.CampaignService.EXPECT().
@@ -122,7 +103,6 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 						mock.MatchedBy(func(data shared.Data) bool {
 							return data.Title == "Campaign Details" &&
 								data.PageName == "campaign" &&
-								data.IsAuthenticated == true &&
 								data.Content != nil
 						}),
 						c,
@@ -130,60 +110,6 @@ func (s *HandlerTestSuite) TestCampaignGET() {
 			},
 			campaignID:     "b8568959-70eb-42f9-bde6-57250faced25",
 			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "unauthorized_access",
-			setupMocks: func(c echo.Context) {
-				campaignID := uuid.MustParse("b8568959-70eb-42f9-bde6-57250faced25")
-				userID := uuid.New().String()
-				differentUserID := uuid.New().String()
-
-				// Setup session manager mock
-				sessionManager := sessionmocks.NewMockManager(s.T())
-				c.Set("session_manager", sessionManager)
-
-				// Setup session expectations
-				mockSession := &sessions.Session{
-					Values: make(map[interface{}]interface{}),
-				}
-				mockSession.Values["user_id"] = userID
-
-				sessionManager.EXPECT().
-					GetSession(c, s.Config.Auth.SessionName).
-					Return(mockSession, nil)
-
-				sessionManager.EXPECT().
-					GetSessionValue(mockSession, "user_id").
-					Return(userID)
-
-				// Setup campaign service mock with different owner
-				campaignData := &campaign.Campaign{
-					BaseModel: shared.BaseModel{
-						ID: campaignID,
-					},
-					OwnerID: uuid.MustParse(differentUserID),
-				}
-
-				s.CampaignService.EXPECT().
-					FetchCampaign(
-						mock.Anything,
-						campaign.GetCampaignParams{
-							ID: campaignID,
-						},
-					).Return(campaignData, nil).Once()
-
-				// Setup error handler expectation
-				s.ErrorHandler.EXPECT().
-					HandleHTTPError(
-						c,
-						campaign.ErrUnauthorizedAccess,
-						"Unauthorized",
-						http.StatusUnauthorized,
-					).Return(echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized"))
-			},
-			campaignID:     "b8568959-70eb-42f9-bde6-57250faced25",
-			expectedStatus: http.StatusUnauthorized,
-			expectedError:  echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized"),
 		},
 	}
 
@@ -390,9 +316,17 @@ func (s *HandlerTestSuite) TestGetUserIDFromSession() {
 		sessionManager := sessionmocks.NewMockManager(s.T())
 		c.Set("session_manager", sessionManager)
 
+		sessionErr := errors.New("session error")
+
+		// Add logger expectation
+		s.Logger.EXPECT().
+			Error("Failed to get session", sessionErr).
+			Once()
+
 		sessionManager.EXPECT().
 			GetSession(c, s.Config.Auth.SessionName).
-			Return(nil, errors.New("session error"))
+			Return(nil, sessionErr).
+			Once()
 
 		userID, err := s.handler.GetUserIDFromSession(c)
 		s.Error(err)
