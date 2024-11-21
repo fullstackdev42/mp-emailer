@@ -10,6 +10,7 @@ type Database interface {
 	// Core operations
 	Create(ctx context.Context, value interface{}) error
 	FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	Update(ctx context.Context, value interface{}) error
 	Delete(ctx context.Context, value interface{}) error
 

@@ -2,6 +2,8 @@ package campaign
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jonesrussell/mp-emailer/database"
@@ -52,9 +54,13 @@ func (r *Repository) Create(ctx context.Context, dto *CreateCampaignDTO) (*Campa
 // GetAll retrieves all campaigns from the database
 func (r *Repository) GetAll(ctx context.Context) ([]Campaign, error) {
 	var campaigns []Campaign
-	err := r.db.FindOne(ctx, &campaigns, "")
-	if err != nil {
+	err := r.db.FindAll(ctx, &campaigns, "1=1")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("failed to get all campaigns: %w", err)
+	}
+	// Return empty slice if no records found
+	if len(campaigns) == 0 {
+		return []Campaign{}, nil
 	}
 	return campaigns, nil
 }

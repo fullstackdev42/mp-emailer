@@ -52,3 +52,11 @@ func (g *GormDB) Close() error {
 func (g *GormDB) DB() *gorm.DB {
 	return g.db
 }
+
+func (g *GormDB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	result := g.db.WithContext(ctx).Where(query, args...).Find(dest)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
