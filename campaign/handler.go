@@ -307,7 +307,7 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	if err := h.addFlashMessage(c, "Campaign updated successfully"); err != nil {
+	if err := h.AddFlashMessage(c, "Campaign updated successfully"); err != nil {
 		h.Logger.Error("Failed to add flash message", err)
 	}
 
@@ -392,14 +392,8 @@ func (h *Handler) SendCampaign(c echo.Context) error {
 		"recipient", email,
 		"campaignID", c.Param("id"))
 
-	// Add success flash message
-	sessionManager, err := h.GetSessionManager(c)
-	if err == nil {
-		session, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
-		if err == nil {
-			session.AddFlash("Email sent successfully!", "messages")
-			_ = sessionManager.SaveSession(c, session)
-		}
+	if err := h.AddFlashMessage(c, "Email sent successfully!"); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+c.Param("id"))
@@ -474,20 +468,4 @@ func (h *Handler) GetUserIDFromSession(c echo.Context) (string, error) {
 	}
 
 	return userID, nil
-}
-
-// addFlashMessage adds a flash message to the session
-func (h *Handler) addFlashMessage(c echo.Context, message string) error {
-	sessionManager, err := h.GetSessionManager(c)
-	if err != nil {
-		return err
-	}
-
-	session, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
-	if err != nil {
-		return err
-	}
-
-	session.AddFlash(message, "messages")
-	return sessionManager.SaveSession(c, session)
 }

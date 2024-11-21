@@ -1,10 +1,13 @@
 package shared
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/session"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -54,4 +57,30 @@ func (h *BaseHandler) Info(msg string, keyvals ...interface{}) {
 // Warn implements HandlerLoggable interface
 func (h *BaseHandler) Warn(msg string, keyvals ...interface{}) {
 	h.Logger.Warn(msg, keyvals...)
+}
+
+// AddFlashMessage adds a flash message to the session
+func (h *BaseHandler) AddFlashMessage(c echo.Context, message string) error {
+	h.Logger.Debug("Adding flash message", "message", message)
+
+	sessionManager, ok := c.Get("session_manager").(session.Manager)
+	if !ok {
+		h.Logger.Error("Failed to get session manager from context", errors.New("session manager not found"))
+		return errors.New("session manager not found")
+	}
+
+	session, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return err
+	}
+
+	session.AddFlash(message, "messages")
+	if err := sessionManager.SaveSession(c, session); err != nil {
+		h.Logger.Error("Failed to save session after adding flash", err)
+		return err
+	}
+
+	h.Logger.Debug("Flash message added successfully")
+	return nil
 }

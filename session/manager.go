@@ -113,9 +113,15 @@ func (m *manager) RegenerateSession(c echo.Context, name string) (*sessions.Sess
 
 func (m *manager) SetSessionValues(sess *sessions.Session, userData interface{}) {
 	if userData == nil {
+		m.logger.Debug("SetSessionValues called with nil userData")
 		return
 	}
+
 	if ud, ok := userData.(UserData); ok {
+		m.logger.Debug("Setting session values",
+			"userID", ud.GetID(),
+			"username", ud.GetUsername())
+
 		sessionData := Data{
 			UserID:          ud.GetID(),
 			Username:        ud.GetUsername(),
@@ -131,6 +137,15 @@ func (m *manager) SetSessionValues(sess *sessions.Session, userData interface{})
 		sess.Values["created_at"] = sessionData.CreatedAt
 		sess.Values["is_authenticated"] = sessionData.IsAuthenticated
 		sess.Values["custom_data"] = sessionData.CustomData
+
+		m.logger.Debug("Session values set",
+			"user_id", sess.Values["user_id"],
+			"username", sess.Values["username"],
+			"is_authenticated", sess.Values["is_authenticated"],
+			"last_accessed", sess.Values["last_accessed"],
+			"created_at", sess.Values["created_at"])
+	} else {
+		m.logger.Debug("userData does not implement UserData interface")
 	}
 }
 
@@ -146,12 +161,27 @@ func (m *manager) DeleteSessionValue(sess *sessions.Session, key string) {
 }
 
 func (m *manager) IsAuthenticated(c echo.Context) bool {
+	m.logger.Debug("Checking authentication status")
+
 	session, err := m.GetSession(c, m.options.CookieName)
 	if err != nil {
+		m.logger.Debug("Failed to get session in IsAuthenticated",
+			"error", err,
+			"cookieName", m.options.CookieName)
 		return false
 	}
 
+	m.logger.Debug("Session retrieved",
+		"sessionID", session.ID,
+		"userID", session.Values["user_id"],
+		"username", session.Values["username"],
+		"isAuthenticated", session.Values["is_authenticated"])
+
 	auth, ok := session.Values["is_authenticated"].(bool)
+	m.logger.Debug("Authentication check",
+		"sessionExists", session != nil,
+		"hasAuthValue", ok,
+		"isAuthenticated", auth)
 	return ok && auth
 }
 
