@@ -43,7 +43,6 @@ func (s *HandlerTestSuite) SetupTest() {
 			Logger:           s.Logger,
 			ErrorHandler:     s.ErrorHandler,
 			TemplateRenderer: s.TemplateRenderer,
-			Store:            s.Store,
 			Config:           s.Config,
 		},
 		Service:                     s.CampaignService,

@@ -36,14 +36,6 @@ func (s *HandlerTestSuite) SetupTest() {
 	s.SessionManager = mocksSession.NewMockManager(s.T())
 
 	s.Config.Auth.SessionName = "test_session"
-
-	flashHandler := shared.NewFlashHandler(shared.FlashHandlerParams{
-		Store:        s.Store,
-		Config:       s.Config,
-		Logger:       s.Logger,
-		ErrorHandler: s.ErrorHandler,
-	})
-
 	s.Echo.Renderer = s.TemplateRenderer
 
 	params := user.HandlerParams{
@@ -51,11 +43,9 @@ func (s *HandlerTestSuite) SetupTest() {
 			Logger:           s.Logger,
 			ErrorHandler:     s.ErrorHandler,
 			TemplateRenderer: s.TemplateRenderer,
-			Store:            s.Store,
 			Config:           s.Config,
 		},
 		Service:        s.UserService,
-		FlashHandler:   flashHandler,
 		Repo:           s.UserRepo,
 		SessionManager: s.SessionManager,
 	}
@@ -103,7 +93,12 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 
 				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
 				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
-				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(nil)
+				s.SessionManager.On("SaveSession", mock.Anything, sess).Run(func(args mock.Arguments) {
+					// Verify flash message was added
+					flashes := sess.Flashes()
+					s.Len(flashes, 1)
+					s.Equal("Successfully logged in!", flashes[0])
+				}).Return(nil)
 
 				s.UserService.On("AuthenticateUser",
 					mock.Anything,

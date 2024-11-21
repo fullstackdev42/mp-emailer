@@ -23,7 +23,6 @@ func (suite *HandlerTestSuite) SetupTest() {
 
 	suite.handler = server.NewHandler(server.HandlerParams{
 		BaseHandlerParams: shared.BaseHandlerParams{
-			Store:            suite.Store,
 			Logger:           suite.Logger,
 			ErrorHandler:     suite.ErrorHandler,
 			TemplateRenderer: suite.TemplateRenderer,

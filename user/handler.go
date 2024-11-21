@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/sessions"
 
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
@@ -35,7 +34,6 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 type Handler struct {
 	shared.BaseHandler
 	Service        ServiceInterface
-	FlashHandler   shared.FlashHandlerInterface
 	Repo           RepositoryInterface
 	SessionManager session.Manager
 }
@@ -44,7 +42,6 @@ type HandlerParams struct {
 	fx.In
 	shared.BaseHandlerParams
 	Service        ServiceInterface
-	FlashHandler   shared.FlashHandlerInterface
 	Repo           RepositoryInterface
 	SessionManager session.Manager
 }
@@ -54,7 +51,6 @@ func NewHandler(params HandlerParams) *Handler {
 	return &Handler{
 		BaseHandler:    shared.NewBaseHandler(params.BaseHandlerParams),
 		Service:        params.Service,
-		FlashHandler:   params.FlashHandler,
 		Repo:           params.Repo,
 		SessionManager: params.SessionManager,
 	}
@@ -78,17 +74,7 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 func (h *Handler) RegisterPOST(c echo.Context) error {
 	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
-		data := &shared.Data{
-			Title:    "Register",
-			PageName: "register",
-			Content: map[string]interface{}{
-				"Username":        params.Username,
-				"Email":           params.Email,
-				"Password":        params.Password,
-				"PasswordConfirm": params.PasswordConfirm,
-			},
-		}
-		return h.TemplateRenderer.Render(c.Response().Writer, "register", data, c)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
 	_, err := h.Service.RegisterUser(c.Request().Context(), params)
@@ -96,8 +82,14 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
 	}
 
-	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Registration successful! Please log in."); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+	}
+
+	sess.AddFlash("Registration successful! Please log in.")
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		h.Logger.Error("Failed to save session", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/user/login")
@@ -115,12 +107,6 @@ func (h *Handler) LoginGET(c echo.Context) error {
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
 	h.Logger.Debug("Processing login request")
-
-	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
-	if err != nil {
-		h.Logger.Error("Failed to get session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
-	}
 
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
@@ -146,38 +132,40 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 
 	h.Logger.Debug("User authenticated successfully", "username", params.Username, "userID", user.ID)
 
-	sess.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400 * 7,
-		HttpOnly: true,
-		Secure:   h.Config.App.Env == "production",
-		SameSite: http.SameSiteLaxMode,
+	// Get or create session
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
 	}
 
+	// Set session values using the new interface
 	h.SessionManager.SetSessionValues(sess, user)
 
+	// Add flash message to session
+	sess.AddFlash("Successfully logged in!")
+
+	// Save session
 	if err := h.SessionManager.SaveSession(c, sess); err != nil {
 		h.Logger.Error("Failed to save session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
 	}
 
-	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Successfully logged in!"); err != nil {
-		h.Logger.Error("Failed to set flash message", err)
-	}
-
 	h.Logger.Debug("Login process completed successfully", "username", params.Username)
-
-	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
-	c.Response().Header().Set("Pragma", "no-cache")
-	c.Response().Header().Set("Expires", "0")
 
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
+	// Clear the session
 	if err := h.SessionManager.ClearSession(c, h.Config.Auth.SessionName); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", http.StatusInternalServerError)
+	}
+
+	// Set authenticated state to false
+	if err := h.SessionManager.SetAuthenticated(c, false); err != nil {
+		h.Logger.Error("Failed to set authenticated state", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/")
@@ -194,8 +182,14 @@ func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", http.StatusInternalServerError)
 	}
 
-	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Password reset instructions have been sent to your email"); err != nil {
-		h.Logger.Error("Failed to set flash message", err)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+	}
+
+	sess.AddFlash("Password reset instructions have been sent to your email")
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		h.Logger.Error("Failed to save session", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/user/login")
@@ -212,9 +206,26 @@ func (h *Handler) ResetPasswordPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", http.StatusInternalServerError)
 	}
 
-	if err := h.FlashHandler.SetFlashAndSaveSession(c, "Your password has been reset successfully"); err != nil {
-		h.Logger.Error("Failed to set flash message", err)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+	}
+
+	sess.AddFlash("Your password has been reset successfully")
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+		h.Logger.Error("Failed to save session", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/user/login")
+}
+
+func (h *Handler) RequireAuthentication() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if !h.SessionManager.IsAuthenticated(c) {
+				return c.Redirect(http.StatusSeeOther, "/user/login")
+			}
+			return next(c)
+		}
+	}
 }

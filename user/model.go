@@ -32,3 +32,9 @@ func (u *User) GetID() interface{} {
 func (u *User) GetUsername() string {
 	return u.Username
 }
+
+func (u *User) GetCustomData() map[string]interface{} {
+	return map[string]interface{}{
+		"email": u.Email,
+	}
+}
