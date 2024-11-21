@@ -210,6 +210,65 @@ func (_c *MockDatabase_Delete_Call) RunAndReturn(run func(context.Context, inter
 	return _c
 }
 
+// FindAll provides a mock function with given fields: ctx, dest, query, args
+func (_m *MockDatabase) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	var _ca []interface{}
+	_ca = append(_ca, ctx, dest, query)
+	_ca = append(_ca, args...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindAll")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}, string, ...interface{}) error); ok {
+		r0 = rf(ctx, dest, query, args...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockDatabase_FindAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindAll'
+type MockDatabase_FindAll_Call struct {
+	*mock.Call
+}
+
+// FindAll is a helper method to define mock.On call
+//   - ctx context.Context
+//   - dest interface{}
+//   - query string
+//   - args ...interface{}
+func (_e *MockDatabase_Expecter) FindAll(ctx interface{}, dest interface{}, query interface{}, args ...interface{}) *MockDatabase_FindAll_Call {
+	return &MockDatabase_FindAll_Call{Call: _e.mock.On("FindAll",
+		append([]interface{}{ctx, dest, query}, args...)...)}
+}
+
+func (_c *MockDatabase_FindAll_Call) Run(run func(ctx context.Context, dest interface{}, query string, args ...interface{})) *MockDatabase_FindAll_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]interface{}, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(interface{})
+			}
+		}
+		run(args[0].(context.Context), args[1].(interface{}), args[2].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockDatabase_FindAll_Call) Return(_a0 error) *MockDatabase_FindAll_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockDatabase_FindAll_Call) RunAndReturn(run func(context.Context, interface{}, string, ...interface{}) error) *MockDatabase_FindAll_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindOne provides a mock function with given fields: ctx, dest, query, args
 func (_m *MockDatabase) FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	var _ca []interface{}

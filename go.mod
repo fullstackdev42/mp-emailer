@@ -6,8 +6,8 @@ require (
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/go-playground/validator/v10 v10.23.0
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/joho/godotenv v1.5.1
@@ -30,11 +30,8 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -50,10 +47,10 @@ require (
 	github.com/samber/lo v1.47.0 // indirect
 	github.com/samber/slog-multi v1.2.4 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
