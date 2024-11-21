@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ var App = fx.Options(
 				return e
 			},
 		),
-		newSessionStore,
+		newSessionStore(),
 		validator.New,
 		fx.Annotate(
 			provideTemplates,
@@ -73,6 +72,10 @@ var App = fx.Options(
 		),
 		provideSessionCleaner,
 		provideDatabaseService,
+		fx.Annotate(
+			session.NewManager,
+			fx.As(new(session.Manager)),
+		),
 	),
 	ErrorModule,
 	fx.Invoke(
@@ -92,26 +95,14 @@ var App = fx.Options(
 	),
 )
 
-// Provide a new session store
-func newSessionStore(cfg *config.Config, logger loggo.LoggerInterface) sessions.Store {
-	logger.Debug("Initializing session store",
-		"secure", cfg.App.Env == config.EnvProduction,
-		"httpOnly", true,
-		"maxAge", "7 days",
+// Modify newSessionStore to return the constructor function directly
+func newSessionStore() interface{} {
+	return fx.Annotate(
+		func(cfg *config.Config) sessions.Store {
+			return sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
+		},
+		fx.As(new(sessions.Store)),
 	)
-
-	store := sessions.NewCookieStore([]byte(cfg.Auth.SessionSecret))
-
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400 * 7,
-		HttpOnly: true,
-		Secure:   cfg.App.Env == config.EnvProduction,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	logger.Debug("Session store initialized successfully")
-	return store
 }
 
 // provideTemplates creates and configures the template renderer

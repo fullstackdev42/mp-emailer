@@ -23,3 +23,12 @@ func (u *User) BeforeCreate(_ *gorm.DB) error {
 	u.ID = uuid.New()
 	return nil
 }
+
+// Add these methods to implement session.UserData interface
+func (u *User) GetID() interface{} {
+	return u.ID
+}
+
+func (u *User) GetUsername() string {
+	return u.Username
+}

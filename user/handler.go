@@ -5,10 +5,13 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
+
+	"github.com/jonesrussell/mp-emailer/session"
 )
 
 func init() {
@@ -34,7 +37,7 @@ type Handler struct {
 	Service        ServiceInterface
 	FlashHandler   shared.FlashHandlerInterface
 	Repo           RepositoryInterface
-	SessionManager SessionManager
+	SessionManager session.Manager
 }
 
 type HandlerParams struct {
@@ -43,7 +46,7 @@ type HandlerParams struct {
 	Service        ServiceInterface
 	FlashHandler   shared.FlashHandlerInterface
 	Repo           RepositoryInterface
-	SessionManager SessionManager
+	SessionManager session.Manager
 }
 
 // NewHandler creates a new user handler
@@ -111,10 +114,9 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
-	// Add request logging
 	h.Logger.Debug("Processing login request")
 
-	sess, err := h.SessionManager.GetSession(c)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
@@ -126,7 +128,6 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
 	}
 
-	// Add debug logging for authentication attempt
 	h.Logger.Debug("Attempting user authentication", "username", params.Username)
 
 	authenticated, user, err := h.Service.AuthenticateUser(c.Request().Context(), params.Username, params.Password)
@@ -143,8 +144,15 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		})
 	}
 
-	// Log successful authentication
 	h.Logger.Debug("User authenticated successfully", "username", params.Username, "userID", user.ID)
+
+	sess.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+		Secure:   h.Config.App.Env == "production",
+		SameSite: http.SameSiteLaxMode,
+	}
 
 	h.SessionManager.SetSessionValues(sess, user)
 
@@ -158,19 +166,17 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	}
 
 	h.Logger.Debug("Login process completed successfully", "username", params.Username)
+
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
+	c.Response().Header().Set("Pragma", "no-cache")
+	c.Response().Header().Set("Expires", "0")
+
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
-	sess, err := h.SessionManager.GetSession(c)
-	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
-	}
-
-	h.SessionManager.ClearSession(sess)
-
-	if err := h.SessionManager.SaveSession(c, sess); err != nil {
+	if err := h.SessionManager.ClearSession(c, h.Config.Auth.SessionName); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", http.StatusInternalServerError)
 	}
 

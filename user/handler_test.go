@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	mocksMiddleware "github.com/jonesrussell/mp-emailer/mocks/middleware"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 )
 
@@ -24,7 +25,7 @@ type HandlerTestSuite struct {
 	handler        *user.Handler
 	UserService    *mocksUser.MockServiceInterface
 	UserRepo       *mocksUser.MockRepositoryInterface
-	SessionManager *mocksUser.MockSessionManager
+	SessionManager *mocksMiddleware.MockSessionManager
 }
 
 func (s *HandlerTestSuite) SetupTest() {
@@ -32,7 +33,7 @@ func (s *HandlerTestSuite) SetupTest() {
 
 	s.UserService = mocksUser.NewMockServiceInterface(s.T())
 	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
-	s.SessionManager = mocksUser.NewMockSessionManager(s.T())
+	s.SessionManager = mocksMiddleware.NewMockSessionManager(s.T())
 
 	s.Config.Auth.SessionName = "test_session"
 
@@ -100,7 +101,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
 				s.Logger.On("Debug", "Login process completed successfully", "username", testUser.Username).Return()
 
-				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
+				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
 				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
 				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(nil)
 
@@ -124,7 +125,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.Logger.On("Debug", "Processing login request").Return()
 				s.Logger.On("Error", "Failed to get session", sessionErr).Return()
 
-				s.SessionManager.On("GetSession", mock.Anything).
+				s.SessionManager.On("GetSession", mock.Anything, "test_session").
 					Return(nil, sessionErr)
 
 				s.ErrorHandler.On("HandleHTTPError",
@@ -150,7 +151,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.Logger.On("Debug", "Attempting user authentication", "username", "wronguser").Return()
 				s.Logger.On("Debug", "Invalid login attempt", "username", "wronguser").Return()
 
-				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
+				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
 
 				s.TemplateRenderer.On("Render",
 					mock.AnythingOfType("*bytes.Buffer"),
@@ -191,7 +192,7 @@ func (s *HandlerTestSuite) TestLoginPOST() {
 				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
 				s.Logger.On("Error", "Failed to save session", saveErr).Return()
 
-				s.SessionManager.On("GetSession", mock.Anything).Return(sess, nil)
+				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
 				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
 				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(saveErr)
 

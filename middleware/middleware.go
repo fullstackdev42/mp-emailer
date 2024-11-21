@@ -100,26 +100,13 @@ func (m *Manager) SessionsMiddleware() echo.MiddlewareFunc {
 			session, err := m.sessionStore.Get(c.Request(), m.cfg.Auth.SessionName)
 			if err != nil {
 				m.logger.Error("Session error", err)
-				// Continue with a new session instead of returning an error
 				session, _ = m.sessionStore.New(c.Request(), m.cfg.Auth.SessionName)
 			}
 
-			// Store the session in context for later use
+			// Store the session in context
 			c.Set("session", session)
 
-			// Process the request
-			err = next(c)
-			if err != nil {
-				return err
-			}
-
-			// Save the session after processing
-			if err := session.Save(c.Request(), c.Response().Writer); err != nil {
-				m.logger.Error("Failed to save session", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save session")
-			}
-
-			return nil
+			return next(c)
 		}
 	}
 }
@@ -343,4 +330,13 @@ func (m *Manager) IsAuthenticated(c echo.Context) bool {
 
 	m.logger.Debug("Authentication status checked", "isAuthenticated", auth)
 	return auth
+}
+
+// SaveSession saves the session to the store
+func (m *Manager) SaveSession(c echo.Context, session *sessions.Session) error {
+	if err := session.Save(c.Request(), c.Response().Writer); err != nil {
+		m.logger.Error("Failed to save session", err)
+		return err
+	}
+	return nil
 }

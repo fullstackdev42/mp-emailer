@@ -176,6 +176,40 @@ func (_c *MockSessionManager_SaveSession_Call) RunAndReturn(run func(echo.Contex
 	return _c
 }
 
+// SetSessionValues provides a mock function with given fields: sess, userData
+func (_m *MockSessionManager) SetSessionValues(sess *sessions.Session, userData interface{}) {
+	_m.Called(sess, userData)
+}
+
+// MockSessionManager_SetSessionValues_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetSessionValues'
+type MockSessionManager_SetSessionValues_Call struct {
+	*mock.Call
+}
+
+// SetSessionValues is a helper method to define mock.On call
+//   - sess *sessions.Session
+//   - userData interface{}
+func (_e *MockSessionManager_Expecter) SetSessionValues(sess interface{}, userData interface{}) *MockSessionManager_SetSessionValues_Call {
+	return &MockSessionManager_SetSessionValues_Call{Call: _e.mock.On("SetSessionValues", sess, userData)}
+}
+
+func (_c *MockSessionManager_SetSessionValues_Call) Run(run func(sess *sessions.Session, userData interface{})) *MockSessionManager_SetSessionValues_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*sessions.Session), args[1].(interface{}))
+	})
+	return _c
+}
+
+func (_c *MockSessionManager_SetSessionValues_Call) Return() *MockSessionManager_SetSessionValues_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockSessionManager_SetSessionValues_Call) RunAndReturn(run func(*sessions.Session, interface{})) *MockSessionManager_SetSessionValues_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ValidateSession provides a mock function with given fields: name
 func (_m *MockSessionManager) ValidateSession(name string) echo.MiddlewareFunc {
 	ret := _m.Called(name)

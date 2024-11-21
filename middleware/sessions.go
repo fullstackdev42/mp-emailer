@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -27,6 +28,7 @@ type SessionManager interface {
 	SaveSession(c echo.Context, session *sessions.Session) error
 	ClearSession(c echo.Context, name string) error
 	ValidateSession(name string) echo.MiddlewareFunc
+	SetSessionValues(sess *sessions.Session, userData interface{})
 }
 
 type SessionMiddleware struct {
@@ -81,16 +83,45 @@ func (sm *SessionMiddleware) ValidateSession(name string) echo.MiddlewareFunc {
 			// Store session in context for handlers to use
 			c.Set("session", session)
 
+			// Store original values to detect changes
+			originalValues := make(map[interface{}]interface{})
+			for k, v := range session.Values {
+				originalValues[k] = v
+			}
+
 			if err = next(c); err != nil {
 				return err
 			}
 
-			// Save session after handler execution
-			if err := sm.SaveSession(c, session); err != nil {
-				return sm.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+			// Check if values have changed
+			valuesChanged := false
+			if len(originalValues) != len(session.Values) {
+				valuesChanged = true
+			} else {
+				for k, v := range session.Values {
+					if originalV, exists := originalValues[k]; !exists || originalV != v {
+						valuesChanged = true
+						break
+					}
+				}
+			}
+
+			// Only save if values changed
+			if valuesChanged {
+				sm.logger.Debug("Session values changed, saving session")
+				if err := sm.SaveSession(c, session); err != nil {
+					return sm.errorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+				}
 			}
 
 			return nil
 		}
+	}
+}
+func (sm *SessionMiddleware) SetSessionValues(sess *sessions.Session, userData interface{}) {
+	if u, ok := userData.(session.UserData); ok {
+		sess.Values["user_id"] = u.GetID()
+		sess.Values["username"] = u.GetUsername()
+		sess.Values["authenticated"] = true
 	}
 }

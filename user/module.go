@@ -1,9 +1,7 @@
 package user
 
 import (
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
-	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/database"
 	"go.uber.org/fx"
 )
@@ -22,7 +20,6 @@ var Module = fx.Options(
 			fx.As(new(ServiceInterface)),
 		),
 		NewHandler,
-		ProvideSessionManager,
 	),
 	// Add module-level decoration
 	fx.Decorate(
@@ -36,9 +33,4 @@ var Module = fx.Options(
 type HandlerResult struct {
 	fx.Out
 	Handler *Handler
-}
-
-// Provide session manager
-func ProvideSessionManager(store sessions.Store, cfg *config.Config) SessionManager {
-	return NewSessionManager(store, cfg)
 }

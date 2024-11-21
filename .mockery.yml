@@ -31,7 +31,6 @@ packages:
     interfaces:
       RepositoryInterface:
       ServiceInterface:
-      SessionManager:
 
   github.com/jonesrussell/mp-emailer/middleware:
     interfaces:
@@ -41,3 +40,8 @@ packages:
   github.com/jonesrussell/mp-emailer/database:
     interfaces:
       Database:
+
+  github.com/jonesrussell/mp-emailer/session:
+    interfaces:
+      Manager:
+      UserData:

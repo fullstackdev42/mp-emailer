@@ -12,8 +12,10 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
 	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
@@ -25,7 +27,7 @@ type IntegrationTestSuite struct {
 	suite.Suite
 	handler        *user.Handler
 	echo           *echo.Echo
-	sessionManager user.SessionManager
+	sessionManager session.Manager
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
@@ -37,7 +39,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 	mockErrorHandler := mocksShared.NewMockErrorHandlerInterface(s.T())
 	mockFlashHandler := mocksShared.NewMockFlashHandlerInterface(s.T())
 	mockTemplateRenderer := mocksShared.NewMockTemplateRendererInterface(s.T())
-	mockSessionManager := mocksUser.NewMockSessionManager(s.T())
+	mockSessionManager := mocksSession.NewMockManager(s.T())
 	mockUserService := mocksUser.NewMockServiceInterface(s.T())
 	mockRepo := mocksUser.NewMockRepositoryInterface(s.T())
 	mockConfig := &config.Config{}
@@ -65,7 +67,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 	mockLogger.On("Debug", "Login process completed successfully", "username", testUser.Username).Return()
 
 	// Setup session expectations with proper user data
-	mockSessionManager.On("GetSession", mock.Anything).Return(mockSession, nil)
+	mockSessionManager.On("GetSession", mock.Anything, "test_session").Return(mockSession, nil)
 	mockSessionManager.On("SetSessionValues", mockSession, testUser).Run(func(args mock.Arguments) {
 		session := args.Get(0).(*sessions.Session)
 		user := args.Get(1).(*user.User)
@@ -161,7 +163,7 @@ func (s *IntegrationTestSuite) TestRegistrationToLoginFlow() {
 	s.Equal("/user/login", rec.Header().Get("Location"))
 
 	// Get registration session and verify flash message
-	regSession, err := s.sessionManager.GetSession(c)
+	regSession, err := s.sessionManager.GetSession(c, "test_session")
 	s.NoError(err)
 	regFlash := regSession.Flashes() // This will clear the flashes
 	s.Len(regFlash, 1)
@@ -178,7 +180,7 @@ func (s *IntegrationTestSuite) TestRegistrationToLoginFlow() {
 	c = s.echo.NewContext(req, rec)
 
 	// Create and set session using GetSession
-	session, err := s.sessionManager.GetSession(c)
+	session, err := s.sessionManager.GetSession(c, "test_session")
 	s.NoError(err)
 	c.Set("session", session)
 
