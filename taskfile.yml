@@ -171,4 +171,12 @@ tasks:
       Applies all pending database migrations
     cmds:
       - goose -dir database/migrations mysql "{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}?parseTime=true" up
+
+  migrate:down:
+    desc: "Rollback the last migration"
+    summary: |
+      Usage: task migrate:down
+      Rolls back the most recent database migration
+    cmds:
+      - goose -dir database/migrations mysql "{{.DB_USER}}:{{.DB_PASSWORD}}@tcp({{.DB_HOST}}:{{.DB_PORT}})/{{.DB_NAME}}?parseTime=true" down
   
