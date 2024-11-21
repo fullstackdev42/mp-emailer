@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/gob"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,8 +15,10 @@ import (
 )
 
 func init() {
-	// Register UUID type with gob encoder for session serialization
+	// Register types with gob encoder for session serialization
 	gob.Register(uuid.UUID{})
+	gob.Register(time.Time{})
+	gob.Register(map[string]interface{}{})
 }
 
 // RegisterRoutes registers the user routes
