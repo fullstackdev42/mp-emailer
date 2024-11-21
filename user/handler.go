@@ -14,11 +14,22 @@ import (
 	"github.com/jonesrussell/mp-emailer/session"
 )
 
+// HTTP Status codes
+const (
+	StatusOK                  = http.StatusOK
+	StatusSeeOther            = http.StatusSeeOther
+	StatusBadRequest          = http.StatusBadRequest
+	StatusUnauthorized        = http.StatusUnauthorized
+	StatusInternalServerError = http.StatusInternalServerError
+)
+
 func init() {
 	// Register types with gob encoder for session serialization
 	gob.Register(uuid.UUID{})
 	gob.Register(time.Time{})
 	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
+	gob.Register(&shared.Data{})
 }
 
 // RegisterRoutes registers the user routes
@@ -70,24 +81,24 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 		},
 	}
 
-	return c.Render(http.StatusOK, "register", data)
+	return c.Render(StatusOK, "register", data)
 }
 
 // RegisterPOST handles POST requests to register a new user
 func (h *Handler) RegisterPOST(c echo.Context) error {
 	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", StatusBadRequest)
 	}
 
 	_, err := h.Service.RegisterUser(c.Request().Context(), params)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to register user", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to register user", StatusInternalServerError)
 	}
 
 	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", StatusInternalServerError)
 	}
 
 	sess.AddFlash("Registration successful! Please log in.")
@@ -95,7 +106,7 @@ func (h *Handler) RegisterPOST(c echo.Context) error {
 		h.Logger.Error("Failed to save session", err)
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/user/login")
+	return c.Redirect(StatusSeeOther, "/user/login")
 }
 
 // LoginGET handler for the login page
@@ -109,25 +120,26 @@ func (h *Handler) LoginGET(c echo.Context) error {
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
+	ctx := c.Request().Context()
 	h.Logger.Debug("Processing login request")
 
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
 		h.Logger.Error("Failed to bind login parameters", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", http.StatusBadRequest)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", StatusBadRequest)
 	}
 
 	h.Logger.Debug("Attempting user authentication", "username", params.Username)
 
-	authenticated, user, err := h.Service.AuthenticateUser(c.Request().Context(), params.Username, params.Password)
+	authenticated, user, err := h.Service.AuthenticateUser(ctx, params.Username, params.Password)
 	if err != nil {
 		h.Logger.Error("Authentication failed", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", StatusInternalServerError)
 	}
 
 	if !authenticated || user == nil {
 		h.Logger.Debug("Invalid login attempt", "username", params.Username)
-		return c.Render(http.StatusUnauthorized, "login", &shared.Data{
+		return c.Render(StatusUnauthorized, "login", &shared.Data{
 			Title: "Login",
 			Error: "Invalid username or password",
 		})
@@ -139,7 +151,7 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", StatusInternalServerError)
 	}
 
 	// Set session values using the new interface
@@ -151,19 +163,19 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 	// Save session
 	if err := h.SessionManager.SaveSession(c, sess); err != nil {
 		h.Logger.Error("Failed to save session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", StatusInternalServerError)
 	}
 
 	h.Logger.Debug("Login process completed successfully", "username", params.Username)
 
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(StatusSeeOther, "/")
 }
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
 	// Clear the session
 	if err := h.SessionManager.ClearSession(c, h.Config.Auth.SessionName); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", StatusInternalServerError)
 	}
 
 	// Set authenticated state to false
@@ -171,23 +183,24 @@ func (h *Handler) LogoutGET(c echo.Context) error {
 		h.Logger.Error("Failed to set authenticated state", err)
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(StatusSeeOther, "/")
 }
 
 // RequestPasswordResetPOST handles the password reset request
 func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
+	ctx := c.Request().Context()
 	dto := new(PasswordResetDTO)
 	if err := c.Bind(dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", StatusBadRequest)
 	}
 
-	if err := h.Service.RequestPasswordReset(c.Request().Context(), dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", http.StatusInternalServerError)
+	if err := h.Service.RequestPasswordReset(ctx, dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", StatusInternalServerError)
 	}
 
 	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", StatusInternalServerError)
 	}
 
 	sess.AddFlash("Password reset instructions have been sent to your email")
@@ -195,23 +208,24 @@ func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
 		h.Logger.Error("Failed to save session", err)
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/user/login")
+	return c.Redirect(StatusSeeOther, "/user/login")
 }
 
 // ResetPasswordPOST handles the password reset completion
 func (h *Handler) ResetPasswordPOST(c echo.Context) error {
+	ctx := c.Request().Context()
 	dto := new(ResetPasswordDTO)
 	if err := c.Bind(dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", http.StatusBadRequest)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", StatusBadRequest)
 	}
 
-	if err := h.Service.ResetPassword(c.Request().Context(), dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", http.StatusInternalServerError)
+	if err := h.Service.ResetPassword(ctx, dto); err != nil {
+		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", StatusInternalServerError)
 	}
 
 	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", http.StatusInternalServerError)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", StatusInternalServerError)
 	}
 
 	sess.AddFlash("Your password has been reset successfully")
@@ -219,14 +233,14 @@ func (h *Handler) ResetPasswordPOST(c echo.Context) error {
 		h.Logger.Error("Failed to save session", err)
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/user/login")
+	return c.Redirect(StatusSeeOther, "/user/login")
 }
 
 func (h *Handler) RequireAuthentication() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if !h.SessionManager.IsAuthenticated(c) {
-				return c.Redirect(http.StatusSeeOther, "/user/login")
+				return c.Redirect(StatusSeeOther, "/user/login")
 			}
 			return next(c)
 		}
