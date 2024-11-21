@@ -337,3 +337,90 @@ func (s *HandlerTestSuite) TestCreateCampaignForm() {
 		s.Equal(http.StatusOK, s.Recorder.Code)
 	})
 }
+
+func (s *HandlerTestSuite) TestGetSessionManager() {
+	// Test successful case
+	s.Run("successful session manager retrieval", func() {
+		c := s.NewContext(http.MethodGet, "/test", nil)
+		sessionManager := sessionmocks.NewMockManager(s.T())
+		c.Set("session_manager", sessionManager)
+
+		result, err := s.handler.GetSessionManager(c)
+		s.NoError(err)
+		s.NotNil(result)
+	})
+
+	// Test failure case
+	s.Run("missing session manager", func() {
+		c := s.NewContext(http.MethodGet, "/test", nil)
+		result, err := s.handler.GetSessionManager(c)
+		s.Error(err)
+		s.Nil(result)
+		s.Equal("session manager not found", err.Error())
+	})
+}
+
+func (s *HandlerTestSuite) TestGetUserIDFromSession() {
+	// Test successful case
+	s.Run("successful user ID retrieval", func() {
+		c := s.NewContext(http.MethodGet, "/test", nil)
+		sessionManager := sessionmocks.NewMockManager(s.T())
+		c.Set("session_manager", sessionManager)
+
+		mockSession := &sessions.Session{
+			Values: make(map[interface{}]interface{}),
+		}
+		expectedUserID := uuid.New().String()
+
+		sessionManager.EXPECT().
+			GetSession(c, s.Config.Auth.SessionName).
+			Return(mockSession, nil)
+
+		sessionManager.EXPECT().
+			GetSessionValue(mockSession, "user_id").
+			Return(expectedUserID)
+
+		userID, err := s.handler.GetUserIDFromSession(c)
+		s.NoError(err)
+		s.Equal(expectedUserID, userID)
+	})
+
+	// Test session error case
+	s.Run("session error", func() {
+		c := s.NewContext(http.MethodGet, "/test", nil)
+		sessionManager := sessionmocks.NewMockManager(s.T())
+		c.Set("session_manager", sessionManager)
+
+		sessionManager.EXPECT().
+			GetSession(c, s.Config.Auth.SessionName).
+			Return(nil, errors.New("session error"))
+
+		userID, err := s.handler.GetUserIDFromSession(c)
+		s.Error(err)
+		s.Empty(userID)
+	})
+
+	// Test missing user ID case
+	s.Run("missing user ID", func() {
+		c := s.NewContext(http.MethodGet, "/test", nil)
+		sessionManager := sessionmocks.NewMockManager(s.T())
+		c.Set("session_manager", sessionManager)
+
+		mockSession := &sessions.Session{
+			Values: make(map[interface{}]interface{}),
+		}
+
+		sessionManager.EXPECT().
+			GetSession(c, s.Config.Auth.SessionName).
+			Return(mockSession, nil)
+
+		sessionManager.EXPECT().
+			GetSessionValue(mockSession, "user_id").
+			Return("")
+
+		userID, err := s.handler.GetUserIDFromSession(c)
+		s.Error(err)
+		s.Empty(userID)
+		s.Equal(campaign.ErrUnauthorizedAccess, err)
+	})
+}

@@ -70,7 +70,7 @@ func (h *Handler) CampaignGET(c echo.Context) error {
 	}
 
 	// Get userID and check authentication
-	userID, err := h.getUserIDFromSession(c)
+	userID, err := h.GetUserIDFromSession(c)
 	isAuthenticated := err == nil && userID != ""
 
 	// Optional: Add ownership check
@@ -123,7 +123,7 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 func (h *Handler) CreateCampaign(c echo.Context) error {
 	h.Logger.Debug("CreateCampaign: Starting")
 
-	userID, err := h.getUserIDFromSession(c)
+	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
@@ -193,7 +193,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 func (h *Handler) DeleteCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling DeleteCampaign request")
 
-	userID, err := h.getUserIDFromSession(c)
+	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
@@ -244,7 +244,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
-	userID, err := h.getUserIDFromSession(c)
+	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
@@ -266,7 +266,7 @@ func (h *Handler) EditCampaignForm(c echo.Context) error {
 func (h *Handler) EditCampaign(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaign request")
 
-	userID, err := h.getUserIDFromSession(c)
+	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
@@ -441,8 +441,8 @@ func (h *Handler) HandleRepresentativeLookup(c echo.Context) error {
 	})
 }
 
-// getSessionManager retrieves the session manager from context
-func (h *Handler) getSessionManager(c echo.Context) (session.Manager, error) {
+// GetSessionManager retrieves the session manager from context
+func (h *Handler) GetSessionManager(c echo.Context) (session.Manager, error) {
 	sessionManager, ok := c.Get("session_manager").(session.Manager)
 	if !ok {
 		return nil, errors.New("session manager not found")
@@ -450,9 +450,9 @@ func (h *Handler) getSessionManager(c echo.Context) (session.Manager, error) {
 	return sessionManager, nil
 }
 
-// getUserIDFromSession retrieves and validates the user ID from session
-func (h *Handler) getUserIDFromSession(c echo.Context) (string, error) {
-	sessionManager, err := h.getSessionManager(c)
+// GetUserIDFromSession retrieves and validates the user ID from session
+func (h *Handler) GetUserIDFromSession(c echo.Context) (string, error) {
+	sessionManager, err := h.GetSessionManager(c)
 	if err != nil {
 		return "", err
 	}
