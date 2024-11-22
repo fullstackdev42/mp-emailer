@@ -1,6 +1,7 @@
 {{define "campaign_send_form"}}
 <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-    <form action="/campaign/{{.ID}}/compose" method="POST" class="space-y-4">
+    <form action="/campaign/{{.Campaign.ID}}/compose" method="POST" class="space-y-4">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
         <div class="flex space-x-4">
             <div class="flex-1">
                 <label for="first_name" class="block text-sm font-medium text-gray-700">First Name:</label>

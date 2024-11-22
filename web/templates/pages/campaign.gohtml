@@ -9,7 +9,7 @@
     </p>
         {{end}}
 
-    {{template "campaign_send_form" .Content.Campaign}}
+    {{template "campaign_send_form" dict "Campaign" .Content.Campaign "CSRFToken" .CSRFToken}}
     
     <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
         <h2 id="template-preview" class="sr-only">Preview</h2>
