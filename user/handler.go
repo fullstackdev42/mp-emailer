@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -209,21 +208,4 @@ func (h *Handler) RequireAuthentication() echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-}
-
-// GetUserIDFromSession retrieves the user ID from the session
-func (h *Handler) GetUserIDFromSession(c echo.Context) (interface{}, error) {
-	sess, err := h.GetSession(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get session values directly from the session
-	values := sess.Values
-	userID := values["user_id"]
-	if userID == nil {
-		return nil, session.ErrSessionNotFound
-	}
-
-	return userID, nil
 }

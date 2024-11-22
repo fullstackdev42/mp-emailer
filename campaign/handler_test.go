@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/campaign"
 	"github.com/jonesrussell/mp-emailer/internal/testutil"
 	campaignmocks "github.com/jonesrussell/mp-emailer/mocks/campaign"
@@ -282,55 +281,5 @@ func (s *HandlerTestSuite) TestGetSessionManager() {
 		s.Error(err)
 		s.Nil(result)
 		s.Equal("session manager not found", err.Error())
-	})
-}
-
-func (s *HandlerTestSuite) TestGetUserIDFromSession() {
-	// Test successful case
-	s.Run("successful user ID retrieval", func() {
-		c := s.NewContext(http.MethodGet, "/test", nil)
-		sessionManager := sessionmocks.NewMockManager(s.T())
-		c.Set("session_manager", sessionManager)
-
-		mockSession := &sessions.Session{
-			Values: make(map[interface{}]interface{}),
-		}
-		expectedUserID := uuid.New().String()
-
-		sessionManager.EXPECT().
-			GetSession(c, s.Config.Auth.SessionName).
-			Return(mockSession, nil)
-
-		sessionManager.EXPECT().
-			GetSessionValue(mockSession, "user_id").
-			Return(expectedUserID, nil)
-
-		userID, err := s.handler.GetUserIDFromSession(c)
-		s.NoError(err)
-		s.Equal(expectedUserID, userID)
-	})
-
-	// Test missing user ID case
-	s.Run("missing user ID", func() {
-		c := s.NewContext(http.MethodGet, "/test", nil)
-		sessionManager := sessionmocks.NewMockManager(s.T())
-		c.Set("session_manager", sessionManager)
-
-		mockSession := &sessions.Session{
-			Values: make(map[interface{}]interface{}),
-		}
-
-		sessionManager.EXPECT().
-			GetSession(c, s.Config.Auth.SessionName).
-			Return(mockSession, nil)
-
-		sessionManager.EXPECT().
-			GetSessionValue(mockSession, "user_id").
-			Return(nil, nil)
-
-		userID, err := s.handler.GetUserIDFromSession(c)
-		s.Error(err)
-		s.Empty(userID)
-		s.Equal(campaign.ErrUnauthorizedAccess, err)
 	})
 }

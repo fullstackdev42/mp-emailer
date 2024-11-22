@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/internal/testutil"
-	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
@@ -88,7 +87,7 @@ func (s *HandlerTestSuite) setupBaseMocks() {
 
 	// Setup session manager expectations
 	s.SessionManager.On("GetSession",
-		mock.MatchedBy(func(c echo.Context) bool { return true }),
+		mock.MatchedBy(func(_ echo.Context) bool { return true }),
 		s.Config.Auth.SessionName,
 	).Return(s.mockSession, nil)
 
@@ -101,34 +100,6 @@ func (s *HandlerTestSuite) createTestRequest(method, path, payload string) (echo
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	return s.Echo.NewContext(req, rec), rec
-}
-
-func (s *HandlerTestSuite) TestGetUserIDFromSession_MissingUserID() {
-	// Setup base mocks
-	s.setupBaseMocks()
-
-	// Setup mock session values
-	mockValues := make(map[interface{}]interface{})
-	s.mockSession.On("Values").Return(mockValues)
-	s.mockSession.On("GetValues").Return(mockValues)
-	s.mockSession.On("GetID").Return("test-session-id")
-
-	// Execute test
-	c, _ := s.createTestRequest(http.MethodGet, "/", "")
-
-	// Set session manager on context
-	c.Set("session_manager", s.SessionManager)
-
-	// Call the method directly
-	_, err := s.handler.GetUserIDFromSession(c)
-
-	// Assert
-	s.Error(err)
-	s.Equal(session.ErrSessionNotFound, err)
-
-	// Verify expectations
-	s.SessionManager.AssertExpectations(s.T())
-	s.mockSession.AssertExpectations(s.T())
 }
 
 func (s *HandlerTestSuite) TestLoginPOST_Success() {
