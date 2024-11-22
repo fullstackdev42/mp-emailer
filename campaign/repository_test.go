@@ -167,7 +167,7 @@ func (s *RepositoryTestSuite) TestUpdate() {
 		// Mock FindOne - Note the exact parameter matching
 		s.mockDB.On("FindOne",
 			mock.Anything,
-			mock.MatchedBy(func(c *campaign.Campaign) bool {
+			mock.MatchedBy(func(_ *campaign.Campaign) bool {
 				// The campaign passed to FindOne will be empty initially
 				return true
 			}),
