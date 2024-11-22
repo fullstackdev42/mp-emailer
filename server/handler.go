@@ -48,6 +48,12 @@ func NewHandler(params HandlerParams) HandlerInterface {
 
 // IndexGET page handler
 func (h *Handler) IndexGET(c echo.Context) error {
+	messages, err := h.GetFlashMessages(c)
+	if err != nil {
+		h.Logger.Error("Failed to get flash messages", err)
+		// Continue without messages rather than failing the request
+	}
+
 	campaigns, err := h.campaignService.GetCampaigns(c.Request().Context())
 	if err != nil {
 		h.Logger.Error("Error fetching campaigns", err)
@@ -58,6 +64,7 @@ func (h *Handler) IndexGET(c echo.Context) error {
 	return c.Render(http.StatusOK, "home", &shared.Data{
 		Title:    "Home",
 		PageName: "home",
+		Messages: messages,
 		Content: map[string]interface{}{
 			"Campaigns": campaigns,
 		},

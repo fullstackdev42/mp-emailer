@@ -11,6 +11,15 @@ import (
 	"go.uber.org/fx"
 )
 
+// HTTP Status codes
+const (
+	StatusOK                  = http.StatusOK
+	StatusSeeOther            = http.StatusSeeOther
+	StatusBadRequest          = http.StatusBadRequest
+	StatusUnauthorized        = http.StatusUnauthorized
+	StatusInternalServerError = http.StatusInternalServerError
+)
+
 // BaseHandlerParams defines the input parameters for BaseHandler
 type BaseHandlerParams struct {
 	fx.In
@@ -19,6 +28,7 @@ type BaseHandlerParams struct {
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface
+	SessionManager   session.Manager `optional:"true"`
 }
 
 type BaseHandler struct {
@@ -26,6 +36,7 @@ type BaseHandler struct {
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface
+	SessionManager   session.Manager
 	MapError         func(error) (int, string)
 }
 
@@ -35,6 +46,7 @@ func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 		ErrorHandler:     params.ErrorHandler,
 		Config:           params.Config,
 		TemplateRenderer: params.TemplateRenderer,
+		SessionManager:   params.SessionManager,
 		MapError:         DefaultErrorMapper,
 	}
 }
@@ -63,24 +75,52 @@ func (h *BaseHandler) Warn(msg string, keyvals ...interface{}) {
 func (h *BaseHandler) AddFlashMessage(c echo.Context, message string) error {
 	h.Logger.Debug("Adding flash message", "message", message)
 
-	sessionManager, ok := c.Get("session_manager").(session.Manager)
-	if !ok {
-		h.Logger.Error("Failed to get session manager from context", errors.New("session manager not found"))
-		return errors.New("session manager not found")
+	if h.SessionManager == nil {
+		h.Logger.Error("Session manager not initialized", errors.New("nil session manager"))
+		return errors.New("session manager not initialized")
 	}
 
-	session, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
+	session, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return err
 	}
 
 	session.AddFlash(message, "messages")
-	if err := sessionManager.SaveSession(c, session); err != nil {
+	if err := h.SessionManager.SaveSession(c, session); err != nil {
 		h.Logger.Error("Failed to save session after adding flash", err)
 		return err
 	}
 
 	h.Logger.Debug("Flash message added successfully")
 	return nil
+}
+
+// GetFlashMessages retrieves and clears flash messages from the session
+func (h *BaseHandler) GetFlashMessages(c echo.Context) ([]string, error) {
+	if h.SessionManager == nil {
+		h.Logger.Error("Session manager not initialized", errors.New("nil session manager"))
+		return nil, errors.New("session manager not initialized")
+	}
+
+	session, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return nil, err
+	}
+
+	flashes := session.Flashes("messages")
+	messages := make([]string, len(flashes))
+	for i, flash := range flashes {
+		if str, ok := flash.(string); ok {
+			messages[i] = str
+		}
+	}
+
+	if err := h.SessionManager.SaveSession(c, session); err != nil {
+		h.Logger.Error("Failed to save session after getting flashes", err)
+		return messages, err
+	}
+
+	return messages, nil
 }

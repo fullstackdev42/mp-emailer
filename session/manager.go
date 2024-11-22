@@ -54,6 +54,17 @@ func (m *manager) GetSession(c echo.Context, name string) (*sessions.Session, er
 		return nil, ErrSessionNotFound
 	}
 
+	// Generate and set session ID if it's a new session
+	if session.IsNew {
+		newID, err := m.store.RegenerateID(c.Request(), c.Response().Writer)
+		if err != nil {
+			m.logger.Error("Failed to generate session ID", err)
+			return nil, ErrSessionStoreFailed
+		}
+		session.ID = newID
+		m.logger.Debug("Created new session with ID", "sessionID", newID)
+	}
+
 	// Update last accessed time
 	session.Values["last_accessed"] = time.Now()
 	return session, nil

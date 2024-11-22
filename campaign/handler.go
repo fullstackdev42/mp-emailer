@@ -184,6 +184,10 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
+	if err := h.AddFlashMessage(c, "Campaign created successfully!"); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
+	}
+
 	h.Logger.Info("CreateCampaign: Campaign created successfully",
 		"campaignID", campaign.ID,
 		"ownerID", userID)
@@ -221,6 +225,10 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 	if err := h.service.DeleteCampaign(c.Request().Context(), DeleteCampaignDTO{ID: campaignID}); err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	if err := h.AddFlashMessage(c, "Campaign deleted successfully"); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
 	}
 
 	h.Logger.Info("Campaign deleted successfully", "campaignID", campaignID)
@@ -353,6 +361,10 @@ func (h *Handler) ComposeEmail(c echo.Context) error {
 	if err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
+	}
+
+	if err := h.AddFlashMessage(c, "Email composed successfully"); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
 	}
 
 	h.Logger.Info("Email composed successfully",

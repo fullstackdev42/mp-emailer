@@ -49,37 +49,60 @@ func (s *secureStore) Get(r *http.Request, name string) (*sessions.Session, erro
 		return nil, err
 	}
 
-	// Apply default options if not set
 	if session.Options == nil {
 		session.Options = s.options
 	}
 
-	// Decrypt session values if encrypted
+	decryptedValues := make(map[interface{}]interface{}, len(session.Values))
 	for key, value := range session.Values {
-		if encryptedValue, ok := value.(string); ok {
-			decryptedValue, err := s.decrypt(encryptedValue)
-			if err != nil {
-				continue // Skip invalid values
+		switch v := value.(type) {
+		case string:
+			if key != "flash" {
+				decryptedValue, err := s.decrypt(v)
+				if err != nil {
+					continue
+				}
+				decryptedValues[key] = decryptedValue
+			} else {
+				decryptedValues[key] = v
 			}
-			session.Values[key] = decryptedValue
+		default:
+			decryptedValues[key] = v
 		}
 	}
 
+	session.Values = decryptedValues
 	return session, nil
 }
 
 func (s *secureStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
-	// Encrypt session values before saving
+	encryptedValues := make(map[interface{}]interface{}, len(session.Values))
+
+	// Define sensitive keys that need encryption
+	sensitiveKeys := map[interface{}]bool{
+		"user_id":  true,
+		"username": true,
+		// Add other sensitive keys as needed
+	}
+
 	for key, value := range session.Values {
-		if str, ok := value.(string); ok {
-			encryptedValue, err := s.encrypt(str)
-			if err != nil {
-				continue // Skip values that can't be encrypted
+		switch v := value.(type) {
+		case string:
+			if sensitiveKeys[key] {
+				encryptedValue, err := s.encrypt(v)
+				if err != nil {
+					continue
+				}
+				encryptedValues[key] = encryptedValue
+			} else {
+				encryptedValues[key] = v
 			}
-			session.Values[key] = encryptedValue
+		default:
+			encryptedValues[key] = v
 		}
 	}
 
+	session.Values = encryptedValues
 	return s.Store.Save(r, w, session)
 }
 
