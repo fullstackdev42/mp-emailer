@@ -98,8 +98,11 @@ func (s *ServiceTestSuite) TestLoginUser() {
 			wantErr: true,
 		},
 		{
-			name:  "empty username",
-			setup: func() {},
+			name: "empty username",
+			setup: func() {
+				s.mockRepo.On("FindByUsername", mock.Anything, "").
+					Return(nil, errors.New("user not found"))
+			},
 			dto: &user.LoginDTO{
 				Username: "",
 				Password: "password",

@@ -2,10 +2,8 @@ package shared
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"html/template"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -81,38 +79,8 @@ var App = fx.Options(
 		NewGenericLoggingDecorator[LoggableService],
 		provideDatabaseService,
 		fx.Annotate(
-			func(cfg *config.Config, logger loggo.LoggerInterface) (session.Manager, error) {
-				// Decode the base64 secret key
-				decodedKey, err := base64.StdEncoding.DecodeString(cfg.Auth.SessionSecret)
-				if err != nil {
-					return nil, fmt.Errorf("session secret must be valid base64: %w", err)
-				}
-
-				// Check the decoded key length
-				if len(decodedKey) != 32 {
-					fmt.Println("\n❌ Configuration Error: Invalid Session Secret")
-					fmt.Println("The decoded session secret key must be exactly 32 bytes long.")
-					fmt.Println("\nTo fix this:")
-					fmt.Println("1. Generate a new key:    openssl rand -base64 24")
-					fmt.Println("2. Set it in your .env:   SESSION_SECRET=<generated_key>")
-					return nil, fmt.Errorf("decoded session secret must be exactly 32 bytes (current length: %d)",
-						len(decodedKey))
-				}
-
-				options := session.Options{
-					MaxAge:          cfg.Auth.SessionMaxAge,
-					CleanupInterval: 15 * time.Minute,
-					SecurityKey:     decodedKey, // Use the decoded key
-					CookieName:      cfg.Auth.SessionName,
-					Domain:          cfg.App.Domain,
-					Secure:          cfg.App.Env == "production",
-					HTTPOnly:        true,
-					SameSite:        http.SameSiteLaxMode,
-					Path:            "/",
-					KeyPrefix:       "sess_",
-				}
-
-				store := sessions.NewCookieStore(decodedKey) // Use the decoded key
+			func(logger loggo.LoggerInterface, options session.Options) (session.Manager, error) {
+				store := sessions.NewCookieStore(options.SecurityKey)
 				secureStore, err := session.NewSecureStore(store, options)
 				if err != nil {
 					return nil, err

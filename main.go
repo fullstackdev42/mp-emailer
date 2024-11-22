@@ -24,6 +24,7 @@ func main() {
 	app := fx.New(
 		fx.Options(
 			shared.App,
+			session.Module,
 			campaign.Module,
 			user.Module,
 			server.Module,
@@ -55,7 +56,7 @@ func registerRoutes(
 	middlewareManager.Register(e)
 
 	// Register route handlers after middleware
-	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, cfg, middlewareManager, sessionManager)
+	registerHandlers(e, serverHandler, campaignHandler, userHandler, apiHandler, middlewareManager, sessionManager)
 
 	// Serve static files
 	e.Static("/static", "web/public")
@@ -68,12 +69,11 @@ func registerHandlers(
 	campaignHandler *campaign.Handler,
 	userHandler *user.Handler,
 	apiHandler *api.Handler,
-	cfg *config.Config,
 	middlewareManager *appMiddleware.Manager,
 	sessionManager session.Manager,
 ) {
 	server.RegisterRoutes(serverHandler, e)
-	campaign.RegisterRoutes(campaignHandler, e, cfg, sessionManager)
+	campaign.RegisterRoutes(campaignHandler, e, sessionManager)
 	user.RegisterRoutes(userHandler, e)
 	api.RegisterRoutes(apiHandler, e, middlewareManager)
 }

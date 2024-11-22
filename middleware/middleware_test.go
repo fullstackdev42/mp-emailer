@@ -9,25 +9,29 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/middleware"
 	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
 	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 )
 
 type MiddlewareTestSuite struct {
 	suite.Suite
-	echo           *echo.Echo
-	mockLogger     *mocks.MockLoggerInterface
-	mockErrHandler *mocksShared.MockErrorHandlerInterface
-	manager        *middleware.Manager
-	config         *config.Config
+	echo               *echo.Echo
+	mockLogger         *mocks.MockLoggerInterface
+	mockErrHandler     *mocksShared.MockErrorHandlerInterface
+	manager            *middleware.Manager
+	config             *config.Config
+	mockSessionManager *mocksSession.MockManager
 }
 
 func (s *MiddlewareTestSuite) SetupTest() {
 	s.echo = echo.New()
 	s.mockLogger = mocks.NewMockLoggerInterface(s.T())
 	s.mockErrHandler = mocksShared.NewMockErrorHandlerInterface(s.T())
+	s.mockSessionManager = mocksSession.NewMockManager(s.T())
 
 	// Create mock dependencies with rate limiting configuration
 	s.config = &config.Config{
@@ -39,8 +43,8 @@ func (s *MiddlewareTestSuite) SetupTest() {
 				RequestsPerSecond float64 `yaml:"requests_per_second" env:"RATE_LIMIT_RPS" envDefault:"20"`
 				BurstSize         int     `yaml:"burst_size" env:"RATE_LIMIT_BURST" envDefault:"50"`
 			}{
-				RequestsPerSecond: 10.0, // Allow 10 requests per second in tests
-				BurstSize:         20,   // Allow burst of 20 requests
+				RequestsPerSecond: 10.0,
+				BurstSize:         20,
 			},
 		},
 		Auth: config.AuthConfig{
@@ -50,76 +54,16 @@ func (s *MiddlewareTestSuite) SetupTest() {
 
 	var err error
 	s.manager, err = middleware.NewManager(middleware.ManagerParams{
-		Logger:       s.mockLogger,
-		Cfg:          s.config,
-		ErrorHandler: s.mockErrHandler,
+		Logger:         s.mockLogger,
+		Cfg:            s.config,
+		ErrorHandler:   s.mockErrHandler,
+		SessionManager: s.mockSessionManager,
 	})
 	s.Require().NoError(err)
 }
 
 func TestMiddlewareTestSuite(t *testing.T) {
 	suite.Run(t, new(MiddlewareTestSuite))
-}
-
-func (s *MiddlewareTestSuite) TestMethodOverride() {
-	testCases := []struct {
-		name           string
-		method         string
-		formMethod     string
-		expectedMethod string
-	}{
-		{
-			name:           "POST to PUT override",
-			method:         "POST",
-			formMethod:     "PUT",
-			expectedMethod: "PUT",
-		},
-		{
-			name:           "POST to DELETE override",
-			method:         "POST",
-			formMethod:     "DELETE",
-			expectedMethod: "DELETE",
-		},
-		{
-			name:           "POST without override",
-			method:         "POST",
-			formMethod:     "",
-			expectedMethod: "POST",
-		},
-		{
-			name:           "GET ignores override",
-			method:         "GET",
-			formMethod:     "DELETE",
-			expectedMethod: "GET",
-		},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			// Setup
-			e := echo.New()
-			req := httptest.NewRequest(tc.method, "/", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
-			if tc.formMethod != "" {
-				c.SetParamValues(tc.formMethod)
-				c.Request().Form = map[string][]string{
-					"_method": {tc.formMethod},
-				}
-			}
-
-			// Execute middleware
-			handler := middleware.MethodOverride()(func(c echo.Context) error {
-				s.Equal(tc.expectedMethod, c.Request().Method)
-				return nil
-			})
-
-			// Assert
-			err := handler(c)
-			s.NoError(err)
-		})
-	}
 }
 
 func (s *MiddlewareTestSuite) TestRegisterMiddleware() {
@@ -130,6 +74,49 @@ func (s *MiddlewareTestSuite) TestRegisterMiddleware() {
 		"rate_limit",
 		http.StatusTooManyRequests).
 		Return(nil).
+		Maybe()
+
+	// Configure session manager expectations
+	session := &sessions.Session{
+		Values: make(map[interface{}]interface{}),
+	}
+
+	// Mock GetSession
+	s.mockSessionManager.On("GetSession",
+		mock.Anything,
+		mock.Anything).
+		Return(session, nil).
+		Maybe()
+
+	// Mock GetFlashes
+	s.mockSessionManager.On("GetFlashes",
+		mock.AnythingOfType("*sessions.Session")).
+		Return([]interface{}{}, nil).
+		Maybe()
+
+	// Mock SaveSession
+	s.mockSessionManager.On("SaveSession",
+		mock.Anything,
+		mock.AnythingOfType("*sessions.Session")).
+		Return(nil).
+		Maybe()
+
+	// Configure logger expectations for both session debug calls
+	s.mockLogger.On("Debug",
+		"Session state",
+		"session_id", mock.Anything,
+		"is_new", mock.Anything,
+		"user_id", mock.Anything,
+		"is_authenticated", mock.Anything).
+		Return().
+		Maybe()
+
+	s.mockLogger.On("Debug",
+		"Session state after handler",
+		"session_id", mock.Anything,
+		"user_id", mock.Anything,
+		"is_authenticated", mock.Anything).
+		Return().
 		Maybe()
 
 	// Test that all middleware are registered without error
@@ -159,4 +146,64 @@ func (s *MiddlewareTestSuite) TestRegisterMiddleware() {
 	if rec.Code == http.StatusOK {
 		s.True(handlerCalled, "Expected handler to be called through middleware chain")
 	}
+}
+
+func (s *MiddlewareTestSuite) TestSessionMiddleware() {
+	// Configure session manager expectations
+	session := &sessions.Session{
+		Values: make(map[interface{}]interface{}),
+	}
+
+	// Mock GetSession
+	s.mockSessionManager.On("GetSession",
+		mock.Anything,
+		mock.Anything).
+		Return(session, nil)
+
+	// Mock GetFlashes
+	s.mockSessionManager.On("GetFlashes",
+		mock.AnythingOfType("*sessions.Session")).
+		Return([]interface{}{}, nil)
+
+	// Mock SaveSession
+	s.mockSessionManager.On("SaveSession",
+		mock.Anything,
+		mock.AnythingOfType("*sessions.Session")).
+		Return(nil)
+
+	// Configure logger expectations for both session debug calls
+	s.mockLogger.On("Debug",
+		"Session state",
+		"session_id", mock.Anything,
+		"is_new", mock.Anything,
+		"user_id", mock.Anything,
+		"is_authenticated", mock.Anything).
+		Return()
+
+	s.mockLogger.On("Debug",
+		"Session state after handler",
+		"session_id", mock.Anything,
+		"user_id", mock.Anything,
+		"is_authenticated", mock.Anything).
+		Return()
+
+	// Create test request and response
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	c := s.echo.NewContext(req, rec)
+
+	// Create test handler
+	handler := func(c echo.Context) error {
+		return c.String(http.StatusOK, "OK")
+	}
+
+	// Create middleware
+	middleware := s.manager.SessionMiddleware(s.mockSessionManager)
+
+	// Execute middleware
+	err := middleware(handler)(c)
+
+	// Assert
+	s.NoError(err)
+	s.Equal(http.StatusOK, rec.Code)
 }

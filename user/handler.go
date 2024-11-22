@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -57,7 +57,12 @@ func NewHandler(params HandlerParams) *Handler {
 
 // RegisterGET handler for the register page
 func (h *Handler) RegisterGET(c echo.Context) error {
-	data := &shared.Data{
+	data := h.prepareRegisterPageData()
+	return c.Render(shared.StatusOK, "register", data)
+}
+
+func (h *Handler) prepareRegisterPageData() *shared.Data {
+	return &shared.Data{
 		Title:    "Register",
 		PageName: "register",
 		Form: shared.FormData{
@@ -65,87 +70,98 @@ func (h *Handler) RegisterGET(c echo.Context) error {
 			Email:    "",
 		},
 	}
-
-	return c.Render(shared.StatusOK, "register", data)
 }
 
 // RegisterPOST handles POST requests to register a new user
 func (h *Handler) RegisterPOST(c echo.Context) error {
 	params := new(RegisterDTO)
 	if err := c.Bind(params); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", shared.StatusBadRequest)
+		return h.handleError(c, err, "Invalid input", shared.StatusBadRequest)
 	}
 
-	_, err := h.Service.RegisterUser(c.Request().Context(), params)
-	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to register user", shared.StatusInternalServerError)
+	if err := h.registerUser(c, params); err != nil {
+		return h.handleError(c, err, "Failed to register user", shared.StatusInternalServerError)
 	}
 
-	if err := h.AddFlashMessage(c, "Registration successful! Please log in."); err != nil {
-		h.Logger.Error("Failed to add registration flash message", err)
-	}
-
+	h.addFlashMessage(c, "Registration successful! Please log in.")
 	return c.Redirect(shared.StatusSeeOther, "/user/login")
+}
+
+func (h *Handler) registerUser(c echo.Context, params *RegisterDTO) error {
+	_, err := h.Service.RegisterUser(c.Request().Context(), params)
+	return err
+}
+
+func (h *Handler) handleError(c echo.Context, err error, message string, statusCode int) error {
+	h.Logger.Error(message, err)
+	return h.ErrorHandler.HandleHTTPError(c, err, message, statusCode)
+}
+
+func (h *Handler) addFlashMessage(c echo.Context, message string) {
+	if err := h.AddFlashMessage(c, message); err != nil {
+		h.Logger.Error("Failed to add flash message", err)
+	}
 }
 
 // LoginGET handler for the login page
 func (h *Handler) LoginGET(c echo.Context) error {
-	pageData := shared.Data{
+	pageData := h.prepareLoginPageData()
+	return c.Render(shared.StatusOK, "login", pageData)
+}
+
+func (h *Handler) prepareLoginPageData() *shared.Data {
+	return &shared.Data{
 		Title:   "Login",
 		Content: nil,
 	}
-	return h.TemplateRenderer.Render(c.Response().Writer, "login", pageData, c)
 }
 
 // LoginPOST handler for the login page
 func (h *Handler) LoginPOST(c echo.Context) error {
-	ctx := c.Request().Context()
 	params := new(LoginDTO)
 	if err := c.Bind(params); err != nil {
-		h.Logger.Error("Failed to bind login parameters", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid input", shared.StatusBadRequest)
+		return h.handleError(c, err, "Invalid input", shared.StatusBadRequest)
 	}
 
-	authenticated, user, err := h.Service.AuthenticateUser(ctx, params.Username, params.Password)
+	user, err := h.Service.AuthenticateUser(c.Request().Context(), params.Username, params.Password)
 	if err != nil {
-		h.Logger.Error("Authentication failed", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication error", shared.StatusInternalServerError)
+		return h.renderLoginError(c, "Invalid username or password")
 	}
 
-	if !authenticated || user == nil {
-		return c.Render(shared.StatusUnauthorized, "login", &shared.Data{
-			Title: "Login",
-			Error: "Invalid username or password",
-		})
+	if err := h.createUserSession(c, user); err != nil {
+		return err
 	}
 
-	// Get session through base handler
-	sess, err := h.BaseHandler.GetSession(c)
-	if err != nil {
-		h.Logger.Error("Failed to get session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", shared.StatusInternalServerError)
-	}
-
-	// Set session values through base handler
-	h.BaseHandler.SetSessionValues(sess, user)
-
-	// Save session through base handler
-	if err := h.BaseHandler.SaveSession(c, sess); err != nil {
-		h.Logger.Error("Failed to save session", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", shared.StatusInternalServerError)
-	}
-
-	if err := h.AddFlashMessage(c, "Successfully logged in!"); err != nil {
-		h.Logger.Error("Failed to add login flash message", err)
-	}
-
+	h.addFlashMessage(c, "Successfully logged in!")
 	return c.Redirect(shared.StatusSeeOther, "/")
+}
+
+func (h *Handler) renderLoginError(c echo.Context, message string) error {
+	return c.Render(shared.StatusUnauthorized, "login", &shared.Data{
+		Title: "Login",
+		Error: message,
+	})
+}
+
+func (h *Handler) createUserSession(c echo.Context, user *User) error {
+	sess, err := h.GetSession(c)
+	if err != nil {
+		return h.handleError(c, err, "Error getting session", shared.StatusInternalServerError)
+	}
+
+	h.SetSessionValues(sess, user)
+
+	if err := h.SaveSession(c, sess); err != nil {
+		return h.handleError(c, err, "Error saving session", shared.StatusInternalServerError)
+	}
+
+	return nil
 }
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
 	if err := h.ClearSession(c); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", shared.StatusInternalServerError)
+		return h.handleError(c, err, "Error clearing session", shared.StatusInternalServerError)
 	}
 
 	return c.Redirect(shared.StatusSeeOther, "/")
@@ -156,17 +172,14 @@ func (h *Handler) RequestPasswordResetPOST(c echo.Context) error {
 	ctx := c.Request().Context()
 	dto := new(PasswordResetDTO)
 	if err := c.Bind(dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", shared.StatusBadRequest)
+		return h.handleError(c, err, "Invalid request", shared.StatusBadRequest)
 	}
 
 	if err := h.Service.RequestPasswordReset(ctx, dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to process reset request", shared.StatusInternalServerError)
+		return h.handleError(c, err, "Failed to process reset request", shared.StatusInternalServerError)
 	}
 
-	if err := h.AddFlashMessage(c, "Password reset instructions have been sent to your email"); err != nil {
-		h.Logger.Error("Failed to add password reset request flash message", err)
-	}
-
+	h.addFlashMessage(c, "Password reset instructions have been sent to your email")
 	return c.Redirect(shared.StatusSeeOther, "/user/login")
 }
 
@@ -175,17 +188,14 @@ func (h *Handler) ResetPasswordPOST(c echo.Context) error {
 	ctx := c.Request().Context()
 	dto := new(ResetPasswordDTO)
 	if err := c.Bind(dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Invalid request", shared.StatusBadRequest)
+		return h.handleError(c, err, "Invalid request", shared.StatusBadRequest)
 	}
 
 	if err := h.Service.ResetPassword(ctx, dto); err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Failed to reset password", shared.StatusInternalServerError)
+		return h.handleError(c, err, "Failed to reset password", shared.StatusInternalServerError)
 	}
 
-	if err := h.AddFlashMessage(c, "Your password has been reset successfully"); err != nil {
-		h.Logger.Error("Failed to add password reset success flash message", err)
-	}
-
+	h.addFlashMessage(c, "Your password has been reset successfully")
 	return c.Redirect(shared.StatusSeeOther, "/user/login")
 }
 
@@ -199,4 +209,21 @@ func (h *Handler) RequireAuthentication() echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
+}
+
+// GetUserIDFromSession retrieves the user ID from the session
+func (h *Handler) GetUserIDFromSession(c echo.Context) (interface{}, error) {
+	sess, err := h.GetSession(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get session values directly from the session
+	values := sess.Values
+	userID := values["user_id"]
+	if userID == nil {
+		return nil, session.ErrSessionNotFound
+	}
+
+	return userID, nil
 }

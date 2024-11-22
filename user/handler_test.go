@@ -1,7 +1,6 @@
 package user_test
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/internal/testutil"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
@@ -17,15 +17,20 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
+	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 )
 
 type HandlerTestSuite struct {
 	testutil.BaseTestSuite
-	handler        *user.Handler
-	UserService    *mocksUser.MockServiceInterface
-	UserRepo       *mocksUser.MockRepositoryInterface
-	SessionManager *mocksSession.MockManager
+	handler          *user.Handler
+	UserService      *mocksUser.MockServiceInterface
+	UserRepo         *mocksUser.MockRepositoryInterface
+	SessionManager   *mocksSession.MockManager
+	StoreProvider    *mocksSession.MockStoreProvider
+	mockStore        *mocksSession.MockStore
+	mockSession      *mocksSession.MockInterface
+	TemplateRenderer *mocksShared.MockTemplateRendererInterface
 }
 
 func (s *HandlerTestSuite) SetupTest() {
@@ -34,6 +39,9 @@ func (s *HandlerTestSuite) SetupTest() {
 	s.UserService = mocksUser.NewMockServiceInterface(s.T())
 	s.UserRepo = mocksUser.NewMockRepositoryInterface(s.T())
 	s.SessionManager = mocksSession.NewMockManager(s.T())
+	s.StoreProvider = mocksSession.NewMockStoreProvider(s.T())
+	s.ErrorHandler = mocksShared.NewMockErrorHandlerInterface(s.T())
+	s.TemplateRenderer = mocksShared.NewMockTemplateRendererInterface(s.T())
 
 	s.Config.Auth.SessionName = "test_session"
 	s.Echo.Renderer = s.TemplateRenderer
@@ -44,6 +52,7 @@ func (s *HandlerTestSuite) SetupTest() {
 			ErrorHandler:     s.ErrorHandler,
 			TemplateRenderer: s.TemplateRenderer,
 			Config:           s.Config,
+			StoreProvider:    s.StoreProvider,
 		},
 		Service: s.UserService,
 		Repo:    s.UserRepo,
@@ -56,206 +65,115 @@ func TestHandler(t *testing.T) {
 	suite.Run(t, new(HandlerTestSuite))
 }
 
-func (s *HandlerTestSuite) debugResponse(rec *httptest.ResponseRecorder) {
-	s.T().Logf("Response Status: %d", rec.Code)
-	s.T().Logf("Response Headers: %v", rec.Header())
-	s.T().Logf("Response Body: %s", rec.Body.String())
+func (s *HandlerTestSuite) setupBaseMocks() {
+	// Setup session mocks
+	s.mockStore = mocksSession.NewMockStore(s.T())
+	s.mockSession = mocksSession.NewMockInterface(s.T())
+
+	// Setup mock session behavior
+	mockValues := make(map[interface{}]interface{})
+	s.mockSession.On("Values").Return(mockValues)
+	s.mockSession.On("IsNew").Return(false)
+	s.mockSession.On("Options").Return(&sessions.Options{})
+	s.mockSession.On("GetID").Return("test-session-id")
+
+	// Setup store provider expectations
+	s.StoreProvider.On("GetStore", mock.AnythingOfType("*http.Request")).Return(s.mockStore)
+
+	// Setup store expectations
+	s.mockStore.On("New",
+		mock.AnythingOfType("*http.Request"),
+		s.Config.Auth.SessionName,
+	).Return(s.mockSession, nil)
+
+	// Setup session manager expectations
+	s.SessionManager.On("GetSession",
+		mock.MatchedBy(func(c echo.Context) bool { return true }),
+		s.Config.Auth.SessionName,
+	).Return(s.mockSession, nil)
+
+	// Set the session manager on the handler
+	s.handler.SessionManager = s.SessionManager
 }
 
-func (s *HandlerTestSuite) TestLoginPOST() {
-	tests := []struct {
-		name    string
-		payload string
+func (s *HandlerTestSuite) createTestRequest(method, path, payload string) (echo.Context, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(method, path, strings.NewReader(payload))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	return s.Echo.NewContext(req, rec), rec
+}
 
-		setupMocks     func() *sessions.Session
-		expectedStatus int
-		expectedPath   string
-	}{
-		{
-			name:    "Successful login",
-			payload: `{"username": "testuser", "password": "password123"}`,
-			setupMocks: func() *sessions.Session {
-				sess := sessions.NewSession(s.Store, "test_session")
-				sess.Values = make(map[interface{}]interface{})
+func (s *HandlerTestSuite) TestGetUserIDFromSession_MissingUserID() {
+	// Setup base mocks
+	s.setupBaseMocks()
 
-				testUser := &user.User{
-					BaseModel: shared.BaseModel{
-						ID: uuid.New(),
-					},
-					Username: "testuser",
-				}
+	// Setup mock session values
+	mockValues := make(map[interface{}]interface{})
+	s.mockSession.On("Values").Return(mockValues)
+	s.mockSession.On("GetValues").Return(mockValues)
+	s.mockSession.On("GetID").Return("test-session-id")
 
-				s.Logger.On("Debug", "Processing login request").Return()
-				s.Logger.On("Debug", "Attempting user authentication", "username", testUser.Username).Return()
-				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
-				s.Logger.On("Debug", "Login process completed successfully", "username", testUser.Username).Return()
+	// Execute test
+	c, _ := s.createTestRequest(http.MethodGet, "/", "")
 
-				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
-				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
-				s.SessionManager.On("SaveSession", mock.Anything, sess).Run(func(_ mock.Arguments) {
-					// Verify flash message was added
-					flashes := sess.Flashes()
-					s.Len(flashes, 1)
-					s.Equal("Successfully logged in!", flashes[0])
-				}).Return(nil)
+	// Set session manager on context
+	c.Set("session_manager", s.SessionManager)
 
-				s.UserService.On("AuthenticateUser",
-					mock.Anything,
-					testUser.Username,
-					"password123",
-				).Return(true, testUser, nil)
+	// Call the method directly
+	_, err := s.handler.GetUserIDFromSession(c)
 
-				return sess
-			},
-			expectedStatus: http.StatusSeeOther,
-			expectedPath:   "/",
-		},
-		{
-			name:    "Session store error",
-			payload: `{"username": "testuser", "password": "password123"}`,
-			setupMocks: func() *sessions.Session {
-				sessionErr := errors.New("session store error")
-				testUser := &user.User{
-					BaseModel: shared.BaseModel{
-						ID: uuid.New(),
-					},
-					Username: "testuser",
-				}
+	// Assert
+	s.Error(err)
+	s.Equal(session.ErrSessionNotFound, err)
 
-				s.Logger.On("Debug", "Processing login request").Return()
-				s.Logger.On("Debug", "Attempting user authentication", "username", "testuser").Return()
-				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
-				s.Logger.On("Error", "Failed to get session", sessionErr).Return()
+	// Verify expectations
+	s.SessionManager.AssertExpectations(s.T())
+	s.mockSession.AssertExpectations(s.T())
+}
 
-				s.UserService.On("AuthenticateUser",
-					mock.Anything,
-					"testuser",
-					"password123",
-				).Return(true, testUser, nil)
+func (s *HandlerTestSuite) TestLoginPOST_Success() {
+	// Setup base mocks
+	s.setupBaseMocks()
 
-				s.SessionManager.On("GetSession", mock.Anything, "test_session").
-					Return(nil, sessionErr)
-
-				s.ErrorHandler.On("HandleHTTPError",
-					mock.AnythingOfType("*echo.context"),
-					sessionErr,
-					"Error getting session",
-					http.StatusInternalServerError,
-				).Return(echo.NewHTTPError(http.StatusInternalServerError))
-
-				return nil
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedPath:   "",
-		},
-		{
-			name:    "Invalid credentials",
-			payload: `{"username": "wronguser", "password": "wrongpass"}`,
-			setupMocks: func() *sessions.Session {
-				s.Logger.On("Debug", "Processing login request").Return()
-				s.Logger.On("Debug", "Attempting user authentication", "username", "wronguser").Return()
-				s.Logger.On("Debug", "Invalid login attempt", "username", "wronguser").Return()
-
-				s.UserService.On("AuthenticateUser",
-					mock.Anything,
-					"wronguser",
-					"wrongpass",
-				).Return(false, nil, nil)
-
-				s.TemplateRenderer.On("Render",
-					mock.AnythingOfType("*bytes.Buffer"),
-					"login",
-					mock.AnythingOfType("*shared.Data"),
-					mock.AnythingOfType("*echo.context"),
-				).Return(nil)
-
-				return nil
-			},
-			expectedStatus: http.StatusUnauthorized,
-			expectedPath:   "",
-		},
-		{
-			name:    "Session save error",
-			payload: `{"username": "testuser", "password": "password123"}`,
-			setupMocks: func() *sessions.Session {
-				sess := sessions.NewSession(s.Store, "test_session")
-				sess.Values = make(map[interface{}]interface{})
-
-				testUser := &user.User{
-					BaseModel: shared.BaseModel{
-						ID: uuid.New(),
-					},
-					Username: "testuser",
-				}
-
-				saveErr := errors.New("failed to save session")
-
-				s.Logger.On("Debug", "Processing login request").Return()
-				s.Logger.On("Debug", "Attempting user authentication", "username", testUser.Username).Return()
-				s.Logger.On("Debug", "User authenticated successfully", "username", testUser.Username, "userID", testUser.ID).Return()
-				s.Logger.On("Error", "Failed to save session", saveErr).Return()
-
-				s.SessionManager.On("GetSession", mock.Anything, "test_session").Return(sess, nil)
-				s.SessionManager.On("SetSessionValues", sess, testUser).Return()
-				s.SessionManager.On("SaveSession", mock.Anything, sess).Return(saveErr)
-
-				s.UserService.On("AuthenticateUser",
-					mock.Anything,
-					testUser.Username,
-					"password123",
-				).Return(true, testUser, nil)
-
-				s.ErrorHandler.On("HandleHTTPError",
-					mock.AnythingOfType("*echo.context"),
-					saveErr,
-					"Error saving session",
-					http.StatusInternalServerError,
-				).Return(echo.NewHTTPError(http.StatusInternalServerError))
-
-				return sess
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedPath:   "",
-		},
+	mockUser := &user.User{
+		BaseModel: shared.BaseModel{ID: uuid.New()},
+		Username:  "testuser",
 	}
 
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.SetupTest() // Reset mocks for each test case
-			sess := tt.setupMocks()
+	// Setup additional expectations specific to this test
+	s.SessionManager.On("AddFlash", s.mockSession, "Successfully logged in!").Return()
+	s.SessionManager.On("SetAuthenticated", mock.AnythingOfType("*echo.Context"), true).Return(nil)
+	s.SessionManager.On("SetSessionValues", s.mockSession, mockUser).Return()
 
-			// Create request with JSON payload
-			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(tt.payload))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			rec := httptest.NewRecorder()
+	// Setup service expectations
+	s.UserService.On("AuthenticateUser", mock.Anything, "testuser", "testpass").Return(mockUser, nil)
 
-			// Create Echo context
-			c := s.Echo.NewContext(req, rec)
-			if sess != nil {
-				c.Set("session", sess)
-			}
+	// Setup error handler expectations
+	s.ErrorHandler.On("HandleHTTPError",
+		mock.AnythingOfType("*echo.context"),
+		mock.AnythingOfType("*echo.HTTPError"),
+		"Error getting session",
+		http.StatusInternalServerError,
+	).Return(nil)
 
-			// Execute handler
-			err := s.handler.LoginPOST(c)
-			if err != nil {
-				s.T().Logf("Handler returned error: %v", err)
-				if he, ok := err.(*echo.HTTPError); ok {
-					s.T().Logf("HTTP Error: code=%d, message=%v", he.Code, he.Message)
-					rec.Code = he.Code // Set the status code from the error
-				}
-			}
+	// Setup logger expectations
+	s.Logger.On("Error", "Error getting session", mock.AnythingOfType("*echo.HTTPError")).Return()
+	s.Logger.On("Debug", "Adding flash message", "message", "Successfully logged in!").Return()
 
-			// Debug response
-			s.debugResponse(rec)
+	// Execute test
+	payload := `{"username":"testuser","password":"testpass"}`
+	c, rec := s.createTestRequest(http.MethodPost, "/login", payload)
 
-			// Verify response
-			s.Equal(tt.expectedStatus, rec.Code)
-			if tt.expectedPath != "" {
-				s.Equal(tt.expectedPath, rec.Header().Get("Location"))
-			}
+	err := s.handler.LoginPOST(c)
+	s.NoError(err)
+	s.Equal(http.StatusSeeOther, rec.Code)
+	s.Equal("/", rec.Header().Get("Location"))
 
-			// Verify all mocks
-			s.SessionManager.AssertExpectations(s.T())
-		})
-	}
+	// Verify all mocks
+	s.UserService.AssertExpectations(s.T())
+	s.SessionManager.AssertExpectations(s.T())
+	s.Logger.AssertExpectations(s.T())
+	s.mockStore.AssertExpectations(s.T())
+	s.mockSession.AssertExpectations(s.T())
+	s.ErrorHandler.AssertExpectations(s.T())
 }

@@ -1,7 +1,6 @@
 package session
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -9,31 +8,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Manager defines the core session management interface
+// Manager defines the session manager interface
 type Manager interface {
-	// Core session operations
 	GetSession(c echo.Context, name string) (*sessions.Session, error)
-	SaveSession(c echo.Context, session *sessions.Session) error
-	ClearSession(c echo.Context, name string) error
-	RegenerateSession(c echo.Context, name string) (*sessions.Session, error)
-
-	// Session data operations
-	SetSessionValues(sess *sessions.Session, userData interface{})
-	GetSessionValue(sess *sessions.Session, key string) interface{}
-	DeleteSessionValue(sess *sessions.Session, key string)
-
-	// Security operations
-	ValidateSession(name string) echo.MiddlewareFunc
-	IsAuthenticated(c echo.Context) bool
-	SetAuthenticated(c echo.Context, authenticated bool) error
-
-	// Cleanup operations
-	StartCleanup(ctx context.Context)
-	StopCleanup() error
-
-	// Flash message operations
+	SaveSession(c echo.Context, sess *sessions.Session) error
 	GetFlashes(sess *sessions.Session) []interface{}
-	AddFlash(sess *sessions.Session, message interface{})
+	AddFlash(sess *sessions.Session, value interface{})
+	SetSessionValues(sess *sessions.Session, user interface{})
+	GetSessionValue(sess *sessions.Session, key string) (interface{}, error)
+	ValidateSession(c echo.Context) error
+	ClearSession(c echo.Context, name string) error
+	IsAuthenticated(c echo.Context) bool
 }
 
 // Store extends the basic sessions.Store interface with additional security features
@@ -88,3 +73,18 @@ var (
 	ErrSessionStoreFailed = echo.NewHTTPError(http.StatusInternalServerError, "session store failed")
 	ErrInvalidKeySize     = echo.NewHTTPError(http.StatusInternalServerError, "invalid security key size: must be 16, 24, or 32 bytes")
 )
+
+// Interface abstracts the gorilla session for testing
+type Interface interface {
+	Get(key interface{}) interface{}
+	Set(key interface{}, val interface{})
+	Delete(key interface{})
+	IsNew() bool
+	Save(r *http.Request, w http.ResponseWriter) error
+	AddFlash(value interface{}, vars ...string)
+	Flashes(vars ...string) []interface{}
+	Options() *sessions.Options
+	Values() map[interface{}]interface{}
+	GetValues() map[interface{}]interface{}
+	GetID() string
+}

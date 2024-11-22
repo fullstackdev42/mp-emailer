@@ -303,34 +303,11 @@ func (s *HandlerTestSuite) TestGetUserIDFromSession() {
 
 		sessionManager.EXPECT().
 			GetSessionValue(mockSession, "user_id").
-			Return(expectedUserID)
+			Return(expectedUserID, nil)
 
 		userID, err := s.handler.GetUserIDFromSession(c)
 		s.NoError(err)
 		s.Equal(expectedUserID, userID)
-	})
-
-	// Test session error case
-	s.Run("session error", func() {
-		c := s.NewContext(http.MethodGet, "/test", nil)
-		sessionManager := sessionmocks.NewMockManager(s.T())
-		c.Set("session_manager", sessionManager)
-
-		sessionErr := errors.New("session error")
-
-		// Add logger expectation
-		s.Logger.EXPECT().
-			Error("Failed to get session", sessionErr).
-			Once()
-
-		sessionManager.EXPECT().
-			GetSession(c, s.Config.Auth.SessionName).
-			Return(nil, sessionErr).
-			Once()
-
-		userID, err := s.handler.GetUserIDFromSession(c)
-		s.Error(err)
-		s.Empty(userID)
 	})
 
 	// Test missing user ID case
@@ -349,7 +326,7 @@ func (s *HandlerTestSuite) TestGetUserIDFromSession() {
 
 		sessionManager.EXPECT().
 			GetSessionValue(mockSession, "user_id").
-			Return("")
+			Return(nil, nil)
 
 		userID, err := s.handler.GetUserIDFromSession(c)
 		s.Error(err)

@@ -3,8 +3,6 @@
 package mocks
 
 import (
-	context "context"
-
 	echo "github.com/labstack/echo/v4"
 	mock "github.com/stretchr/testify/mock"
 
@@ -24,9 +22,9 @@ func (_m *MockManager) EXPECT() *MockManager_Expecter {
 	return &MockManager_Expecter{mock: &_m.Mock}
 }
 
-// AddFlash provides a mock function with given fields: sess, message
-func (_m *MockManager) AddFlash(sess *sessions.Session, message interface{}) {
-	_m.Called(sess, message)
+// AddFlash provides a mock function with given fields: sess, value
+func (_m *MockManager) AddFlash(sess *sessions.Session, value interface{}) {
+	_m.Called(sess, value)
 }
 
 // MockManager_AddFlash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddFlash'
@@ -36,12 +34,12 @@ type MockManager_AddFlash_Call struct {
 
 // AddFlash is a helper method to define mock.On call
 //   - sess *sessions.Session
-//   - message interface{}
-func (_e *MockManager_Expecter) AddFlash(sess interface{}, message interface{}) *MockManager_AddFlash_Call {
-	return &MockManager_AddFlash_Call{Call: _e.mock.On("AddFlash", sess, message)}
+//   - value interface{}
+func (_e *MockManager_Expecter) AddFlash(sess interface{}, value interface{}) *MockManager_AddFlash_Call {
+	return &MockManager_AddFlash_Call{Call: _e.mock.On("AddFlash", sess, value)}
 }
 
-func (_c *MockManager_AddFlash_Call) Run(run func(sess *sessions.Session, message interface{})) *MockManager_AddFlash_Call {
+func (_c *MockManager_AddFlash_Call) Run(run func(sess *sessions.Session, value interface{})) *MockManager_AddFlash_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(*sessions.Session), args[1].(interface{}))
 	})
@@ -101,40 +99,6 @@ func (_c *MockManager_ClearSession_Call) Return(_a0 error) *MockManager_ClearSes
 }
 
 func (_c *MockManager_ClearSession_Call) RunAndReturn(run func(echo.Context, string) error) *MockManager_ClearSession_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteSessionValue provides a mock function with given fields: sess, key
-func (_m *MockManager) DeleteSessionValue(sess *sessions.Session, key string) {
-	_m.Called(sess, key)
-}
-
-// MockManager_DeleteSessionValue_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteSessionValue'
-type MockManager_DeleteSessionValue_Call struct {
-	*mock.Call
-}
-
-// DeleteSessionValue is a helper method to define mock.On call
-//   - sess *sessions.Session
-//   - key string
-func (_e *MockManager_Expecter) DeleteSessionValue(sess interface{}, key interface{}) *MockManager_DeleteSessionValue_Call {
-	return &MockManager_DeleteSessionValue_Call{Call: _e.mock.On("DeleteSessionValue", sess, key)}
-}
-
-func (_c *MockManager_DeleteSessionValue_Call) Run(run func(sess *sessions.Session, key string)) *MockManager_DeleteSessionValue_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*sessions.Session), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockManager_DeleteSessionValue_Call) Return() *MockManager_DeleteSessionValue_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockManager_DeleteSessionValue_Call) RunAndReturn(run func(*sessions.Session, string)) *MockManager_DeleteSessionValue_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -247,7 +211,7 @@ func (_c *MockManager_GetSession_Call) RunAndReturn(run func(echo.Context, strin
 }
 
 // GetSessionValue provides a mock function with given fields: sess, key
-func (_m *MockManager) GetSessionValue(sess *sessions.Session, key string) interface{} {
+func (_m *MockManager) GetSessionValue(sess *sessions.Session, key string) (interface{}, error) {
 	ret := _m.Called(sess, key)
 
 	if len(ret) == 0 {
@@ -255,6 +219,10 @@ func (_m *MockManager) GetSessionValue(sess *sessions.Session, key string) inter
 	}
 
 	var r0 interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*sessions.Session, string) (interface{}, error)); ok {
+		return rf(sess, key)
+	}
 	if rf, ok := ret.Get(0).(func(*sessions.Session, string) interface{}); ok {
 		r0 = rf(sess, key)
 	} else {
@@ -263,7 +231,13 @@ func (_m *MockManager) GetSessionValue(sess *sessions.Session, key string) inter
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(*sessions.Session, string) error); ok {
+		r1 = rf(sess, key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockManager_GetSessionValue_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSessionValue'
@@ -285,12 +259,12 @@ func (_c *MockManager_GetSessionValue_Call) Run(run func(sess *sessions.Session,
 	return _c
 }
 
-func (_c *MockManager_GetSessionValue_Call) Return(_a0 interface{}) *MockManager_GetSessionValue_Call {
-	_c.Call.Return(_a0)
+func (_c *MockManager_GetSessionValue_Call) Return(_a0 interface{}, _a1 error) *MockManager_GetSessionValue_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockManager_GetSessionValue_Call) RunAndReturn(run func(*sessions.Session, string) interface{}) *MockManager_GetSessionValue_Call {
+func (_c *MockManager_GetSessionValue_Call) RunAndReturn(run func(*sessions.Session, string) (interface{}, error)) *MockManager_GetSessionValue_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -341,68 +315,9 @@ func (_c *MockManager_IsAuthenticated_Call) RunAndReturn(run func(echo.Context) 
 	return _c
 }
 
-// RegenerateSession provides a mock function with given fields: c, name
-func (_m *MockManager) RegenerateSession(c echo.Context, name string) (*sessions.Session, error) {
-	ret := _m.Called(c, name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for RegenerateSession")
-	}
-
-	var r0 *sessions.Session
-	var r1 error
-	if rf, ok := ret.Get(0).(func(echo.Context, string) (*sessions.Session, error)); ok {
-		return rf(c, name)
-	}
-	if rf, ok := ret.Get(0).(func(echo.Context, string) *sessions.Session); ok {
-		r0 = rf(c, name)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*sessions.Session)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(echo.Context, string) error); ok {
-		r1 = rf(c, name)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockManager_RegenerateSession_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RegenerateSession'
-type MockManager_RegenerateSession_Call struct {
-	*mock.Call
-}
-
-// RegenerateSession is a helper method to define mock.On call
-//   - c echo.Context
-//   - name string
-func (_e *MockManager_Expecter) RegenerateSession(c interface{}, name interface{}) *MockManager_RegenerateSession_Call {
-	return &MockManager_RegenerateSession_Call{Call: _e.mock.On("RegenerateSession", c, name)}
-}
-
-func (_c *MockManager_RegenerateSession_Call) Run(run func(c echo.Context, name string)) *MockManager_RegenerateSession_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(echo.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockManager_RegenerateSession_Call) Return(_a0 *sessions.Session, _a1 error) *MockManager_RegenerateSession_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockManager_RegenerateSession_Call) RunAndReturn(run func(echo.Context, string) (*sessions.Session, error)) *MockManager_RegenerateSession_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// SaveSession provides a mock function with given fields: c, _a1
-func (_m *MockManager) SaveSession(c echo.Context, _a1 *sessions.Session) error {
-	ret := _m.Called(c, _a1)
+// SaveSession provides a mock function with given fields: c, sess
+func (_m *MockManager) SaveSession(c echo.Context, sess *sessions.Session) error {
+	ret := _m.Called(c, sess)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveSession")
@@ -410,7 +325,7 @@ func (_m *MockManager) SaveSession(c echo.Context, _a1 *sessions.Session) error 
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(echo.Context, *sessions.Session) error); ok {
-		r0 = rf(c, _a1)
+		r0 = rf(c, sess)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -425,12 +340,12 @@ type MockManager_SaveSession_Call struct {
 
 // SaveSession is a helper method to define mock.On call
 //   - c echo.Context
-//   - _a1 *sessions.Session
-func (_e *MockManager_Expecter) SaveSession(c interface{}, _a1 interface{}) *MockManager_SaveSession_Call {
-	return &MockManager_SaveSession_Call{Call: _e.mock.On("SaveSession", c, _a1)}
+//   - sess *sessions.Session
+func (_e *MockManager_Expecter) SaveSession(c interface{}, sess interface{}) *MockManager_SaveSession_Call {
+	return &MockManager_SaveSession_Call{Call: _e.mock.On("SaveSession", c, sess)}
 }
 
-func (_c *MockManager_SaveSession_Call) Run(run func(c echo.Context, _a1 *sessions.Session)) *MockManager_SaveSession_Call {
+func (_c *MockManager_SaveSession_Call) Run(run func(c echo.Context, sess *sessions.Session)) *MockManager_SaveSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(echo.Context), args[1].(*sessions.Session))
 	})
@@ -447,56 +362,9 @@ func (_c *MockManager_SaveSession_Call) RunAndReturn(run func(echo.Context, *ses
 	return _c
 }
 
-// SetAuthenticated provides a mock function with given fields: c, authenticated
-func (_m *MockManager) SetAuthenticated(c echo.Context, authenticated bool) error {
-	ret := _m.Called(c, authenticated)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SetAuthenticated")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(echo.Context, bool) error); ok {
-		r0 = rf(c, authenticated)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockManager_SetAuthenticated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetAuthenticated'
-type MockManager_SetAuthenticated_Call struct {
-	*mock.Call
-}
-
-// SetAuthenticated is a helper method to define mock.On call
-//   - c echo.Context
-//   - authenticated bool
-func (_e *MockManager_Expecter) SetAuthenticated(c interface{}, authenticated interface{}) *MockManager_SetAuthenticated_Call {
-	return &MockManager_SetAuthenticated_Call{Call: _e.mock.On("SetAuthenticated", c, authenticated)}
-}
-
-func (_c *MockManager_SetAuthenticated_Call) Run(run func(c echo.Context, authenticated bool)) *MockManager_SetAuthenticated_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(echo.Context), args[1].(bool))
-	})
-	return _c
-}
-
-func (_c *MockManager_SetAuthenticated_Call) Return(_a0 error) *MockManager_SetAuthenticated_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockManager_SetAuthenticated_Call) RunAndReturn(run func(echo.Context, bool) error) *MockManager_SetAuthenticated_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// SetSessionValues provides a mock function with given fields: sess, userData
-func (_m *MockManager) SetSessionValues(sess *sessions.Session, userData interface{}) {
-	_m.Called(sess, userData)
+// SetSessionValues provides a mock function with given fields: sess, user
+func (_m *MockManager) SetSessionValues(sess *sessions.Session, user interface{}) {
+	_m.Called(sess, user)
 }
 
 // MockManager_SetSessionValues_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetSessionValues'
@@ -506,12 +374,12 @@ type MockManager_SetSessionValues_Call struct {
 
 // SetSessionValues is a helper method to define mock.On call
 //   - sess *sessions.Session
-//   - userData interface{}
-func (_e *MockManager_Expecter) SetSessionValues(sess interface{}, userData interface{}) *MockManager_SetSessionValues_Call {
-	return &MockManager_SetSessionValues_Call{Call: _e.mock.On("SetSessionValues", sess, userData)}
+//   - user interface{}
+func (_e *MockManager_Expecter) SetSessionValues(sess interface{}, user interface{}) *MockManager_SetSessionValues_Call {
+	return &MockManager_SetSessionValues_Call{Call: _e.mock.On("SetSessionValues", sess, user)}
 }
 
-func (_c *MockManager_SetSessionValues_Call) Run(run func(sess *sessions.Session, userData interface{})) *MockManager_SetSessionValues_Call {
+func (_c *MockManager_SetSessionValues_Call) Run(run func(sess *sessions.Session, user interface{})) *MockManager_SetSessionValues_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(*sessions.Session), args[1].(interface{}))
 	})
@@ -528,99 +396,19 @@ func (_c *MockManager_SetSessionValues_Call) RunAndReturn(run func(*sessions.Ses
 	return _c
 }
 
-// StartCleanup provides a mock function with given fields: ctx
-func (_m *MockManager) StartCleanup(ctx context.Context) {
-	_m.Called(ctx)
-}
-
-// MockManager_StartCleanup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartCleanup'
-type MockManager_StartCleanup_Call struct {
-	*mock.Call
-}
-
-// StartCleanup is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockManager_Expecter) StartCleanup(ctx interface{}) *MockManager_StartCleanup_Call {
-	return &MockManager_StartCleanup_Call{Call: _e.mock.On("StartCleanup", ctx)}
-}
-
-func (_c *MockManager_StartCleanup_Call) Run(run func(ctx context.Context)) *MockManager_StartCleanup_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *MockManager_StartCleanup_Call) Return() *MockManager_StartCleanup_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockManager_StartCleanup_Call) RunAndReturn(run func(context.Context)) *MockManager_StartCleanup_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// StopCleanup provides a mock function with given fields:
-func (_m *MockManager) StopCleanup() error {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for StopCleanup")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockManager_StopCleanup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StopCleanup'
-type MockManager_StopCleanup_Call struct {
-	*mock.Call
-}
-
-// StopCleanup is a helper method to define mock.On call
-func (_e *MockManager_Expecter) StopCleanup() *MockManager_StopCleanup_Call {
-	return &MockManager_StopCleanup_Call{Call: _e.mock.On("StopCleanup")}
-}
-
-func (_c *MockManager_StopCleanup_Call) Run(run func()) *MockManager_StopCleanup_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockManager_StopCleanup_Call) Return(_a0 error) *MockManager_StopCleanup_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockManager_StopCleanup_Call) RunAndReturn(run func() error) *MockManager_StopCleanup_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ValidateSession provides a mock function with given fields: name
-func (_m *MockManager) ValidateSession(name string) echo.MiddlewareFunc {
-	ret := _m.Called(name)
+// ValidateSession provides a mock function with given fields: c
+func (_m *MockManager) ValidateSession(c echo.Context) error {
+	ret := _m.Called(c)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateSession")
 	}
 
-	var r0 echo.MiddlewareFunc
-	if rf, ok := ret.Get(0).(func(string) echo.MiddlewareFunc); ok {
-		r0 = rf(name)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(echo.Context) error); ok {
+		r0 = rf(c)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(echo.MiddlewareFunc)
-		}
+		r0 = ret.Error(0)
 	}
 
 	return r0
@@ -632,24 +420,24 @@ type MockManager_ValidateSession_Call struct {
 }
 
 // ValidateSession is a helper method to define mock.On call
-//   - name string
-func (_e *MockManager_Expecter) ValidateSession(name interface{}) *MockManager_ValidateSession_Call {
-	return &MockManager_ValidateSession_Call{Call: _e.mock.On("ValidateSession", name)}
+//   - c echo.Context
+func (_e *MockManager_Expecter) ValidateSession(c interface{}) *MockManager_ValidateSession_Call {
+	return &MockManager_ValidateSession_Call{Call: _e.mock.On("ValidateSession", c)}
 }
 
-func (_c *MockManager_ValidateSession_Call) Run(run func(name string)) *MockManager_ValidateSession_Call {
+func (_c *MockManager_ValidateSession_Call) Run(run func(c echo.Context)) *MockManager_ValidateSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(echo.Context))
 	})
 	return _c
 }
 
-func (_c *MockManager_ValidateSession_Call) Return(_a0 echo.MiddlewareFunc) *MockManager_ValidateSession_Call {
+func (_c *MockManager_ValidateSession_Call) Return(_a0 error) *MockManager_ValidateSession_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockManager_ValidateSession_Call) RunAndReturn(run func(string) echo.MiddlewareFunc) *MockManager_ValidateSession_Call {
+func (_c *MockManager_ValidateSession_Call) RunAndReturn(run func(echo.Context) error) *MockManager_ValidateSession_Call {
 	_c.Call.Return(run)
 	return _c
 }

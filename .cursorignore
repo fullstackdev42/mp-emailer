@@ -3,8 +3,6 @@
 .devcontainer/
 .github/
 .idea/
-docs/
-mocks/
 storage/
 qodana.yml
 taskfile.yml

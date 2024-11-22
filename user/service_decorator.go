@@ -66,13 +66,13 @@ func (d *LoggingDecorator) RegisterUser(ctx context.Context, dto *RegisterDTO) (
 }
 
 // AuthenticateUser authenticates a user with logging
-func (d *LoggingDecorator) AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error) {
+func (d *LoggingDecorator) AuthenticateUser(ctx context.Context, username, password string) (*User, error) {
 	d.logger.Info("Authenticating user", "username", username)
-	authenticated, user, err := d.service.AuthenticateUser(ctx, username, password)
+	user, err := d.service.AuthenticateUser(ctx, username, password)
 	if err != nil {
 		d.logger.Error("Failed to authenticate user", err, "username", username)
 	}
-	return authenticated, user, err
+	return user, err
 }
 
 // RequestPasswordReset decorates the password reset request with logging

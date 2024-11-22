@@ -88,12 +88,21 @@ func (m *manager) SaveSession(c echo.Context, session *sessions.Session) error {
 }
 
 func (m *manager) ClearSession(c echo.Context, name string) error {
-	session, err := m.GetSession(c, name)
+	sess, err := m.GetSession(c, name)
 	if err != nil {
 		return err
 	}
-	session.Options.MaxAge = -1
-	return m.SaveSession(c, session)
+
+	// Clear all values
+	for key := range sess.Values {
+		delete(sess.Values, key)
+	}
+
+	// Set session to expire immediately
+	sess.Options.MaxAge = -1
+
+	// Save the session
+	return m.SaveSession(c, sess)
 }
 
 func (m *manager) RegenerateSession(c echo.Context, name string) (*sessions.Session, error) {
@@ -169,11 +178,19 @@ func (m *manager) SetSessionValues(sess *sessions.Session, userData interface{})
 	}
 }
 
-func (m *manager) GetSessionValue(sess *sessions.Session, key string) interface{} {
+func (m *manager) GetSessionValue(sess *sessions.Session, key string) (interface{}, error) {
 	if sess == nil {
-		return nil
+		m.logger.Debug("GetSessionValue called with nil session")
+		return nil, ErrSessionNotFound
 	}
-	return sess.Values[key]
+
+	value, exists := sess.Values[key]
+	if !exists {
+		m.logger.Debug("Session value not found", "key", key)
+		return nil, nil // Return nil, nil when key doesn't exist
+	}
+
+	return value, nil
 }
 
 func (m *manager) DeleteSessionValue(sess *sessions.Session, key string) {
@@ -181,28 +198,30 @@ func (m *manager) DeleteSessionValue(sess *sessions.Session, key string) {
 }
 
 func (m *manager) IsAuthenticated(c echo.Context) bool {
-	m.logger.Debug("Checking authentication status")
-
-	session, err := m.GetSession(c, m.options.CookieName)
+	sess, err := m.GetSession(c, m.options.CookieName)
 	if err != nil {
-		m.logger.Debug("Failed to get session in IsAuthenticated",
-			"error", err,
-			"cookieName", m.options.CookieName)
 		return false
 	}
 
-	m.logger.Debug("Session retrieved",
-		"sessionID", session.ID,
-		"userID", session.Values["user_id"],
-		"username", session.Values["username"],
-		"isAuthenticated", session.Values["is_authenticated"])
+	// Check if session has user_id
+	if sess.Values["user_id"] == nil {
+		return false
+	}
 
-	auth, ok := session.Values["is_authenticated"].(bool)
-	m.logger.Debug("Authentication check",
-		"sessionExists", session != nil,
-		"hasAuthValue", ok,
-		"isAuthenticated", auth)
-	return ok && auth
+	// Check if session is marked as authenticated
+	isAuthenticated, ok := sess.Values["is_authenticated"].(bool)
+	if !ok || !isAuthenticated {
+		return false
+	}
+
+	// Check session expiry if set
+	if expiryTime, ok := sess.Values["expiry_time"].(time.Time); ok {
+		if time.Now().After(expiryTime) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (m *manager) SetAuthenticated(c echo.Context, authenticated bool) error {
@@ -215,27 +234,31 @@ func (m *manager) SetAuthenticated(c echo.Context, authenticated bool) error {
 	return m.SaveSession(c, session)
 }
 
-func (m *manager) ValidateSession(name string) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			session, err := m.GetSession(c, name)
-			if err != nil {
-				return ErrSessionNotFound
-			}
+func (m *manager) ValidateSession(c echo.Context) error {
+	sess, err := m.GetSession(c, m.options.CookieName)
+	if err != nil {
+		return err
+	}
 
-			if session.IsNew {
-				return ErrSessionNotFound
-			}
+	// Check if session has user_id
+	if sess.Values["user_id"] == nil {
+		return ErrSessionNotFound
+	}
 
-			// Check session expiration
-			lastAccessed, ok := session.Values["last_accessed"].(time.Time)
-			if !ok || time.Since(lastAccessed) > time.Duration(m.options.MaxAge)*time.Second {
-				return ErrSessionExpired
-			}
+	// Check if session is authenticated
+	isAuthenticated, ok := sess.Values["is_authenticated"].(bool)
+	if !ok || !isAuthenticated {
+		return ErrSessionNotFound
+	}
 
-			return next(c)
+	// Check session expiry if set
+	if expiryTime, ok := sess.Values["expiry_time"].(time.Time); ok {
+		if time.Now().After(expiryTime) {
+			return ErrSessionExpired
 		}
 	}
+
+	return nil
 }
 
 func (m *manager) StartCleanup(ctx context.Context) {

@@ -76,25 +76,6 @@ func (m *Manager) Register(e *echo.Echo) {
 	// Don't register JWT globally - it should be applied to specific routes
 }
 
-// MethodOverride middleware converts POST requests with _method parameter to the specified method
-func MethodOverride() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if c.Request().Method == "POST" {
-				method := c.FormValue("_method")
-				if method != "" {
-					c.Logger().Debug("Method override",
-						"original_method", c.Request().Method,
-						"new_method", method,
-						"path", c.Request().URL.Path)
-					c.Request().Method = method
-				}
-			}
-			return next(c)
-		}
-	}
-}
-
 // JWTMiddleware adds JWT authentication middleware
 func (m *Manager) JWTMiddleware() echo.MiddlewareFunc {
 	config := echojwt.Config{

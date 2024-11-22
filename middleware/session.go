@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/labstack/echo/v4"
 )
@@ -19,12 +20,15 @@ func (m *Manager) SessionMiddleware(sessionManager session.Manager) echo.Middlew
 				return next(c)
 			}
 
+			// Get session values based on type
+			values := getSessionValues(sess)
+
 			// Debug log session state
 			m.logger.Debug("Session state",
-				"session_id", sess.ID,
-				"is_new", sess.IsNew,
-				"user_id", sess.Values["user_id"],
-				"is_authenticated", sess.Values["is_authenticated"])
+				"session_id", getSessionID(sess),
+				"is_new", isNewSession(sess),
+				"user_id", values["user_id"],
+				"is_authenticated", values["is_authenticated"])
 
 			// Store session in context for easy access
 			c.Set("session", sess)
@@ -39,17 +43,51 @@ func (m *Manager) SessionMiddleware(sessionManager session.Manager) echo.Middlew
 
 			// Debug log session state after handler
 			m.logger.Debug("Session state after handler",
-				"session_id", sess.ID,
-				"user_id", sess.Values["user_id"],
-				"is_authenticated", sess.Values["is_authenticated"])
+				"session_id", getSessionID(sess),
+				"user_id", values["user_id"],
+				"is_authenticated", values["is_authenticated"])
 
 			// Save session after processing request
 			if saveErr := sessionManager.SaveSession(c, sess); saveErr != nil {
 				m.logger.Error("Failed to save session", saveErr)
-				return saveErr // Return the error instead of continuing
+				return saveErr
 			}
 
 			return err
 		}
+	}
+}
+
+// Helper functions to handle different session types
+func getSessionValues(sess interface{}) map[interface{}]interface{} {
+	switch s := sess.(type) {
+	case session.Interface:
+		return s.Values()
+	case *sessions.Session:
+		return s.Values
+	default:
+		return make(map[interface{}]interface{})
+	}
+}
+
+func getSessionID(sess interface{}) string {
+	switch s := sess.(type) {
+	case session.Interface:
+		return s.GetID()
+	case *sessions.Session:
+		return s.ID
+	default:
+		return ""
+	}
+}
+
+func isNewSession(sess interface{}) bool {
+	switch s := sess.(type) {
+	case session.Interface:
+		return s.IsNew()
+	case *sessions.Session:
+		return s.IsNew
+	default:
+		return false
 	}
 }

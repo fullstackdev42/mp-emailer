@@ -20,7 +20,7 @@ type ServiceInterface interface {
 	GetUser(ctx context.Context, params *GetDTO) (*DTO, error)
 	RegisterUser(ctx context.Context, params *RegisterDTO) (*DTO, error)
 	LoginUser(ctx context.Context, params *LoginDTO) (string, error)
-	AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error)
+	AuthenticateUser(ctx context.Context, username, password string) (*User, error)
 	RequestPasswordReset(ctx context.Context, dto *PasswordResetDTO) error
 	ResetPassword(ctx context.Context, dto *ResetPasswordDTO) error
 }
@@ -98,12 +98,12 @@ func (s *Service) LoginUser(ctx context.Context, params *LoginDTO) (string, erro
 		return "", fmt.Errorf("invalid username format")
 	}
 
-	authenticated, _, err := s.AuthenticateUser(ctx, params.Username, params.Password)
-	if err != nil || !authenticated {
+	user, err := s.AuthenticateUser(ctx, params.Username, params.Password)
+	if err != nil {
 		return "", fmt.Errorf("invalid username or password")
 	}
 
-	return params.Username, nil
+	return user.Username, nil
 }
 
 // GetUser retrieves a user by their username
@@ -137,31 +137,17 @@ func (s *Service) Error(_ string, _ error, _ ...interface{}) {
 }
 
 // AuthenticateUser validates the username and password combination
-func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (bool, *User, error) {
-	if username == "" || password == "" {
-		return false, nil, fmt.Errorf("username and password required")
-	}
-
+func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (*User, error) {
 	user, err := s.repo.FindByUsername(ctx, username)
 	if err != nil {
-		// Log the specific error but return a generic message
-		s.Error("User lookup failed", err, "username", username)
-		return false, nil, fmt.Errorf("invalid username or password")
+		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if user == nil {
-		s.Info("Login attempt for non-existent user", "username", username)
-		return false, nil, fmt.Errorf("invalid username or password")
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		s.Info("Password mismatch", "username", username)
-		return false, nil, fmt.Errorf("invalid username or password")
-	}
-
-	s.Info("User authenticated successfully", "username", username)
-	return true, user, nil
+	return user, nil
 }
 
 type PasswordResetDTO struct {

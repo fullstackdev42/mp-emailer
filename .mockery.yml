@@ -12,6 +12,8 @@ packages:
       Manager:
       Store:
       UserData:
+      StoreProvider:
+      Interface:
 
   github.com/jonesrussell/mp-emailer/campaign:
     interfaces:

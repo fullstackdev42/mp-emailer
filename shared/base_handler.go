@@ -30,6 +30,7 @@ type BaseHandlerParams struct {
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface
 	SessionManager   session.Manager `optional:"true"`
+	StoreProvider    session.StoreProvider
 }
 
 type BaseHandler struct {
@@ -39,6 +40,7 @@ type BaseHandler struct {
 	TemplateRenderer TemplateRendererInterface
 	SessionManager   session.Manager
 	MapError         func(error) (int, string)
+	StoreProvider    session.StoreProvider
 }
 
 func NewBaseHandler(params BaseHandlerParams) BaseHandler {
@@ -49,6 +51,7 @@ func NewBaseHandler(params BaseHandlerParams) BaseHandler {
 		TemplateRenderer: params.TemplateRenderer,
 		SessionManager:   params.SessionManager,
 		MapError:         DefaultErrorMapper,
+		StoreProvider:    params.StoreProvider,
 	}
 }
 
@@ -176,9 +179,12 @@ func (h *BaseHandler) GetUserIDFromSession(c echo.Context) (string, error) {
 		h.Logger.Error("Authentication check failed", err)
 		return "", err
 	}
-
 	// Get the user ID using the session manager's method
-	userIDRaw := h.SessionManager.GetSessionValue(sess, "user_id")
+	userIDRaw, err := h.SessionManager.GetSessionValue(sess, "user_id")
+	if err != nil {
+		h.Logger.Error("Failed to get user ID from session", err)
+		return "", err
+	}
 	if userIDRaw == nil {
 		err := fmt.Errorf("user ID not found in session")
 		h.Logger.Error("Missing user ID", err)
