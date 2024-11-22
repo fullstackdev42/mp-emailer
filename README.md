@@ -4,20 +4,41 @@ MP Emailer is a web application that facilitates communication between constitue
 
 ## Features
 
-- User registration and authentication
-- Create and manage email campaigns
-- Find MPs based on postal codes
-- Send emails to MPs
-- Responsive web design
+- User registration and authentication with JWT and session support
+- Create and manage email campaigns with rich text editing
+- Find MPs based on postal codes using the OpenNorth Represent API
+- Send emails via SMTP or Mailgun
+- Responsive web design with Tailwind CSS
+- Real-time frontend development with Browser-Sync
+- Comprehensive logging with Zap
+- Database migrations with Goose
+- Dependency injection with Uber's fx
 
 ## Technologies Used
 
+### Backend
 - Go 1.23
 - Echo web framework
-- MariaDB
-- Docker
-- Taskfile for task automation
+- MariaDB with GORM
+- Uber fx for dependency injection
+- Zap for logging
+- JWT and session-based authentication
+- Mailgun/SMTP for email delivery
+
+### Frontend
 - Tailwind CSS
+- Quill rich text editor
+- Browser-Sync for live reload
+- Responsive design
+
+### Development & Testing
+- Docker and Docker Compose
+- Taskfile for task automation
+- Goose for database migrations
+- Testify for testing
+- Air for live reload
+- Mailpit for local email testing
+- GolangCI-Lint for code quality
 
 ## Prerequisites
 
@@ -57,30 +78,66 @@ MP Emailer is a web application that facilitates communication between constitue
    task frontend-build
    ```
 
-7. Access the application at `http://localhost:8080`
+7. Access the application:
+   - Main application: http://localhost:8080
+   - Browser-Sync UI: http://localhost:3000
+   - Mailpit interface: http://localhost:8025
 
 ## Development
 
-- To run tests: `task test`
-- To lint the code: `task lint`
-- To build the application: `task build`
-- To run the application with live reloading: `task dev`
-- To watch and compile frontend assets: `task frontend-dev`
+### Common Tasks
+- Run tests: `task test`
+- Lint code: `task lint`
+- Build application: `task build`
+- Run with live reload: `task dev`
+- Watch frontend assets: `task frontend-dev`
 
-## Database Management
+### Database Management
+- Create migration: `task migrate:create -- <migration_name>`
+- Apply migrations: `task migrate:up`
+- Rollback last migration: `task migrate:down`
+- Reset all migrations: `task migrate:reset` (Warning: This will drop all tables and data!)
 
-- To create a new migration: `migrate create -ext sql -dir migrations -seq <migration_name>`
-- To apply all migrations: `task migrate-up`
-- To rollback one migration: `task migrate-down-one`
-- To view current migration version: `task migrate-version`
+Example:
+```bash
+# Create a new migration
+task migrate:create -- add_status_to_users
 
-## Email Testing
+# Apply all pending migrations
+task migrate:up
 
+# Rollback the most recent migration
+task migrate:down
+
+# Reset all migrations (interactive prompt)
+task migrate:reset
+```
+
+### Email Testing
 The development environment includes Mailpit for email testing. Access the Mailpit interface at `http://localhost:8025`.
+
+## Configuration
+
+The application uses a layered configuration approach:
+1. Default values from `config.yaml`
+2. Environment variables
+3. `.env` file overrides
+
+Key configuration areas:
+- Database settings
+- Email provider (SMTP/Mailgun)
+- Authentication (JWT/Sessions)
+- Feature flags
+- Logging
+- Rate limiting
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
