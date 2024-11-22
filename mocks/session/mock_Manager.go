@@ -24,6 +24,40 @@ func (_m *MockManager) EXPECT() *MockManager_Expecter {
 	return &MockManager_Expecter{mock: &_m.Mock}
 }
 
+// AddFlash provides a mock function with given fields: sess, message
+func (_m *MockManager) AddFlash(sess *sessions.Session, message interface{}) {
+	_m.Called(sess, message)
+}
+
+// MockManager_AddFlash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddFlash'
+type MockManager_AddFlash_Call struct {
+	*mock.Call
+}
+
+// AddFlash is a helper method to define mock.On call
+//   - sess *sessions.Session
+//   - message interface{}
+func (_e *MockManager_Expecter) AddFlash(sess interface{}, message interface{}) *MockManager_AddFlash_Call {
+	return &MockManager_AddFlash_Call{Call: _e.mock.On("AddFlash", sess, message)}
+}
+
+func (_c *MockManager_AddFlash_Call) Run(run func(sess *sessions.Session, message interface{})) *MockManager_AddFlash_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*sessions.Session), args[1].(interface{}))
+	})
+	return _c
+}
+
+func (_c *MockManager_AddFlash_Call) Return() *MockManager_AddFlash_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockManager_AddFlash_Call) RunAndReturn(run func(*sessions.Session, interface{})) *MockManager_AddFlash_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ClearSession provides a mock function with given fields: c, name
 func (_m *MockManager) ClearSession(c echo.Context, name string) error {
 	ret := _m.Called(c, name)
@@ -101,6 +135,54 @@ func (_c *MockManager_DeleteSessionValue_Call) Return() *MockManager_DeleteSessi
 }
 
 func (_c *MockManager_DeleteSessionValue_Call) RunAndReturn(run func(*sessions.Session, string)) *MockManager_DeleteSessionValue_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetFlashes provides a mock function with given fields: sess
+func (_m *MockManager) GetFlashes(sess *sessions.Session) []interface{} {
+	ret := _m.Called(sess)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFlashes")
+	}
+
+	var r0 []interface{}
+	if rf, ok := ret.Get(0).(func(*sessions.Session) []interface{}); ok {
+		r0 = rf(sess)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]interface{})
+		}
+	}
+
+	return r0
+}
+
+// MockManager_GetFlashes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFlashes'
+type MockManager_GetFlashes_Call struct {
+	*mock.Call
+}
+
+// GetFlashes is a helper method to define mock.On call
+//   - sess *sessions.Session
+func (_e *MockManager_Expecter) GetFlashes(sess interface{}) *MockManager_GetFlashes_Call {
+	return &MockManager_GetFlashes_Call{Call: _e.mock.On("GetFlashes", sess)}
+}
+
+func (_c *MockManager_GetFlashes_Call) Run(run func(sess *sessions.Session)) *MockManager_GetFlashes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*sessions.Session))
+	})
+	return _c
+}
+
+func (_c *MockManager_GetFlashes_Call) Return(_a0 []interface{}) *MockManager_GetFlashes_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockManager_GetFlashes_Call) RunAndReturn(run func(*sessions.Session) []interface{}) *MockManager_GetFlashes_Call {
 	_c.Call.Return(run)
 	return _c
 }

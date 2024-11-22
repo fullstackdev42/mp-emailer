@@ -30,6 +30,10 @@ type Manager interface {
 	// Cleanup operations
 	StartCleanup(ctx context.Context)
 	StopCleanup() error
+
+	// Flash message operations
+	GetFlashes(sess *sessions.Session) []interface{}
+	AddFlash(sess *sessions.Session, message interface{})
 }
 
 // Store extends the basic sessions.Store interface with additional security features

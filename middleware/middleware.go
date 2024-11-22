@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"golang.org/x/time/rate"
 
@@ -28,17 +29,19 @@ var Module = fx.Options(
 
 // Manager handles middleware registration and configuration
 type Manager struct {
-	logger       loggo.LoggerInterface
-	cfg          *config.Config
-	errorHandler shared.ErrorHandlerInterface
+	logger         loggo.LoggerInterface
+	cfg            *config.Config
+	errorHandler   shared.ErrorHandlerInterface
+	sessionManager session.Manager
 }
 
 // ManagerParams for dependency injection
 type ManagerParams struct {
 	fx.In
-	Logger       loggo.LoggerInterface
-	Cfg          *config.Config
-	ErrorHandler shared.ErrorHandlerInterface
+	Logger         loggo.LoggerInterface
+	Cfg            *config.Config
+	ErrorHandler   shared.ErrorHandlerInterface
+	SessionManager session.Manager
 }
 
 // NewManager creates a new middleware manager
@@ -54,9 +57,10 @@ func NewManager(params ManagerParams) (*Manager, error) {
 	}
 
 	return &Manager{
-		logger:       params.Logger,
-		cfg:          params.Cfg,
-		errorHandler: params.ErrorHandler,
+		logger:         params.Logger,
+		cfg:            params.Cfg,
+		errorHandler:   params.ErrorHandler,
+		sessionManager: params.SessionManager,
 	}, nil
 }
 
@@ -66,7 +70,9 @@ func (m *Manager) Register(e *echo.Echo) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.MethodOverride())
+	e.Use(m.SessionMiddleware(m.sessionManager))
 	m.registerRateLimiter(e)
+
 	// Don't register JWT globally - it should be applied to specific routes
 }
 

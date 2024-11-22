@@ -123,11 +123,27 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
-	h.Logger.Debug("CreateCampaign: Starting")
+	h.Logger.Debug("CreateCampaign request")
 
-	userID, err := h.GetUserIDFromSession(c)
+	// Get session manager from context
+	sessionManager, err := h.GetSessionManager(c)
 	if err != nil {
-		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
+		h.Logger.Error("Session manager error", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication required", http.StatusUnauthorized)
+	}
+
+	// Get session
+	sess, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Session error", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication required", http.StatusUnauthorized)
+	}
+
+	// Get user ID from session
+	userID, ok := sessionManager.GetSessionValue(sess, "user_id").(string)
+	if !ok || userID == "" {
+		h.Logger.Error("User ID not found", ErrUnauthorizedAccess)
+		return h.ErrorHandler.HandleHTTPError(c, ErrUnauthorizedAccess, "Authentication required", http.StatusUnauthorized)
 	}
 
 	params := &CreateCampaignParams{

@@ -237,3 +237,30 @@ func (m *manager) StopCleanup() error {
 	m.cleaner.StopCleanup()
 	return nil
 }
+
+func (m *manager) GetFlashes(sess *sessions.Session) []interface{} {
+	if sess == nil {
+		m.logger.Debug("GetFlashes called with nil session")
+		return nil
+	}
+
+	// Get all flashes
+	flashes := sess.Flashes()
+
+	// Log flash messages for debugging
+	if len(flashes) > 0 {
+		m.logger.Debug("Retrieved flash messages", "count", len(flashes))
+	}
+
+	return flashes
+}
+
+func (m *manager) AddFlash(sess *sessions.Session, message interface{}) {
+	if sess == nil {
+		m.logger.Debug("AddFlash called with nil session")
+		return
+	}
+
+	sess.AddFlash(message)
+	m.logger.Debug("Added flash message", "message", message)
+}
