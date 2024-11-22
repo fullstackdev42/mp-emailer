@@ -24,18 +24,6 @@ import (
 //
 //nolint:gochecknoglobals
 var App = fx.Options(
-	fx.Invoke(func(lc fx.Lifecycle) {
-		lc.Append(fx.Hook{
-			OnStart: func(_ context.Context) error {
-				fmt.Println("🚀 Starting application...")
-				return nil
-			},
-			OnStop: func(_ context.Context) error {
-				fmt.Println("👋 Shutting down application...")
-				return nil
-			},
-		})
-	}),
 	fx.Provide(
 		config.Load,
 		provideVersionInfo,
@@ -43,14 +31,7 @@ var App = fx.Options(
 			provideLogger,
 			fx.As(new(logger.Interface)),
 		),
-		fx.Annotate(
-			func() *echo.Echo {
-				fmt.Println("🔄 Initializing Echo server...")
-				e := echo.New()
-				fmt.Println("✅ Echo server initialized")
-				return e
-			},
-		),
+		echo.New,
 		validator.New,
 		fx.Annotate(
 			provideTemplates,
@@ -85,8 +66,6 @@ var App = fx.Options(
 )
 
 func provideLogger(cfg *config.Config) (logger.Interface, error) {
-	fmt.Println("🔄 Initializing zap logger...")
-
 	logConfig := &logger.Config{
 		Level:       cfg.Log.Level,
 		Format:      cfg.Log.Format,
@@ -95,11 +74,9 @@ func provideLogger(cfg *config.Config) (logger.Interface, error) {
 	}
 
 	if err := logger.Initialize(logConfig); err != nil {
-		fmt.Printf("❌ Logger initialization failed: %v\n", err)
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	fmt.Println("✅ Logger initialized successfully")
 	return logger.GetLogger(), nil
 }
 
@@ -107,8 +84,7 @@ func provideVersionInfo() version.Info {
 	return version.Get()
 }
 
-func provideDatabaseService(cfg *config.Config, log logger.Interface) (database.Database, error) {
-	log.Debug("Initializing database connection")
+func provideDatabaseService(cfg *config.Config) (database.Database, error) {
 	ctx := context.Background()
 
 	dbConfig := database.ConnectionConfig{
@@ -122,12 +98,9 @@ func provideDatabaseService(cfg *config.Config, log logger.Interface) (database.
 
 	db, err := database.NewConnection(ctx, dbConfig)
 	if err != nil {
-		log.Error("Failed to create database connection", err)
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
-	log.Debug("Database connection established successfully")
 
-	log.Debug("Running database migrations")
 	migConfig := database.MigrationConfig{
 		DSN:            cfg.DSN(),
 		MigrationsPath: "database/migrations",
@@ -135,17 +108,13 @@ func provideDatabaseService(cfg *config.Config, log logger.Interface) (database.
 	}
 
 	if err := database.RunMigrations(migConfig); err != nil {
-		log.Error("Failed to run database migrations", err)
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
-	log.Debug("Database migrations completed successfully")
 
 	return db, nil
 }
 
-func provideTemplates(manager session.Manager, cfg *config.Config, log logger.Interface) (TemplateRendererInterface, error) {
-	log.Debug("Initializing template renderer")
-
+func provideTemplates(manager session.Manager, cfg *config.Config) (TemplateRendererInterface, error) {
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"hasPrefix": strings.HasPrefix,
 		"safeHTML":  func(s string) template.HTML { return template.HTML(s) },
@@ -167,28 +136,21 @@ func provideTemplates(manager session.Manager, cfg *config.Config, log logger.In
 	})
 
 	pattern := filepath.Join("web", "templates", "**", "*.gohtml")
-	log.Debug("Looking for templates", "pattern", pattern)
 
 	templates, err := filepath.Glob(pattern)
 	if err != nil {
-		log.Error("Failed to glob templates", err)
 		return nil, fmt.Errorf("failed to glob templates: %w", err)
 	}
 
 	if len(templates) == 0 {
-		log.Error("No templates found", fmt.Errorf("no templates in %s", pattern))
 		return nil, fmt.Errorf("no templates found in %s", pattern)
 	}
 
-	log.Debug("Found templates", "count", len(templates))
-
 	tmpl, err = tmpl.ParseFiles(templates...)
 	if err != nil {
-		log.Error("Failed to parse templates", err)
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 
-	log.Debug("Templates parsed successfully")
 	return NewCustomTemplateRenderer(tmpl, manager, cfg), nil
 }
 

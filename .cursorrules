@@ -4,7 +4,7 @@ General Guidelines
 - Confirm the plan, then write code.
 - Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go 1.23 code.
 - Use taskfile.dev over makefiles and build scripts.
-- Use github.com/jonesrussell/loggo for logging.
+- Use uber's zap for logging.
 - Use echo/v4 for web development.
 
 Web Application Development
@@ -39,6 +39,3 @@ Naming Conventions
 Testing
 - Do not use github.com/golang/mock/gomock; use testify's mock package instead.
 - Use testify's assert package for assertions.
-
-Methods
-- Use logger.Error("Server error", err) instead of logger.Error("Server error", "error", err).
