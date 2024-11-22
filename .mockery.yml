@@ -43,3 +43,7 @@ packages:
   github.com/jonesrussell/mp-emailer/database:
     interfaces:
       Database:
+
+  github.com/jonesrussell/mp-emailer/logger:
+    interfaces:
+      Interface:

@@ -1,7 +1,7 @@
 package shared
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/labstack/echo/v4"
 )
 
@@ -37,14 +37,14 @@ func (h *ErrorHandler) HandleHTTPError(c echo.Context, err error, message string
 // LoggingErrorHandlerDecorator adds logging functionality to the ErrorHandlerInterface
 type LoggingErrorHandlerDecorator struct {
 	errorHandler ErrorHandlerInterface
-	logger       loggo.LoggerInterface
+	logger       logger.Interface
 }
 
 // NewLoggingErrorHandlerDecorator creates a new instance of LoggingErrorHandlerDecorator
-func NewLoggingErrorHandlerDecorator(errorHandler ErrorHandlerInterface, logger loggo.LoggerInterface) *LoggingErrorHandlerDecorator {
+func NewLoggingErrorHandlerDecorator(errorHandler ErrorHandlerInterface, log logger.Interface) *LoggingErrorHandlerDecorator {
 	return &LoggingErrorHandlerDecorator{
 		errorHandler: errorHandler,
-		logger:       logger,
+		logger:       log,
 	}
 }
 

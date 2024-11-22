@@ -9,8 +9,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/campaign"
-	mocks "github.com/jonesrussell/mp-emailer/mocks"
 	mocksCampaign "github.com/jonesrussell/mp-emailer/mocks/campaign"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,13 +20,13 @@ type CampaignServiceTestSuite struct {
 	service    *campaign.Service
 	mockRepo   *mocksCampaign.MockRepositoryInterface
 	validate   *validator.Validate
-	mockLogger *mocks.MockLoggerInterface
+	mockLogger *mocksLogger.MockInterface
 }
 
 func (s *CampaignServiceTestSuite) SetupTest() {
 	s.mockRepo = new(mocksCampaign.MockRepositoryInterface)
 	s.validate = validator.New()
-	s.mockLogger = new(mocks.MockLoggerInterface)
+	s.mockLogger = mocksLogger.NewMockInterface(s.T())
 
 	// Register the UUID validator
 	err := s.validate.RegisterValidation("uuid4", func(fl validator.FieldLevel) bool {

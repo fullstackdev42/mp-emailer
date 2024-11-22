@@ -9,6 +9,7 @@
         </div>
         <div class="mt-6">
             <form action="/campaign/{{.Content.CampaignID}}/send" method="POST">
+                <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
                 <input type="hidden" name="email" value="{{.Content.Email}}">
                 <textarea name="content" style="display: none;">{{printf "%s" .Content.Content}}</textarea>
                 <button type="submit" 

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"go.uber.org/fx"
 )
 
@@ -35,7 +35,7 @@ var Module = fx.Module("session",
 	),
 )
 
-func NewDefaultOptions(cfg *config.Config, logger loggo.LoggerInterface) (Options, error) {
+func NewDefaultOptions(cfg *config.Config, log logger.Interface) (Options, error) {
 	// Decode the base64 secret key
 	decodedKey, err := base64.StdEncoding.DecodeString(cfg.Auth.SessionSecret)
 	if err != nil {
@@ -44,7 +44,7 @@ func NewDefaultOptions(cfg *config.Config, logger loggo.LoggerInterface) (Option
 
 	// Check the decoded key length
 	if len(decodedKey) != 32 {
-		logger.Error("Invalid session secret length", fmt.Errorf("decoded session secret must be exactly 32 bytes (current length: %d)", len(decodedKey)))
+		log.Error("Invalid session secret length", fmt.Errorf("decoded session secret must be exactly 32 bytes (current length: %d)", len(decodedKey)))
 		return Options{}, fmt.Errorf("decoded session secret must be exactly 32 bytes (got %d)", len(decodedKey))
 	}
 

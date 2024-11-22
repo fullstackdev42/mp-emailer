@@ -1,8 +1,6 @@
 package shared
 
-import (
-	"github.com/jonesrussell/loggo"
-)
+import "github.com/jonesrussell/mp-emailer/logger"
 
 // ServiceInterface is a generic interface for services to be decorated
 type ServiceInterface interface {
@@ -14,7 +12,7 @@ type ServiceInterface interface {
 // LoggingServiceDecorator adds logging functionality to any ServiceInterface
 type LoggingServiceDecorator struct {
 	Service ServiceInterface
-	Logger  loggo.LoggerInterface
+	Logger  logger.Interface
 }
 
 func (d *LoggingServiceDecorator) Info(message string, params ...interface{}) {

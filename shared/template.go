@@ -20,7 +20,7 @@ type FormData struct {
 
 type Data struct {
 	Content         interface{}
-	CSRFToken       interface{}
+	CSRFToken       string
 	CurrentPath     string
 	Error           string
 	Form            FormData
@@ -97,7 +97,17 @@ func (t *CustomTemplateRenderer) Render(w io.Writer, name string, data interface
 		messages[i] = fmt.Sprint(flash)
 	}
 	pageData.Messages = append(pageData.Messages, messages...)
-	pageData.CSRFToken = c.Get("csrf")
+
+	if token := c.Get("csrf"); token != nil {
+		if tokenStr, ok := token.(string); ok {
+			pageData.CSRFToken = tokenStr
+		}
+	}
+
+	if pageData.CSRFToken == "" {
+		return fmt.Errorf("missing CSRF token")
+	}
+
 	pageData.CurrentPath = c.Request().URL.Path
 
 	return t.executeTemplate(w, name, pageData)

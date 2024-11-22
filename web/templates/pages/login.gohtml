@@ -1,6 +1,7 @@
 {{define "login"}}
 <main class="max-w-md mx-auto p-8">
     <form action="/user/login" method="post" class="space-y-4">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
         <div>
             <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>
             <input type="text" id="username" name="username" required 

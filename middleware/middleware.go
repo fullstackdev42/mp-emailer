@@ -11,7 +11,7 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -29,7 +29,7 @@ var Module = fx.Options(
 
 // Manager handles middleware registration and configuration
 type Manager struct {
-	logger         loggo.LoggerInterface
+	logger         logger.Interface
 	cfg            *config.Config
 	errorHandler   shared.ErrorHandlerInterface
 	sessionManager session.Manager
@@ -38,7 +38,7 @@ type Manager struct {
 // ManagerParams for dependency injection
 type ManagerParams struct {
 	fx.In
-	Logger         loggo.LoggerInterface
+	Logger         logger.Interface
 	Cfg            *config.Config
 	ErrorHandler   shared.ErrorHandlerInterface
 	SessionManager session.Manager
@@ -69,7 +69,9 @@ func (m *Manager) Register(e *echo.Echo) {
 	// Add global middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.MethodOverride())
+	e.Pre(middleware.MethodOverrideWithConfig(middleware.MethodOverrideConfig{
+		Getter: middleware.MethodFromForm("_method"),
+	}))
 	e.Use(m.SessionMiddleware(m.sessionManager))
 	e.Use(m.CSRFMiddleware())
 	m.registerRateLimiter(e)
@@ -114,10 +116,11 @@ func (m *Manager) registerRateLimiter(e *echo.Echo) {
 // CSRFMiddleware returns CSRF protection middleware
 func (m *Manager) CSRFMiddleware() echo.MiddlewareFunc {
 	return middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup:    "form:csrf",
+		TokenLookup:    "header:X-CSRF-Token,form:_csrf,form:csrf",
 		ContextKey:     "csrf",
 		CookieName:     "_csrf",
 		CookiePath:     "/",
+		CookieMaxAge:   86400,
 		CookieSecure:   m.cfg.App.Env == "production",
 		CookieHTTPOnly: true,
 	})

@@ -9,7 +9,7 @@
     </p>
         {{end}}
 
-    {{template "campaign_send_form" .Content.Campaign}}
+    {{template "campaign_send_form" dict "Campaign" .Content.Campaign "CSRFToken" .CSRFToken}}
     
     <div class="bg-white shadow-md rounded-lg p-6 mb-6" aria-labelledby="template-preview">
         <h2 id="template-preview" class="sr-only">Preview</h2>
@@ -26,6 +26,7 @@
             </a>
             <form action="/campaign/{{.Content.Campaign.ID}}" method="POST" class="inline-block">
                 <input type="hidden" name="_method" value="DELETE">
+                <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
                 <button type="submit"
                     class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300"
                     aria-label="Delete Campaign">

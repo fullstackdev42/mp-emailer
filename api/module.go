@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"go.uber.org/fx"
@@ -17,7 +17,7 @@ type HandlerParams struct {
 
 	CampaignService campaign.ServiceInterface
 	UserService     user.ServiceInterface
-	Logger          loggo.LoggerInterface
+	Logger          logger.Interface
 	ErrorHandler    shared.ErrorHandlerInterface
 	JWTExpiry       int
 }
@@ -31,8 +31,8 @@ var Module = fx.Options(
 		provideJWTExpiry,
 	),
 	fx.Decorate(
-		func(base *Handler, logger loggo.LoggerInterface) *Handler {
-			return NewLoggingHandlerDecorator(base, logger)
+		func(base *Handler, log logger.Interface) *Handler {
+			return NewLoggingHandlerDecorator(base, log)
 		},
 	),
 )

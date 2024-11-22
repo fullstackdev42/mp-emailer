@@ -390,15 +390,17 @@ func (h *Handler) EditCampaign(c echo.Context) error {
 	}
 
 	params := EditParams{
-		ID:       campaignID,
-		Name:     c.FormValue("name"),
-		Template: c.FormValue("template"),
+		ID:          campaignID,
+		Name:        c.FormValue("name"),
+		Description: c.FormValue("description"),
+		Template:    c.FormValue("template"),
 	}
 
 	if err := h.service.UpdateCampaign(c.Request().Context(), &UpdateCampaignDTO{
-		ID:       params.ID,
-		Name:     params.Name,
-		Template: params.Template,
+		ID:          params.ID,
+		Name:        params.Name,
+		Description: params.Description,
+		Template:    params.Template,
 	}); err != nil {
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)

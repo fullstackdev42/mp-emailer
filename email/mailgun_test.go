@@ -3,8 +3,8 @@ package email
 import (
 	"testing"
 
-	"github.com/jonesrussell/mp-emailer/mocks"
 	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -12,7 +12,7 @@ import (
 
 func TestMailgunEmailService_SendEmail(t *testing.T) {
 	mockMailgun := new(mocksEmail.MockMailgunClient)
-	mockLogger := mocks.NewMockLoggerInterface(t)
+	mockLogger := mocksLogger.NewMockInterface(t)
 
 	// Set up logger expectations
 	mockLogger.On("Debug", "Email sent successfully", "messageId", "").Return()
@@ -21,7 +21,7 @@ func TestMailgunEmailService_SendEmail(t *testing.T) {
 		domain: "example.com",
 		apiKey: "key",
 		client: mockMailgun,
-		logger: mockLogger,
+		Logger: mockLogger,
 	}
 
 	message := &mailgun.Message{}

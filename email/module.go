@@ -1,7 +1,7 @@
 package email
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"go.uber.org/fx"
 )
 
@@ -30,7 +30,7 @@ type Params struct {
 	fx.In
 
 	Config Config
-	Logger loggo.LoggerInterface
+	Logger logger.Interface
 }
 
 // Result holds the email service instance

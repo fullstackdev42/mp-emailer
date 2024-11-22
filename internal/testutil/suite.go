@@ -7,9 +7,9 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
-	"github.com/jonesrussell/mp-emailer/mocks"
 	mocksCampaign "github.com/jonesrussell/mp-emailer/mocks/campaign"
 	mocksEmail "github.com/jonesrussell/mp-emailer/mocks/email"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
@@ -20,7 +20,7 @@ type BaseTestSuite struct {
 	Echo                        *echo.Echo
 	Context                     echo.Context
 	Recorder                    *httptest.ResponseRecorder
-	Logger                      *mocks.MockLoggerInterface
+	Logger                      *mocksLogger.MockInterface
 	CampaignService             *mocksCampaign.MockServiceInterface
 	RepresentativeLookupService *mocksCampaign.MockRepresentativeLookupServiceInterface
 	EmailService                *mocksEmail.MockService
@@ -34,7 +34,7 @@ type BaseTestSuite struct {
 func (s *BaseTestSuite) SetupTest() {
 	s.Echo = echo.New()
 	s.Recorder = httptest.NewRecorder()
-	s.Logger = mocks.NewMockLoggerInterface(s.T())
+	s.Logger = mocksLogger.NewMockInterface(s.T())
 	s.CampaignService = mocksCampaign.NewMockServiceInterface(s.T())
 	s.RepresentativeLookupService = mocksCampaign.NewMockRepresentativeLookupServiceInterface(s.T())
 	s.EmailService = mocksEmail.NewMockService(s.T())
