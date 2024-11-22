@@ -1,9 +1,9 @@
 package shared
 
 import (
-	"errors"
 	"net/http"
 
+	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/session"
@@ -76,40 +76,32 @@ func (h *BaseHandler) AddFlashMessage(c echo.Context, message string) error {
 	h.Logger.Debug("Adding flash message", "message", message)
 
 	if h.SessionManager == nil {
-		h.Logger.Error("Session manager not initialized", errors.New("nil session manager"))
-		return errors.New("session manager not initialized")
+		return session.ErrSessionNotFound
 	}
 
-	session, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return err
 	}
 
-	session.AddFlash(message, "messages")
-	if err := h.SessionManager.SaveSession(c, session); err != nil {
-		h.Logger.Error("Failed to save session after adding flash", err)
-		return err
-	}
-
-	h.Logger.Debug("Flash message added successfully")
-	return nil
+	sess.AddFlash(message, "messages")
+	return h.SessionManager.SaveSession(c, sess)
 }
 
 // GetFlashMessages retrieves and clears flash messages from the session
 func (h *BaseHandler) GetFlashMessages(c echo.Context) ([]string, error) {
 	if h.SessionManager == nil {
-		h.Logger.Error("Session manager not initialized", errors.New("nil session manager"))
-		return nil, errors.New("session manager not initialized")
+		return nil, session.ErrSessionNotFound
 	}
 
-	session, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return nil, err
 	}
 
-	flashes := session.Flashes("messages")
+	flashes := sess.Flashes("messages")
 	messages := make([]string, len(flashes))
 	for i, flash := range flashes {
 		if str, ok := flash.(string); ok {
@@ -117,10 +109,50 @@ func (h *BaseHandler) GetFlashMessages(c echo.Context) ([]string, error) {
 		}
 	}
 
-	if err := h.SessionManager.SaveSession(c, session); err != nil {
+	if err := h.SessionManager.SaveSession(c, sess); err != nil {
 		h.Logger.Error("Failed to save session after getting flashes", err)
 		return messages, err
 	}
 
 	return messages, nil
+}
+
+// ClearSession clears the current session
+func (h *BaseHandler) ClearSession(c echo.Context) error {
+	if h.SessionManager == nil {
+		return session.ErrSessionNotFound
+	}
+
+	return h.SessionManager.ClearSession(c, h.Config.Auth.SessionName)
+}
+
+// GetSession retrieves the current session
+func (h *BaseHandler) GetSession(c echo.Context) (*sessions.Session, error) {
+	if h.SessionManager == nil {
+		return nil, session.ErrSessionNotFound
+	}
+	return h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+}
+
+// SaveSession saves the session
+func (h *BaseHandler) SaveSession(c echo.Context, sess *sessions.Session) error {
+	if h.SessionManager == nil {
+		return session.ErrSessionNotFound
+	}
+	return h.SessionManager.SaveSession(c, sess)
+}
+
+// SetSessionValues sets user values in the session
+func (h *BaseHandler) SetSessionValues(sess *sessions.Session, user interface{}) {
+	if h.SessionManager != nil {
+		h.SessionManager.SetSessionValues(sess, user)
+	}
+}
+
+// IsAuthenticated checks if the current session is authenticated
+func (h *BaseHandler) IsAuthenticated(c echo.Context) bool {
+	if h.SessionManager == nil {
+		return false
+	}
+	return h.SessionManager.IsAuthenticated(c)
 }

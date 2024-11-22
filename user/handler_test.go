@@ -45,9 +45,8 @@ func (s *HandlerTestSuite) SetupTest() {
 			TemplateRenderer: s.TemplateRenderer,
 			Config:           s.Config,
 		},
-		Service:        s.UserService,
-		Repo:           s.UserRepo,
-		SessionManager: s.SessionManager,
+		Service: s.UserService,
+		Repo:    s.UserRepo,
 	}
 
 	s.handler = user.NewHandler(params)

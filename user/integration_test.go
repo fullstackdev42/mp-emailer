@@ -63,9 +63,8 @@ func (s *IntegrationTestSuite) SetupTest() {
 			Config:           mockConfig,
 			TemplateRenderer: mockTemplateRenderer,
 		},
-		Service:        mockUserService,
-		Repo:           mockRepo,
-		SessionManager: mockSessionManager,
+		Service: mockUserService,
+		Repo:    mockRepo,
 	})
 
 	s.sessionManager = mockSessionManager

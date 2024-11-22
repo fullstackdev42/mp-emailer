@@ -9,8 +9,6 @@ import (
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
-
-	"github.com/jonesrussell/mp-emailer/session"
 )
 
 func init() {
@@ -37,26 +35,23 @@ func RegisterRoutes(h *Handler, e *echo.Echo) {
 // Handler for user routes
 type Handler struct {
 	shared.BaseHandler
-	Service        ServiceInterface
-	Repo           RepositoryInterface
-	SessionManager session.Manager
+	Service ServiceInterface
+	Repo    RepositoryInterface
 }
 
 type HandlerParams struct {
 	fx.In
 	shared.BaseHandlerParams
-	Service        ServiceInterface
-	Repo           RepositoryInterface
-	SessionManager session.Manager
+	Service ServiceInterface
+	Repo    RepositoryInterface
 }
 
 // NewHandler creates a new user handler
 func NewHandler(params HandlerParams) *Handler {
 	return &Handler{
-		BaseHandler:    shared.NewBaseHandler(params.BaseHandlerParams),
-		Service:        params.Service,
-		Repo:           params.Repo,
-		SessionManager: params.SessionManager,
+		BaseHandler: shared.NewBaseHandler(params.BaseHandlerParams),
+		Service:     params.Service,
+		Repo:        params.Repo,
 	}
 }
 
@@ -124,15 +119,21 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 		})
 	}
 
-	// Get or create session
-	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	// Get session through base handler
+	sess, err := h.BaseHandler.GetSession(c)
 	if err != nil {
 		h.Logger.Error("Failed to get session", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error getting session", shared.StatusInternalServerError)
 	}
 
-	// Set session values using the new interface
-	h.SessionManager.SetSessionValues(sess, user)
+	// Set session values through base handler
+	h.BaseHandler.SetSessionValues(sess, user)
+
+	// Save session through base handler
+	if err := h.BaseHandler.SaveSession(c, sess); err != nil {
+		h.Logger.Error("Failed to save session", err)
+		return h.ErrorHandler.HandleHTTPError(c, err, "Error saving session", shared.StatusInternalServerError)
+	}
 
 	if err := h.AddFlashMessage(c, "Successfully logged in!"); err != nil {
 		h.Logger.Error("Failed to add login flash message", err)
@@ -143,13 +144,8 @@ func (h *Handler) LoginPOST(c echo.Context) error {
 
 // LogoutGET handler for the logout page
 func (h *Handler) LogoutGET(c echo.Context) error {
-	if err := h.SessionManager.ClearSession(c, h.Config.Auth.SessionName); err != nil {
-		h.Logger.Error("Failed to clear session", err)
+	if err := h.ClearSession(c); err != nil {
 		return h.ErrorHandler.HandleHTTPError(c, err, "Error clearing session", shared.StatusInternalServerError)
-	}
-
-	if err := h.AddFlashMessage(c, "You have been successfully logged out"); err != nil {
-		h.Logger.Error("Failed to add logout flash message", err)
 	}
 
 	return c.Redirect(shared.StatusSeeOther, "/")
@@ -193,10 +189,11 @@ func (h *Handler) ResetPasswordPOST(c echo.Context) error {
 	return c.Redirect(shared.StatusSeeOther, "/user/login")
 }
 
+// RequireAuthentication middleware
 func (h *Handler) RequireAuthentication() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if !h.SessionManager.IsAuthenticated(c) {
+			if !h.IsAuthenticated(c) {
 				return c.Redirect(shared.StatusSeeOther, "/user/login")
 			}
 			return next(c)
