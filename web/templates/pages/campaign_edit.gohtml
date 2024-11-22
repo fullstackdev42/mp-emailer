@@ -1,6 +1,6 @@
 {{define "campaign_edit"}}
 <main class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Edit Campaign: {{.Content.Campaign.Name}}</h1>
+    <h1 class="text-3xl font-bold mb-6">{{.Content.Campaign.Name}}</h1>
     <form action="/campaign/{{.Content.Campaign.ID}}" method="POST" class="max-w-2xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <!-- Add hidden method field -->
         <input type="hidden" name="_method" value="PUT">
