@@ -71,6 +71,7 @@ func (m *Manager) Register(e *echo.Echo) {
 	e.Use(middleware.Recover())
 	e.Use(middleware.MethodOverride())
 	e.Use(m.SessionMiddleware(m.sessionManager))
+	e.Use(m.CSRFMiddleware())
 	m.registerRateLimiter(e)
 
 	// Don't register JWT globally - it should be applied to specific routes
@@ -108,4 +109,16 @@ func (m *Manager) registerRateLimiter(e *echo.Echo) {
 		},
 	}
 	e.Use(middleware.RateLimiterWithConfig(config))
+}
+
+// CSRFMiddleware returns CSRF protection middleware
+func (m *Manager) CSRFMiddleware() echo.MiddlewareFunc {
+	return middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "form:csrf",
+		ContextKey:     "csrf",
+		CookieName:     "_csrf",
+		CookiePath:     "/",
+		CookieSecure:   m.cfg.App.Env == "production",
+		CookieHTTPOnly: true,
+	})
 }

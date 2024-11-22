@@ -259,38 +259,106 @@ func (h *Handler) DeleteCampaign(c echo.Context) error {
 // EditCampaignForm handles GET requests for the campaign edit form
 func (h *Handler) EditCampaignForm(c echo.Context) error {
 	h.Logger.Debug("Handling EditCampaignForm request")
+
 	id := c.Param("id")
 	campaignID, err := uuid.Parse(id)
 	if err != nil {
+		h.Logger.Error("Invalid campaign ID", err, "id", id)
 		status, msg := h.MapError(ErrInvalidCampaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
+	h.Logger.Debug("Attempting to fetch campaign",
+		"campaignID", campaignID,
+		"context", fmt.Sprintf("%+v", c.Request().Context()))
+
 	campaign, err := h.service.FetchCampaign(c.Request().Context(), GetCampaignParams{ID: campaignID})
 	if err != nil {
-		if err == ErrCampaignNotFound {
+		h.Logger.Error("Failed to fetch campaign", err,
+			"campaignID", campaignID,
+			"errorType", fmt.Sprintf("%T", err),
+			"errorDetails", fmt.Sprintf("%+v", err))
+
+		if errors.Is(err, ErrCampaignNotFound) {
 			return h.ErrorHandler.HandleHTTPError(c, err, "Campaign not found", http.StatusNotFound)
 		}
+
+		// Log the full error chain
+		var errChain []string
+		for e := err; e != nil; e = errors.Unwrap(e) {
+			errChain = append(errChain, fmt.Sprintf("%T: %v", e, e))
+		}
+		h.Logger.Error("Error chain", nil,
+			"campaignID", campaignID,
+			"errors", strings.Join(errChain, " -> "))
+
 		status, msg := h.MapError(err)
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
+	h.Logger.Debug("Campaign fetched successfully",
+		"campaignID", campaignID,
+		"campaignName", campaign.Name)
+
 	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
+		h.Logger.Error("Authentication failed", err,
+			"campaignID", campaignID)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Unauthorized", http.StatusUnauthorized)
 	}
 
 	if campaign.OwnerID.String() != userID {
-		return h.ErrorHandler.HandleHTTPError(c, errors.New("unauthorized"), "Unauthorized", http.StatusUnauthorized)
+		h.Logger.Error("Unauthorized access attempt", nil,
+			"campaignID", campaignID,
+			"requestingUserID", userID,
+			"ownerID", campaign.OwnerID)
+		return h.ErrorHandler.HandleHTTPError(c,
+			errors.New("unauthorized"),
+			"Unauthorized",
+			http.StatusUnauthorized)
 	}
 
-	return c.Render(http.StatusOK, "campaign_edit", shared.Data{
+	// Get CSRF token with error handling
+	csrfToken, ok := c.Get("csrf").(string)
+	if !ok {
+		h.Logger.Error("Failed to get CSRF token", nil,
+			"csrfValue", fmt.Sprintf("%v", c.Get("csrf")))
+		return h.ErrorHandler.HandleHTTPError(c,
+			errors.New("csrf token not found"),
+			"Internal Server Error",
+			http.StatusInternalServerError)
+	}
+
+	h.Logger.Debug("Preparing to render template",
+		"campaignID", campaignID,
+		"userID", userID,
+		"csrfToken", csrfToken,
+		"templateName", "campaign_edit")
+
+	data := shared.Data{
 		Title:    "Edit Campaign",
 		PageName: "campaign_edit",
 		Content: map[string]interface{}{
-			"Campaign": campaign,
+			"Campaign":  campaign,
+			"CSRFToken": csrfToken,
 		},
-	})
+	}
+
+	h.Logger.Debug("Template data prepared",
+		"data", fmt.Sprintf("%+v", data))
+
+	err = c.Render(http.StatusOK, "campaign_edit", data)
+	if err != nil {
+		h.Logger.Error("Template rendering failed", err,
+			"templateName", "campaign_edit",
+			"error", err.Error())
+		return h.ErrorHandler.HandleHTTPError(c, err,
+			"Failed to render template",
+			http.StatusInternalServerError)
+	}
+
+	h.Logger.Debug("Template rendered successfully")
+	return nil
 }
 
 // EditCampaign handles PUT/POST requests for updating a campaign
