@@ -114,10 +114,11 @@ func (m *Manager) registerRateLimiter(e *echo.Echo) {
 // CSRFMiddleware returns CSRF protection middleware
 func (m *Manager) CSRFMiddleware() echo.MiddlewareFunc {
 	return middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup:    "form:csrf",
+		TokenLookup:    "header:X-CSRF-Token,form:_csrf,form:csrf",
 		ContextKey:     "csrf",
 		CookieName:     "_csrf",
 		CookiePath:     "/",
+		CookieMaxAge:   86400,
 		CookieSecure:   m.cfg.App.Env == "production",
 		CookieHTTPOnly: true,
 	})

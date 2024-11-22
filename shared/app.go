@@ -20,13 +20,10 @@ import (
 	"go.uber.org/fx"
 )
 
+// App is the main application module
+//
+//nolint:gochecknoglobals
 var App = fx.Options(
-	fx.Supply(fx.Hook{
-		OnStart: func(context.Context) error {
-			fmt.Println("🚀 Starting application...")
-			return nil
-		},
-	}),
 	fx.Invoke(func(lc fx.Lifecycle) {
 		lc.Append(fx.Hook{
 			OnStart: func(_ context.Context) error {
