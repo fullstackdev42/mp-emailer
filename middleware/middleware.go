@@ -69,7 +69,9 @@ func (m *Manager) Register(e *echo.Echo) {
 	// Add global middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.MethodOverride())
+	e.Pre(middleware.MethodOverrideWithConfig(middleware.MethodOverrideConfig{
+		Getter: middleware.MethodFromForm("_method"),
+	}))
 	e.Use(m.SessionMiddleware(m.sessionManager))
 	e.Use(m.CSRFMiddleware())
 	m.registerRateLimiter(e)

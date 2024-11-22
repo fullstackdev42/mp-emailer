@@ -67,11 +67,19 @@ func (r *Repository) GetAll(ctx context.Context) ([]Campaign, error) {
 
 // Update updates an existing campaign in the database
 func (r *Repository) Update(ctx context.Context, dto *UpdateCampaignDTO) error {
+	// First fetch the existing campaign to preserve owner_id
+	existing := &Campaign{}
+	if err := r.db.FindOne(ctx, existing, "id = ?", dto.ID); err != nil {
+		return fmt.Errorf("error finding existing campaign: %w", err)
+	}
+
+	// Create updated campaign with preserved owner_id
 	campaign := &Campaign{
 		BaseModel:   shared.BaseModel{ID: dto.ID},
 		Name:        dto.Name,
 		Description: dto.Description,
 		Template:    dto.Template,
+		OwnerID:     existing.OwnerID, // Preserve the owner_id
 	}
 
 	if err := r.db.Update(ctx, campaign); err != nil {

@@ -26,9 +26,10 @@ type CreateCampaignParams struct {
 
 // EditParams defines the parameters for editing a campaign
 type EditParams struct {
-	ID       uuid.UUID `param:"id"`
-	Name     string    `param:"name"`
-	Template string    `param:"template"`
+	ID          uuid.UUID `param:"id"`
+	Name        string    `param:"name"`
+	Description string    `param:"description"`
+	Template    string    `param:"template"`
 }
 
 // SendCampaignParams defines the parameters for sending a campaign
