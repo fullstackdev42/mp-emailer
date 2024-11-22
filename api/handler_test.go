@@ -9,8 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonesrussell/mp-emailer/api"
 	"github.com/jonesrussell/mp-emailer/campaign"
-	"github.com/jonesrussell/mp-emailer/mocks"
+	"github.com/jonesrussell/mp-emailer/logger"
 	mocksCampaign "github.com/jonesrussell/mp-emailer/mocks/campaign"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 	mocksUser "github.com/jonesrussell/mp-emailer/mocks/user"
 	"github.com/jonesrussell/mp-emailer/shared"
@@ -23,7 +24,7 @@ type APITestSuite struct {
 	handler          *api.Handler
 	mockCampaign     *mocksCampaign.MockServiceInterface
 	mockUser         *mocksUser.MockServiceInterface
-	mockLogger       *mocks.MockLoggerInterface
+	mockLogger       logger.Interface
 	mockErrorHandler *mocksShared.MockErrorHandlerInterface
 	echo             *echo.Echo
 }
@@ -32,7 +33,7 @@ func setupAPITest(t *testing.T) *APITestSuite {
 	suite := &APITestSuite{
 		mockCampaign:     mocksCampaign.NewMockServiceInterface(t),
 		mockUser:         mocksUser.NewMockServiceInterface(t),
-		mockLogger:       mocks.NewMockLoggerInterface(t),
+		mockLogger:       mocksLogger.NewMockInterface(t),
 		mockErrorHandler: mocksShared.NewMockErrorHandlerInterface(t),
 		echo:             echo.New(),
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
 	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,7 @@ import (
 func TestNewCleaner(t *testing.T) {
 	// Arrange
 	store := mocksSession.NewMockStore(t)
-	logger := mocks.NewMockLoggerInterface(t)
+	logger := mocksLogger.NewMockInterface(t)
 	interval := 15 * time.Minute
 	maxAge := 3600
 
@@ -29,7 +29,7 @@ func TestNewCleaner(t *testing.T) {
 func TestCleanup(t *testing.T) {
 	// Arrange
 	store := mocksSession.NewMockStore(t)
-	logger := mocks.NewMockLoggerInterface(t)
+	logger := mocksLogger.NewMockInterface(t)
 	interval := 15 * time.Millisecond
 	maxAge := 3600
 	ctx := context.Background()
@@ -64,7 +64,7 @@ func TestCleanup(t *testing.T) {
 func TestStopCleanup(t *testing.T) {
 	// Arrange
 	store := mocksSession.NewMockStore(t)
-	logger := mocks.NewMockLoggerInterface(t)
+	logger := mocksLogger.NewMockInterface(t)
 	interval := 100 * time.Millisecond
 	maxAge := 3600
 	ctx := context.Background()

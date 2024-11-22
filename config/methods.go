@@ -1,22 +1,22 @@
 package config
 
 import (
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/version"
+	"go.uber.org/zap/zapcore"
 )
 
-func (c *Config) GetLogLevel() loggo.Level {
+func (c *Config) GetLogLevel() zapcore.Level {
 	switch c.Log.Level {
 	case "debug":
-		return loggo.LevelDebug
+		return zapcore.DebugLevel
 	case "info":
-		return loggo.LevelInfo
+		return zapcore.InfoLevel
 	case "warn":
-		return loggo.LevelWarn
+		return zapcore.WarnLevel
 	case "error":
-		return loggo.LevelError
+		return zapcore.ErrorLevel
 	default:
-		return loggo.LevelInfo
+		return zapcore.InfoLevel
 	}
 }
 

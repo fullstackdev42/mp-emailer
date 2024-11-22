@@ -4,23 +4,23 @@ import (
 	"context"
 	"time"
 
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 )
 
 type Cleaner struct {
 	store    Store
 	interval time.Duration
 	maxAge   int
-	logger   loggo.LoggerInterface
+	logger   logger.Interface
 	cancel   context.CancelFunc
 }
 
-func NewCleaner(store Store, interval time.Duration, maxAge int, logger loggo.LoggerInterface) *Cleaner {
+func NewCleaner(store Store, interval time.Duration, maxAge int, log logger.Interface) *Cleaner {
 	return &Cleaner{
 		store:    store,
 		interval: interval,
 		maxAge:   maxAge,
-		logger:   logger,
+		logger:   log,
 	}
 }
 

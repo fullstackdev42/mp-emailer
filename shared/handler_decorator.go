@@ -1,7 +1,7 @@
 package shared
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,14 +15,14 @@ type HandlerLoggable interface {
 // LoggingHandlerDecorator adds logging functionality to any handler
 type LoggingHandlerDecorator[T HandlerLoggable] struct {
 	Handler T
-	Logger  loggo.LoggerInterface
+	Logger  logger.Interface
 }
 
 // NewLoggingHandlerDecorator creates a new instance of LoggingHandlerDecorator
-func NewLoggingHandlerDecorator[T HandlerLoggable](handler T, logger loggo.LoggerInterface) *LoggingHandlerDecorator[T] {
+func NewLoggingHandlerDecorator[T HandlerLoggable](handler T, log logger.Interface) *LoggingHandlerDecorator[T] {
 	return &LoggingHandlerDecorator[T]{
 		Handler: handler,
-		Logger:  logger,
+		Logger:  log,
 	}
 }
 

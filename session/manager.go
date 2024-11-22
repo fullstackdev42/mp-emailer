@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/labstack/echo/v4"
 )
 
 type manager struct {
 	store   Store
-	logger  loggo.LoggerInterface
+	logger  logger.Interface
 	options Options
 	cleaner *Cleaner
 }
 
-func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Manager, error) {
+func NewManager(store Store, log logger.Interface, options Options) (Manager, error) {
 	// Validate security key size
 	keySize := len(options.SecurityKey)
 	if keySize != 16 && keySize != 24 && keySize != 32 {
@@ -25,7 +25,7 @@ func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Man
 
 	m := &manager{
 		store:   store,
-		logger:  logger,
+		logger:  log,
 		options: options,
 	}
 
@@ -42,7 +42,7 @@ func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Man
 	})
 
 	// Debug log store configuration
-	logger.Debug("Session store configured",
+	log.Debug("Session store configured",
 		"path", options.Path,
 		"domain", options.Domain,
 		"maxAge", options.MaxAge,
@@ -51,7 +51,7 @@ func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Man
 		"sameSite", options.SameSite)
 
 	// Initialize cleaner
-	m.cleaner = NewCleaner(store, options.CleanupInterval, options.MaxAge, logger)
+	m.cleaner = NewCleaner(store, options.CleanupInterval, options.MaxAge, log)
 
 	return m, nil
 }

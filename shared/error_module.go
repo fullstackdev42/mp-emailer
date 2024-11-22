@@ -1,7 +1,7 @@
 package shared
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"go.uber.org/fx"
 )
 
@@ -12,9 +12,9 @@ var ErrorModule = fx.Options(
 	fx.Provide(
 		NewErrorHandler,
 		fx.Annotate(
-			func(logger loggo.LoggerInterface) ErrorHandlerInterface {
+			func(log logger.Interface) ErrorHandlerInterface {
 				baseHandler := NewErrorHandler()
-				return NewLoggingErrorHandlerDecorator(baseHandler, logger)
+				return NewLoggingErrorHandlerDecorator(baseHandler, log)
 			},
 			fx.As(new(ErrorHandlerInterface)),
 		),

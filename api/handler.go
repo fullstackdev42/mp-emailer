@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/campaign"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"github.com/jonesrussell/mp-emailer/user"
 	"github.com/labstack/echo/v4"
@@ -17,7 +17,7 @@ import (
 type Handler struct {
 	campaignService campaign.ServiceInterface
 	userService     user.ServiceInterface
-	logger          loggo.LoggerInterface
+	logger          logger.Interface
 	errorHandler    shared.ErrorHandlerInterface
 	jwtExpiry       int
 }

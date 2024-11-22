@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 )
 
 // NewService creates a new campaign service
-func NewService(repo RepositoryInterface, validate *validator.Validate, logger loggo.LoggerInterface) ServiceInterface {
+func NewService(repo RepositoryInterface, validate *validator.Validate, log logger.Interface) ServiceInterface {
 	return &Service{
 		repo:     repo,
 		validate: validate,
-		logger:   logger,
+		Logger:   log,
 	}
 }
 
@@ -36,7 +36,7 @@ type ServiceInterface interface {
 type Service struct {
 	repo     RepositoryInterface
 	validate *validator.Validate
-	logger   loggo.LoggerInterface
+	Logger   logger.Interface
 }
 
 // Ensure Service implements ServiceInterface
@@ -49,17 +49,17 @@ func (s *Service) CreateCampaign(ctx context.Context, dto *CreateCampaignDTO) (*
 	}
 
 	if err := s.validate.Struct(dto); err != nil {
-		s.logger.Debug("Invalid campaign data", "error", err)
+		s.Logger.Debug("Invalid campaign data", "error", err)
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
 	campaign, err := s.repo.Create(ctx, dto)
 	if err != nil {
-		s.logger.Error("Failed to create campaign", err)
+		s.Logger.Error("Failed to create campaign", err)
 		return nil, fmt.Errorf("failed to create campaign: %w", err)
 	}
 
-	s.logger.Info("Campaign created successfully", "id", campaign.ID)
+	s.Logger.Info("Campaign created successfully", "id", campaign.ID)
 	return campaign, nil
 }
 
@@ -77,10 +77,10 @@ func (s *Service) GetCampaignByID(ctx context.Context, params GetCampaignParams)
 	campaign, err := s.repo.GetByID(ctx, GetCampaignDTO{ID: params.ID})
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
-			s.logger.Debug("Campaign not found", "id", params.ID)
+			s.Logger.Debug("Campaign not found", "id", params.ID)
 			return nil, err
 		}
-		s.logger.Error("Failed to get campaign", err, "id", params.ID)
+		s.Logger.Error("Failed to get campaign", err, "id", params.ID)
 		return nil, fmt.Errorf("failed to get campaign: %w", err)
 	}
 
@@ -101,19 +101,19 @@ func (s *Service) DeleteCampaign(ctx context.Context, params DeleteCampaignDTO) 
 	_, err := s.repo.GetByID(ctx, GetCampaignDTO(params))
 	if err != nil {
 		if errors.Is(err, ErrCampaignNotFound) {
-			s.logger.Debug("Campaign not found for deletion", "id", params.ID)
+			s.Logger.Debug("Campaign not found for deletion", "id", params.ID)
 			return err
 		}
-		s.logger.Error("Failed to fetch campaign for deletion", err, "id", params.ID)
+		s.Logger.Error("Failed to fetch campaign for deletion", err, "id", params.ID)
 		return fmt.Errorf("failed to fetch campaign: %w", err)
 	}
 
 	if err := s.repo.Delete(ctx, params); err != nil {
-		s.logger.Error("Failed to delete campaign", err, "id", params.ID)
+		s.Logger.Error("Failed to delete campaign", err, "id", params.ID)
 		return fmt.Errorf("failed to delete campaign: %w", err)
 	}
 
-	s.logger.Info("Campaign deleted successfully", "id", params.ID)
+	s.Logger.Info("Campaign deleted successfully", "id", params.ID)
 	return nil
 }
 

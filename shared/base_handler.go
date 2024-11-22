@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/jonesrussell/mp-emailer/session"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -25,7 +25,7 @@ const (
 type BaseHandlerParams struct {
 	fx.In
 
-	Logger           loggo.LoggerInterface
+	Logger           logger.Interface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface
@@ -34,7 +34,7 @@ type BaseHandlerParams struct {
 }
 
 type BaseHandler struct {
-	Logger           loggo.LoggerInterface
+	Logger           logger.Interface
 	ErrorHandler     ErrorHandlerInterface
 	Config           *config.Config
 	TemplateRenderer TemplateRendererInterface

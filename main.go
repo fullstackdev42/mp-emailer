@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/api"
 	"github.com/jonesrussell/mp-emailer/campaign"
 	"github.com/jonesrussell/mp-emailer/config"
+	"github.com/jonesrussell/mp-emailer/logger"
 	appMiddleware "github.com/jonesrussell/mp-emailer/middleware"
 	"github.com/jonesrussell/mp-emailer/server"
 	"github.com/jonesrussell/mp-emailer/session"
@@ -79,7 +79,7 @@ func registerHandlers(
 }
 
 // startServer configures the server and starts it
-func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger loggo.LoggerInterface, handler server.HandlerInterface) {
+func startServer(lc fx.Lifecycle, e *echo.Echo, cfg *config.Config, logger logger.Interface, handler server.HandlerInterface) {
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			// Register health check endpoint

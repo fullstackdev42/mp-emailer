@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 // setupTestDirectory sets up a temporary directory for testing and clears environment variables.
@@ -133,13 +133,13 @@ func TestLogLevelConversion(t *testing.T) {
 	tests := []struct {
 		name     string
 		logLevel string
-		want     loggo.Level
+		want     zapcore.Level
 	}{
-		{"Debug Level", "debug", loggo.LevelDebug},
-		{"Info Level", "info", loggo.LevelInfo},
-		{"Warn Level", "warn", loggo.LevelWarn},
-		{"Error Level", "error", loggo.LevelError},
-		{"Default Level", "invalid", loggo.LevelInfo},
+		{"Debug Level", "debug", zapcore.DebugLevel},
+		{"Info Level", "info", zapcore.InfoLevel},
+		{"Warn Level", "warn", zapcore.WarnLevel},
+		{"Error Level", "error", zapcore.ErrorLevel},
+		{"Default Level", "invalid", zapcore.InfoLevel},
 	}
 
 	for _, tt := range tests {
@@ -162,6 +162,7 @@ app:
   port: 8080
 log:
   file: "storage/logs/app.log"
+  format: "json"
 `
 	err := os.WriteFile("config.yaml", []byte(defaultConfig), 0644)
 	require.NoError(t, err, "could not write config.yaml")
@@ -195,6 +196,7 @@ log:
 	assert.Equal(t, config.EmailProviderSMTP, cfg.Email.Provider, "unexpected value for Email.Provider")
 	assert.Equal(t, "24h", cfg.Auth.JWTExpiry, "unexpected value for Auth.JWTExpiry")
 	assert.Equal(t, expectedLogFilePath, cfg.Log.File, "unexpected value for Log.File")
+	assert.Equal(t, "json", cfg.Log.Format, "unexpected value for Log.Format")
 	assert.Equal(t, "info", cfg.Log.Level, "unexpected value for Log.Level")
 }
 

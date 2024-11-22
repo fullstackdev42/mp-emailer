@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/jonesrussell/mp-emailer/shared"
 	"go.uber.org/fx"
 )
@@ -18,8 +18,8 @@ var Module = fx.Module("server",
 		),
 	),
 	fx.Decorate(
-		func(base HandlerInterface, logger loggo.LoggerInterface) HandlerInterface {
-			return shared.NewLoggingHandlerDecorator[HandlerInterface](base, logger)
+		func(base HandlerInterface, log logger.Interface) HandlerInterface {
+			return shared.NewLoggingHandlerDecorator[HandlerInterface](base, log)
 		},
 	),
 )

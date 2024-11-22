@@ -1,8 +1,6 @@
 package shared
 
-import (
-	"github.com/jonesrussell/loggo"
-)
+import "github.com/jonesrussell/mp-emailer/logger"
 
 // LoggableService defines the basic logging operations that a service should support
 type LoggableService interface {
@@ -19,14 +17,14 @@ type ServiceWithLogging interface {
 // GenericLoggingDecorator adds logging functionality to any LoggableService
 type GenericLoggingDecorator[T ServiceWithLogging] struct {
 	Service T
-	Logger  loggo.LoggerInterface
+	Logger  logger.Interface
 }
 
 // NewGenericLoggingDecorator creates a new instance of GenericLoggingDecorator
-func NewGenericLoggingDecorator[T ServiceWithLogging](service T, logger loggo.LoggerInterface) *GenericLoggingDecorator[T] {
+func NewGenericLoggingDecorator[T ServiceWithLogging](service T, log logger.Interface) *GenericLoggingDecorator[T] {
 	return &GenericLoggingDecorator[T]{
 		Service: service,
-		Logger:  logger,
+		Logger:  log,
 	}
 }
 

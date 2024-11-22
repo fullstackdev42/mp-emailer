@@ -1,17 +1,17 @@
 package shared
 
 import (
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"go.uber.org/fx/fxevent"
 )
 
 // CustomFxLogger wraps the application logger for fx logging
 type CustomFxLogger struct {
-	logger loggo.LoggerInterface
+	logger logger.Interface
 }
 
 // NewCustomFxLogger creates a new CustomFxLogger instance
-func NewCustomFxLogger(logger loggo.LoggerInterface) fxevent.Logger {
+func NewCustomFxLogger(logger logger.Interface) fxevent.Logger {
 	return &CustomFxLogger{logger: logger}
 }
 

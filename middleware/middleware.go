@@ -11,7 +11,7 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -29,7 +29,7 @@ var Module = fx.Options(
 
 // Manager handles middleware registration and configuration
 type Manager struct {
-	logger         loggo.LoggerInterface
+	logger         logger.Interface
 	cfg            *config.Config
 	errorHandler   shared.ErrorHandlerInterface
 	sessionManager session.Manager
@@ -38,7 +38,7 @@ type Manager struct {
 // ManagerParams for dependency injection
 type ManagerParams struct {
 	fx.In
-	Logger         loggo.LoggerInterface
+	Logger         logger.Interface
 	Cfg            *config.Config
 	ErrorHandler   shared.ErrorHandlerInterface
 	SessionManager session.Manager

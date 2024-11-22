@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonesrussell/mp-emailer/config"
 	"github.com/jonesrussell/mp-emailer/middleware"
-	"github.com/jonesrussell/mp-emailer/mocks"
+	mocksLogger "github.com/jonesrussell/mp-emailer/mocks/logger"
 	mocksSession "github.com/jonesrussell/mp-emailer/mocks/session"
 	mocksShared "github.com/jonesrussell/mp-emailer/mocks/shared"
 )
@@ -20,7 +20,7 @@ import (
 type MiddlewareTestSuite struct {
 	suite.Suite
 	echo               *echo.Echo
-	mockLogger         *mocks.MockLoggerInterface
+	mockLogger         *mocksLogger.MockInterface
 	mockErrHandler     *mocksShared.MockErrorHandlerInterface
 	manager            *middleware.Manager
 	config             *config.Config
@@ -29,7 +29,7 @@ type MiddlewareTestSuite struct {
 
 func (s *MiddlewareTestSuite) SetupTest() {
 	s.echo = echo.New()
-	s.mockLogger = mocks.NewMockLoggerInterface(s.T())
+	s.mockLogger = mocksLogger.NewMockInterface(s.T())
 	s.mockErrHandler = mocksShared.NewMockErrorHandlerInterface(s.T())
 	s.mockSessionManager = mocksSession.NewMockManager(s.T())
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jonesrussell/loggo"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"github.com/mailgun/mailgun-go/v4"
 )
 
@@ -18,15 +18,15 @@ type MailgunEmailService struct {
 	domain string
 	apiKey string
 	client MailgunClient
-	logger loggo.LoggerInterface
+	Logger logger.Interface
 }
 
-func NewMailgunEmailService(domain, apiKey string, client MailgunClient, logger loggo.LoggerInterface) *MailgunEmailService {
+func NewMailgunEmailService(domain, apiKey string, client MailgunClient, log logger.Interface) *MailgunEmailService {
 	return &MailgunEmailService{
 		domain: domain,
 		apiKey: apiKey,
 		client: client,
-		logger: logger,
+		Logger: log,
 	}
 }
 
@@ -39,7 +39,7 @@ func (s *MailgunEmailService) SendEmail(to, subject, body string, isHTML bool) e
 	)
 
 	if isHTML {
-		s.logger.Debug("HTML Body content", "body", body)
+		s.Logger.Debug("HTML Body content", "body", body)
 		message.SetHTML(body)
 	}
 
@@ -51,6 +51,6 @@ func (s *MailgunEmailService) SendEmail(to, subject, body string, isHTML bool) e
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 
-	s.logger.Debug("Email sent successfully", "messageId", id)
+	s.Logger.Debug("Email sent successfully", "messageId", id)
 	return nil
 }

@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/jonesrussell/loggo"
 	"github.com/jonesrussell/mp-emailer/database"
+	"github.com/jonesrussell/mp-emailer/logger"
 	"go.uber.org/fx"
 )
 
@@ -23,8 +23,8 @@ var Module = fx.Options(
 	),
 	// Add module-level decoration
 	fx.Decorate(
-		func(base ServiceInterface, logger loggo.LoggerInterface) ServiceInterface {
-			return NewLoggingDecorator(base, logger)
+		func(base ServiceInterface, log logger.Interface) ServiceInterface {
+			return NewLoggingDecorator(base, log)
 		},
 	),
 )
