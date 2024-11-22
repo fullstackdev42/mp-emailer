@@ -19,6 +19,13 @@ func (m *Manager) SessionMiddleware(sessionManager session.Manager) echo.Middlew
 				return next(c)
 			}
 
+			// Debug log session state
+			m.logger.Debug("Session state",
+				"session_id", sess.ID,
+				"is_new", sess.IsNew,
+				"user_id", sess.Values["user_id"],
+				"is_authenticated", sess.Values["is_authenticated"])
+
 			// Store session in context for easy access
 			c.Set("session", sess)
 
@@ -30,9 +37,16 @@ func (m *Manager) SessionMiddleware(sessionManager session.Manager) echo.Middlew
 			// Call next handler
 			err = next(c)
 
+			// Debug log session state after handler
+			m.logger.Debug("Session state after handler",
+				"session_id", sess.ID,
+				"user_id", sess.Values["user_id"],
+				"is_authenticated", sess.Values["is_authenticated"])
+
 			// Save session after processing request
 			if saveErr := sessionManager.SaveSession(c, sess); saveErr != nil {
 				m.logger.Error("Failed to save session", saveErr)
+				return saveErr // Return the error instead of continuing
 			}
 
 			return err

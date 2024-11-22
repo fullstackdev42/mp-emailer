@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -123,29 +124,18 @@ func (h *Handler) CreateCampaignForm(c echo.Context) error {
 
 // CreateCampaign handles POST requests for creating a new campaign
 func (h *Handler) CreateCampaign(c echo.Context) error {
-	h.Logger.Debug("CreateCampaign request")
+	h.Logger.Debug("CreateCampaign: Starting request")
 
-	// Get session manager from context
-	sessionManager, err := h.GetSessionManager(c)
+	// Get user ID from session with debug logging
+	userID, err := h.GetUserIDFromSession(c)
 	if err != nil {
-		h.Logger.Error("Session manager error", err)
+		h.Logger.Error("CreateCampaign: Authentication failed", err)
 		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication required", http.StatusUnauthorized)
 	}
 
-	// Get session
-	sess, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
-	if err != nil {
-		h.Logger.Error("Session error", err)
-		return h.ErrorHandler.HandleHTTPError(c, err, "Authentication required", http.StatusUnauthorized)
-	}
+	h.Logger.Debug("CreateCampaign: User authenticated", "userID", userID)
 
-	// Get user ID from session
-	userID, ok := sessionManager.GetSessionValue(sess, "user_id").(string)
-	if !ok || userID == "" {
-		h.Logger.Error("User ID not found", ErrUnauthorizedAccess)
-		return h.ErrorHandler.HandleHTTPError(c, ErrUnauthorizedAccess, "Authentication required", http.StatusUnauthorized)
-	}
-
+	// Parse and validate form data
 	params := &CreateCampaignParams{
 		Name:        strings.TrimSpace(c.FormValue("name")),
 		Description: strings.TrimSpace(c.FormValue("description")),
@@ -166,8 +156,8 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 	}
 
 	if len(validationErrors) > 0 {
-		h.Logger.Error("CreateCampaign: Validation failed", nil,
-			"errors", strings.Join(validationErrors, ", "),
+		h.Logger.Error("CreateCampaign: Validation failed",
+			fmt.Errorf("validation failed: %s", strings.Join(validationErrors, ", ")),
 			"name", params.Name,
 			"description", params.Description)
 
@@ -181,8 +171,11 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		})
 	}
 
-	h.Logger.Debug("CreateCampaign: Creating campaign", "ownerID", userID)
+	h.Logger.Debug("CreateCampaign: Validation passed, creating campaign",
+		"ownerID", userID,
+		"name", params.Name)
 
+	// Create campaign DTO
 	dto := &CreateCampaignDTO{
 		Name:        params.Name,
 		Description: params.Description,
@@ -190,7 +183,7 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		OwnerID:     params.OwnerID,
 	}
 
-	// Add context from echo.Context
+	// Create campaign
 	campaign, err := h.service.CreateCampaign(c.Request().Context(), dto)
 	if err != nil {
 		h.Logger.Error("CreateCampaign: Failed to create campaign", err,
@@ -200,13 +193,25 @@ func (h *Handler) CreateCampaign(c echo.Context) error {
 		return h.ErrorHandler.HandleHTTPError(c, err, msg, status)
 	}
 
+	// Add success flash message
 	if err := h.AddFlashMessage(c, "Campaign created successfully!"); err != nil {
-		h.Logger.Error("Failed to add flash message", err)
+		h.Logger.Error("CreateCampaign: Failed to add flash message", err)
 	}
 
 	h.Logger.Info("CreateCampaign: Campaign created successfully",
 		"campaignID", campaign.ID,
 		"ownerID", userID)
+
+	// Save session to ensure flash message persists
+	sessionManager, err := h.GetSessionManager(c)
+	if err == nil {
+		sess, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
+		if err == nil {
+			if err := sessionManager.SaveSession(c, sess); err != nil {
+				h.Logger.Error("CreateCampaign: Failed to save session", err)
+			}
+		}
+	}
 
 	return c.Redirect(http.StatusSeeOther, "/campaign/"+campaign.ID.String())
 }
@@ -475,25 +480,4 @@ func (h *Handler) GetSessionManager(c echo.Context) (session.Manager, error) {
 		return nil, errors.New("session manager not found")
 	}
 	return sessionManager, nil
-}
-
-// GetUserIDFromSession retrieves and validates the user ID from session
-func (h *Handler) GetUserIDFromSession(c echo.Context) (string, error) {
-	sessionManager, err := h.GetSessionManager(c)
-	if err != nil {
-		return "", err
-	}
-
-	sess, err := sessionManager.GetSession(c, h.Config.Auth.SessionName)
-	if err != nil {
-		h.Logger.Error("Failed to get session", err)
-		return "", err
-	}
-
-	userID, ok := sessionManager.GetSessionValue(sess, "user_id").(string)
-	if !ok || userID == "" {
-		return "", ErrUnauthorizedAccess
-	}
-
-	return userID, nil
 }

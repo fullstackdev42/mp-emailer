@@ -41,6 +41,15 @@ func NewManager(store Store, logger loggo.LoggerInterface, options Options) (Man
 		SameSite: options.SameSite,
 	})
 
+	// Debug log store configuration
+	logger.Debug("Session store configured",
+		"path", options.Path,
+		"domain", options.Domain,
+		"maxAge", options.MaxAge,
+		"secure", options.Secure,
+		"httpOnly", options.HTTPOnly,
+		"sameSite", options.SameSite)
+
 	// Initialize cleaner
 	m.cleaner = NewCleaner(store, options.CleanupInterval, options.MaxAge, logger)
 
@@ -161,10 +170,10 @@ func (m *manager) SetSessionValues(sess *sessions.Session, userData interface{})
 }
 
 func (m *manager) GetSessionValue(sess *sessions.Session, key string) interface{} {
-	if value, ok := sess.Values[key]; ok {
-		return value
+	if sess == nil {
+		return nil
 	}
-	return nil
+	return sess.Values[key]
 }
 
 func (m *manager) DeleteSessionValue(sess *sessions.Session, key string) {

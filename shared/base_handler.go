@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -155,4 +156,57 @@ func (h *BaseHandler) IsAuthenticated(c echo.Context) bool {
 		return false
 	}
 	return h.SessionManager.IsAuthenticated(c)
+}
+
+// GetUserIDFromSession retrieves and validates the user ID from session
+func (h *BaseHandler) GetUserIDFromSession(c echo.Context) (string, error) {
+	if h.SessionManager == nil {
+		return "", session.ErrSessionNotFound
+	}
+
+	sess, err := h.SessionManager.GetSession(c, h.Config.Auth.SessionName)
+	if err != nil {
+		h.Logger.Error("Failed to get session", err)
+		return "", err
+	}
+
+	// First check if we're authenticated
+	if !h.SessionManager.IsAuthenticated(c) {
+		err := fmt.Errorf("user not authenticated")
+		h.Logger.Error("Authentication check failed", err)
+		return "", err
+	}
+
+	// Get the user ID using the session manager's method
+	userIDRaw := h.SessionManager.GetSessionValue(sess, "user_id")
+	if userIDRaw == nil {
+		err := fmt.Errorf("user ID not found in session")
+		h.Logger.Error("Missing user ID", err)
+		return "", err
+	}
+
+	// Handle both string and UUID types
+	var userID string
+	switch v := userIDRaw.(type) {
+	case string:
+		userID = v
+	case fmt.Stringer: // This will handle uuid.UUID
+		userID = v.String()
+	default:
+		err := fmt.Errorf("unexpected user ID type: %T", userIDRaw)
+		h.Logger.Error("Invalid user ID type", err,
+			"type", fmt.Sprintf("%T", userIDRaw),
+			"value", userIDRaw)
+		return "", err
+	}
+
+	if userID == "" {
+		err := fmt.Errorf("empty user ID")
+		h.Logger.Error("Empty user ID", err)
+		return "", err
+	}
+
+	h.Logger.Debug("Successfully retrieved user ID",
+		"user_id", userID)
+	return userID, nil
 }
