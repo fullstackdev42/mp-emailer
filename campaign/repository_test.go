@@ -147,42 +147,58 @@ func (s *RepositoryTestSuite) TestGetAll() {
 }
 
 func (s *RepositoryTestSuite) TestUpdate() {
-	tests := []struct {
-		name    string
-		dto     *campaign.UpdateCampaignDTO
-		wantErr bool
-	}{
-		{
-			name: "successful update",
-			dto: &campaign.UpdateCampaignDTO{
-				ID:          uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				Name:        "Updated Campaign",
-				Description: "Updated Description",
-				Template:    "Updated Template",
-			},
-			wantErr: false,
-		},
-	}
+	s.Run("successful_update", func() {
+		// Test data
+		id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+		ownerID := uuid.New()
+		dto := &campaign.UpdateCampaignDTO{
+			ID:          id,
+			Name:        "Updated Campaign",
+			Description: "Updated Description",
+			Template:    "Updated Template",
+		}
 
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.SetupTest() // Reset mock for each test case
+		// Create existing campaign
+		existingCampaign := &campaign.Campaign{
+			BaseModel: shared.BaseModel{ID: id},
+			OwnerID:   ownerID,
+		}
 
-			// Mock Update call
-			s.mockDB.EXPECT().Update(
-				mock.Anything,
-				mock.AnythingOfType("*campaign.Campaign"),
-			).Return(nil)
+		// Mock FindOne - Note the exact parameter matching
+		s.mockDB.On("FindOne",
+			mock.Anything,
+			mock.MatchedBy(func(c *campaign.Campaign) bool {
+				// The campaign passed to FindOne will be empty initially
+				return true
+			}),
+			"id = ?",
+			id,
+		).Run(func(args mock.Arguments) {
+			// Set the values in the campaign object that's passed in
+			campaign := args.Get(1).(*campaign.Campaign)
+			campaign.ID = existingCampaign.ID
+			campaign.OwnerID = existingCampaign.OwnerID
+		}).Return(nil)
 
-			err := s.repo.Update(context.Background(), tt.dto)
+		// Mock Update - Note the exact parameter matching
+		s.mockDB.On("Update",
+			mock.Anything,
+			mock.MatchedBy(func(c *campaign.Campaign) bool {
+				return c.ID == id &&
+					c.Name == dto.Name &&
+					c.Description == dto.Description &&
+					c.Template == dto.Template &&
+					c.OwnerID == ownerID
+			}),
+		).Return(nil)
 
-			if tt.wantErr {
-				assert.Error(s.T(), err)
-			} else {
-				assert.NoError(s.T(), err)
-			}
-		})
-	}
+		// Execute update
+		err := s.repo.Update(context.Background(), dto)
+
+		// Assertions
+		s.NoError(err)
+		s.mockDB.AssertExpectations(s.T())
+	})
 }
 
 func (s *RepositoryTestSuite) TestDelete() {
