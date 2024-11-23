@@ -36,6 +36,14 @@ var Module = fx.Module("session",
 )
 
 func NewDefaultOptions(cfg *config.Config, log logger.Interface) (Options, error) {
+	// Get the session secret from config
+	secret := cfg.Auth.SessionSecret
+
+	// Ensure the secret is base64 encoded
+	if _, err := base64.StdEncoding.DecodeString(secret); err != nil {
+		return Options{}, fmt.Errorf("session secret must be valid base64: %w", err)
+	}
+
 	// Decode the base64 secret key
 	decodedKey, err := base64.StdEncoding.DecodeString(cfg.Auth.SessionSecret)
 	if err != nil {
